@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+<<<<<<< HEAD:bindjs/src/main/java/ai/metabind/bindjs/composables/ext/ModifierExt.kt
 import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ColorComponent
@@ -70,6 +71,7 @@ import ai.metabind.bindjs.model.modifier.TextCaseModifier
 import ai.metabind.bindjs.model.modifier.TextSelectionModifier
 import ai.metabind.bindjs.model.modifier.TrackingModifier
 import ai.metabind.bindjs.model.modifier.UnderlineModifier
+import ai.metabind.bindjs.model.modifier.asColorComponent
 import kotlin.reflect.KClass
 
 @Composable
@@ -308,8 +310,9 @@ fun List<ComponentModifier<*>>.getForegroundColor(): Color {
 
     firstOrNull { it is ForegroundStyleModifier }?.let { modifier ->
         val rawValue = (modifier as ForegroundStyleModifier).props.rawValue
-        if (rawValue is ColorComponent) {
-            return forColorComponent(rawValue)
+        val colorComponent = rawValue.asColorComponent()
+        if (colorComponent != null) {
+            return forColorComponent(colorComponent)
         } else if (rawValue is Component) {
             val colorComponent = rawValue.props.children?.firstOrNull {
                 it is ColorComponent
@@ -341,10 +344,14 @@ fun List<ComponentModifier<*>>.getAlpha(): Float {
 fun List<ComponentModifier<*>>.getForegroundStyleModifierComponent(): BaseComponent<*>? {
     return lastOrNull { it is ForegroundStyleModifier }?.let { modifier ->
         val rawValue = (modifier as ForegroundStyleModifier).props.rawValue
+        val colorComponent = rawValue.asColorComponent()
+        if (colorComponent != null) {
+            return colorComponent
+        }
         if (rawValue is Component) {
             rawValue.props.children?.firstOrNull()
         } else {
-            rawValue
+            rawValue as? BaseComponent<*>
         }
     }
 }
@@ -527,4 +534,3 @@ fun List<ComponentModifier<*>>.getBackgroundFrameHeight(): Float? {
     }
     return null
 }
-

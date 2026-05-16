@@ -43,6 +43,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
+import ai.metabind.bindjs.composables.chart.ChartView
+import ai.metabind.bindjs.composables.chart.PieChartView
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.buildModifierFromSubset
 import ai.metabind.bindjs.composables.ext.getAlignment
@@ -89,6 +91,15 @@ import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
 import ai.metabind.bindjs.model.VideoComponent
+import ai.metabind.bindjs.model.chart.AreaMarkComponent
+import ai.metabind.bindjs.model.chart.BarMarkComponent
+import ai.metabind.bindjs.model.chart.ChartComponent
+import ai.metabind.bindjs.model.chart.LineMarkComponent
+import ai.metabind.bindjs.model.chart.PieChartComponent
+import ai.metabind.bindjs.model.chart.PieSliceMarkComponent
+import ai.metabind.bindjs.model.chart.PointMarkComponent
+import ai.metabind.bindjs.model.chart.RectangleMarkComponent
+import ai.metabind.bindjs.model.chart.RuleMarkComponent
 import ai.metabind.bindjs.model.ext.toAlignment
 import ai.metabind.bindjs.model.modifier.ClipShapeModifier
 import ai.metabind.bindjs.model.modifier.ClippedModifier
@@ -103,6 +114,7 @@ import ai.metabind.bindjs.model.modifier.OnAppearModifier
 import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
+import ai.metabind.bindjs.model.modifier.asColorComponent
 
 private const val TAG = "BindJSView"
 
@@ -677,7 +689,7 @@ private fun ContextMenuItems(
         is ModifiedComponent -> {
             val modifier = component.props.modifier
             val childColor = if (modifier is ForegroundStyleModifier) {
-                val colorComponent = modifier.props.rawValue as? ColorComponent
+                val colorComponent = modifier.props.rawValue.asColorComponent()
                 colorComponent?.let { Color(it.color) }
             } else {
                 textColor
@@ -906,6 +918,32 @@ private fun ComponentInnerView(
     hasFrame: Boolean = false,
 ) {
     when (component) {
+        is ChartComponent -> ChartView(
+            component = component,
+            modifiers = modifiers,
+            onUiEvent = onUiEvent
+        )
+
+        is PieChartComponent -> PieChartView(
+            component = component,
+            modifiers = modifiers,
+            onUiEvent = onUiEvent
+        )
+
+        is BarMarkComponent -> UnsupportedChartContent("BarMark", modifiers, onUiEvent)
+
+        is LineMarkComponent -> UnsupportedChartContent("LineMark", modifiers, onUiEvent)
+
+        is AreaMarkComponent -> UnsupportedChartContent("AreaMark", modifiers, onUiEvent)
+
+        is PointMarkComponent -> UnsupportedChartContent("PointMark", modifiers, onUiEvent)
+
+        is RuleMarkComponent -> UnsupportedChartContent("RuleMark", modifiers, onUiEvent)
+
+        is RectangleMarkComponent -> UnsupportedChartContent("RectangleMark", modifiers, onUiEvent)
+
+        is PieSliceMarkComponent -> UnsupportedChartContent("PieSliceMark", modifiers, onUiEvent)
+
         is BoxComponent -> BoxView(
             jsRuntime = jsRuntime,
             component = component,
@@ -1151,4 +1189,16 @@ private fun ComponentInnerView(
 
         else -> Log.w(TAG, "No mapping found for component $component")
     }
+}
+
+@Composable
+private fun UnsupportedChartContent(
+    componentName: String,
+    modifiers: List<ComponentModifier<*>>,
+    onUiEvent: (UiEvent) -> Unit,
+) {
+    Text(
+        text = "Unsupported chart content: $componentName",
+        modifier = modifiers.buildModifier(onUiEvent)
+    )
 }
