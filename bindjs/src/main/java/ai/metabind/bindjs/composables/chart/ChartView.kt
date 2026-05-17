@@ -74,6 +74,8 @@ fun ChartView(
 ) {
     val model = remember(component, modifiers) { ChartCollector.collect(component, modifiers) }
     val prepared = remember(model) { PreparedChartData.from(model) }
+    val rectangleChart = remember(model) { PreparedRectangleChartData.from(model) }
+    val accessibilityDescription = remember(model) { model.accessibilityDescription() }
 
     LaunchedEffect(model.diagnostics) {
         model.diagnostics.forEach { diagnostic ->
@@ -86,7 +88,7 @@ fun ChartView(
         }
     }
 
-    if (prepared.isEmpty) {
+    if (prepared.isEmpty && rectangleChart == null) {
         Box(modifier = modifiers.buildModifier(onUiEvent)) {
             Text("Unsupported chart content")
         }
@@ -98,12 +100,9 @@ fun ChartView(
         .then(if (!modifiers.hasFrame()) Modifier.fillMaxWidth().height(240.dp) else Modifier)
         .then(prepared.selectionModifier(onUiEvent))
         .then(
-            if (model.accessibility.label != null || model.accessibility.description != null) {
+            if (accessibilityDescription != null) {
                 Modifier.semantics {
-                    contentDescription = listOfNotNull(
-                        model.accessibility.label,
-                        model.accessibility.description,
-                    ).joinToString(". ")
+                    contentDescription = accessibilityDescription
                 }
             } else {
                 Modifier
@@ -111,7 +110,6 @@ fun ChartView(
         )
 
     val modelProducer = remember { CartesianChartModelProducer() }
-    val rectangleChart = remember(model) { PreparedRectangleChartData.from(model) }
     if (rectangleChart != null) {
         RectangleChartView(rectangleChart, chartModifier)
         return
@@ -321,6 +319,7 @@ private fun ChartInterpolation?.toVicoInterpolator(): LineCartesianLayer.Interpo
 @Composable
 private fun chartColor(name: String): Color =
     when {
+        name == "clear" -> Color.Transparent
         name.startsWith("#") || namedColors.contains(name) -> Color(ColorComponent(ColorProps(rawValue = name)).color)
         else -> paletteColor(name)
     }
@@ -587,8 +586,7 @@ private data class PreparedChartData(
                 columns = builder.seriesFor(ChartMarkKind.Bar),
                 lines = builder.seriesFor(ChartMarkKind.Line),
                 areas = builder.seriesFor(ChartMarkKind.Area),
-                points = builder.seriesFor(ChartMarkKind.Point) +
-                    builder.seriesFor(ChartMarkKind.Rectangle),
+                points = builder.seriesFor(ChartMarkKind.Point),
                 xRules = builder.xRules(),
                 rules = builder.rules(),
                 xLabels = builder.xLabels(),
@@ -746,6 +744,8 @@ private class PreparedChartDataBuilder(
         }
 
         val label = value?.displayText ?: return null
+        // Vico reserves numeric zero naturally on Y axes; string categories start at 1
+        // so the first category does not collapse onto the baseline.
         val y = yCategories.getOrPut(label) { (yCategories.size + 1).toDouble() }
         yLabels.putIfAbsent(y, label)
         return y
@@ -877,6 +877,29 @@ private data class ChartSelectionRow(
     val xValue: ChartValue?,
     val yValue: ChartValue?,
 )
+
+private fun ChartModel.accessibilityDescription(): String? =
+    listOfNotNull(
+        accessibility.label.nonBlankOrNull(),
+        accessibility.description.nonBlankOrNull(),
+        marks.mapNotNull { it.accessibilityDescription() }
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString("; "),
+    )
+        .joinToString(". ")
+        .nonBlankOrNull()
+
+private fun ChartMark.accessibilityDescription(): String? =
+    listOfNotNull(
+        accessibility.label.nonBlankOrNull(),
+        accessibility.value.nonBlankOrNull(),
+        accessibility.description.nonBlankOrNull(),
+    )
+        .joinToString(", ")
+        .nonBlankOrNull()
+
+private fun String?.nonBlankOrNull(): String? =
+    this?.takeIf { it.isNotBlank() }
 
 private data class ChartRule(
     val y: Double,

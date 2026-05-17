@@ -47,16 +47,6 @@ object PieChartCollector {
         return collector.build()
     }
 
-    fun collectRoot(
-        component: BaseComponent<*>,
-        modifiers: List<ComponentModifier<*>> = emptyList(),
-    ): PieChartModel? {
-        val collectedModifiers = mutableListOf<ComponentModifier<*>>()
-        val base = unwrapModified(component, collectedModifiers)
-        val chart = base as? PieChartComponent ?: return null
-        return collect(chart, collectedModifiers.asReversed() + modifiers)
-    }
-
     fun isPieChartLevelModifier(modifier: ComponentModifier<*>): Boolean =
         modifier is ChartForegroundStyleScaleModifier ||
             modifier is ChartLegendModifier ||

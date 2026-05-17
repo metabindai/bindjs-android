@@ -70,16 +70,6 @@ object ChartCollector {
         return collector.build()
     }
 
-    fun collectRoot(
-        component: BaseComponent<*>,
-        modifiers: List<ComponentModifier<*>> = emptyList(),
-    ): ChartModel? {
-        val collectedModifiers = mutableListOf<ComponentModifier<*>>()
-        val base = unwrapModified(component, collectedModifiers)
-        val chart = base as? ChartComponent ?: return null
-        return collect(chart, collectedModifiers.asReversed() + modifiers)
-    }
-
     fun isChartLevelModifier(modifier: ComponentModifier<*>): Boolean =
         modifier is ChartXAxisModifier ||
             modifier is ChartYAxisModifier ||
@@ -110,8 +100,20 @@ object ChartCollector {
             }
         }
 
-        fun build(): ChartModel =
-            ChartModel(
+        fun build(): ChartModel {
+            val hasRectangleMarks = marks.any { it.kind == com.yapstudios.bindjs.model.chart.ChartMarkKind.Rectangle }
+            val hasNonRectangleMarks = marks.any { it.kind != com.yapstudios.bindjs.model.chart.ChartMarkKind.Rectangle }
+            if (hasRectangleMarks && hasNonRectangleMarks) {
+                diagnostics.add(
+                    ChartDiagnostic(
+                        ChartDiagnostic.Severity.Error,
+                        "RectangleMark cannot be mixed with other Cartesian marks on Android; render rectangle ranges in a dedicated Chart.",
+                        "Chart",
+                    )
+                )
+            }
+
+            return ChartModel(
                 marks = marks,
                 axes = axes,
                 scales = scales,
@@ -121,6 +123,7 @@ object ChartCollector {
                 accessibility = accessibility,
                 diagnostics = diagnostics,
             )
+        }
 
         private fun collectChild(component: BaseComponent<*>, path: String) {
             when (component) {
@@ -232,11 +235,20 @@ object ChartCollector {
                     )
                 )
 
-                is InterpolationMethodModifier -> current.copy(
-                    interpolationMethod = ChartInterpolation.from(
-                        modifier.props.method ?: modifier.props.rawValue
-                    ) ?: current.interpolationMethod
-                )
+                is InterpolationMethodModifier -> {
+                    val raw = modifier.props.method ?: modifier.props.rawValue
+                    val interpolation = ChartInterpolation.from(raw)
+                    interpolation?.androidApproximationMessage(raw)?.let { message ->
+                        diagnostics.add(
+                            ChartDiagnostic(
+                                ChartDiagnostic.Severity.Warning,
+                                message,
+                                path,
+                            )
+                        )
+                    }
+                    current.copy(interpolationMethod = interpolation ?: current.interpolationMethod)
+                }
 
                 is CornerRadiusModifier -> current.copy(cornerRadius = modifier.props.rawValue.toDouble())
                 is SymbolModifier -> {
@@ -514,3 +526,17 @@ private fun Any?.asColorString(): String? {
 
 private fun componentName(component: Any): String =
     component::class.simpleName ?: component.toString()
+
+private fun ChartInterpolation.androidApproximationMessage(raw: String?): String? =
+    when (this) {
+        ChartInterpolation.StepStart,
+        ChartInterpolation.StepCenter,
+        ChartInterpolation.StepEnd,
+        -> "Android renderer does not support '${raw ?: name}' interpolation exactly; rendering it as linear."
+        ChartInterpolation.Monotone,
+        ChartInterpolation.Cardinal,
+        -> "Android renderer approximates '${raw ?: name}' interpolation with cubic interpolation."
+        ChartInterpolation.Linear,
+        ChartInterpolation.CatmullRom,
+        -> null
+    }

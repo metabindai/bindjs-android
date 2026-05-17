@@ -10,6 +10,7 @@ import ai.metabind.bindjs.model.chart.BarMarkComponent
 import ai.metabind.bindjs.model.chart.ChartComponent
 import ai.metabind.bindjs.model.chart.ChartDiagnostic
 import ai.metabind.bindjs.model.chart.ChartForegroundStyle
+import ai.metabind.bindjs.model.chart.ChartInterpolation
 import ai.metabind.bindjs.model.chart.ChartMarkKind
 import ai.metabind.bindjs.model.chart.ChartMarkProps
 import ai.metabind.bindjs.model.chart.ChartProps
@@ -20,6 +21,7 @@ import ai.metabind.bindjs.model.chart.ChartStacking
 import ai.metabind.bindjs.model.chart.ChartSymbolName
 import ai.metabind.bindjs.model.chart.ChartValue
 import ai.metabind.bindjs.model.chart.ChartValueFormatter
+import ai.metabind.bindjs.model.chart.LineMarkComponent
 import ai.metabind.bindjs.model.chart.PieChartComponent
 import ai.metabind.bindjs.model.chart.PieChartProps
 import ai.metabind.bindjs.model.chart.PieSelectionBinding
@@ -47,6 +49,8 @@ import ai.metabind.bindjs.model.modifier.chart.ChartXSelectionModifier
 import ai.metabind.bindjs.model.modifier.chart.ChartYScaleModifier
 import ai.metabind.bindjs.model.modifier.chart.ChartYSelectionModifier
 import ai.metabind.bindjs.model.modifier.chart.ChartScaleModifierProps
+import ai.metabind.bindjs.model.modifier.chart.InterpolationMethodModifier
+import ai.metabind.bindjs.model.modifier.chart.InterpolationMethodModifierProps
 import ai.metabind.bindjs.model.modifier.chart.LineStyleModifier
 import ai.metabind.bindjs.model.modifier.chart.LineStyleModifierProps
 import ai.metabind.bindjs.model.modifier.chart.SymbolModifier
@@ -136,7 +140,10 @@ class ChartCollectorTest {
         assertEquals(mapOf("North" to ChartSymbolName.Circle, "South" to ChartSymbolName.Square), model.style.symbolScale)
         assertEquals(ChartSelectionBinding(ChartValue.StringValue("Jan"), "selectMonth"), model.selection?.x)
         assertEquals(ChartSelectionBinding(ChartValue.NumberValue(12.0), "selectValue"), model.selection?.y)
-        assertTrue(model.diagnostics.isEmpty(), model.diagnostics.toString())
+        assertTrue(model.diagnostics.any {
+            it.severity == ChartDiagnostic.Severity.Error &&
+                it.message.contains("RectangleMark cannot be mixed")
+        })
     }
 
     @Test
@@ -171,6 +178,25 @@ class ChartCollectorTest {
         val foreground = assertIs<ChartForegroundStyle.SeriesValue>(collected.style.foregroundStyle)
         assertEquals("North", foreground.channel.value.displayText)
         assertEquals("Region", foreground.channel.label)
+    }
+
+    @Test
+    fun warnsWhenAndroidApproximatesInterpolation() {
+        val mark = modified(
+            InterpolationMethodModifier(
+                InterpolationMethodModifierProps(children = null, rawValue = "stepStart")
+            ),
+            line("Jan", 12),
+        )
+        val chart = ChartComponent(ChartProps(children = listOf(mark)))
+
+        val model = ChartCollector.collect(chart)
+
+        assertEquals(ChartInterpolation.StepStart, model.marks.single().style.interpolationMethod)
+        assertTrue(model.diagnostics.any {
+            it.severity == ChartDiagnostic.Severity.Warning &&
+                it.message.contains("does not support 'stepStart' interpolation exactly")
+        })
     }
 
     @Test
@@ -438,6 +464,15 @@ class ChartCollectorTest {
 
     private fun point(x: String, y: Int): PointMarkComponent =
         PointMarkComponent(
+            ChartMarkProps(
+                children = null,
+                x = mapOf("value" to x),
+                y = mapOf("value" to y),
+            )
+        )
+
+    private fun line(x: String, y: Int): LineMarkComponent =
+        LineMarkComponent(
             ChartMarkProps(
                 children = null,
                 x = mapOf("value" to x),

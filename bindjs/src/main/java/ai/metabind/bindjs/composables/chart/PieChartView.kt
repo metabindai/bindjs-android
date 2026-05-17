@@ -58,6 +58,7 @@ fun PieChartView(
 ) {
     val model = remember(component, modifiers) { PieChartCollector.collect(component, modifiers) }
     val prepared = remember(model) { PreparedPieChartData.from(model) }
+    val accessibilityDescription = remember(model) { model.accessibilityDescription() }
 
     LaunchedEffect(model.diagnostics) {
         model.diagnostics.forEach { diagnostic ->
@@ -83,12 +84,9 @@ fun PieChartView(
         .then(if (!modifiers.hasFrame()) Modifier.fillMaxWidth().height(240.dp) else Modifier)
         .then(prepared.selectionModifier(model, onUiEvent))
         .then(
-            if (model.accessibility.label != null || model.accessibility.description != null) {
+            if (accessibilityDescription != null) {
                 Modifier.semantics {
-                    contentDescription = listOfNotNull(
-                        model.accessibility.label,
-                        model.accessibility.description,
-                    ).joinToString(". ")
+                    contentDescription = accessibilityDescription
                 }
             } else {
                 Modifier
@@ -161,6 +159,7 @@ private fun PieLegend(slices: List<PreparedPieSlice>) {
 @Composable
 private fun pieChartColor(name: String): Color =
     when {
+        name == "clear" -> Color.Transparent
         name.startsWith("#") || pieNamedColors.contains(name) -> Color(ColorComponent(ColorProps(rawValue = name)).color)
         else -> piePaletteColor(name)
     }
@@ -272,3 +271,26 @@ private data class PreparedPieSlice(
     val label: String?,
     val colorName: String,
 )
+
+private fun PieChartModel.accessibilityDescription(): String? =
+    listOfNotNull(
+        accessibility.label.nonBlankOrNull(),
+        accessibility.description.nonBlankOrNull(),
+        slices.mapNotNull { it.accessibilityDescription() }
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString("; "),
+    )
+        .joinToString(". ")
+        .nonBlankOrNull()
+
+private fun PieSliceMark.accessibilityDescription(): String? =
+    listOfNotNull(
+        accessibility.label.nonBlankOrNull(),
+        accessibility.value.nonBlankOrNull(),
+        accessibility.description.nonBlankOrNull(),
+    )
+        .joinToString(", ")
+        .nonBlankOrNull()
+
+private fun String?.nonBlankOrNull(): String? =
+    this?.takeIf { it.isNotBlank() }
