@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -775,9 +776,19 @@ private fun FrameModifier(
     } else {
         effectiveModifiers.buildModifier(onUiEvent)
     }
+    // A height-only frame (no explicit width) is typically an inner content
+    // box — e.g. a fixed-height text slot. Compose Text doesn't auto-trim by
+    // height, so a 3-line description in a 2-line slot would draw past its
+    // bounds and overlap siblings. Clip to enforce the explicit height.
+    // Width-and-height frames are skipped because they're typically card-like
+    // containers whose shadow modifiers need to render outside the bounds.
+    val shouldClipToHeight = frameModifier?.props?.height != null &&
+            frameModifier.props.width == null &&
+            !contentHasGeometryReader
     Box(
         modifier = boxModifier
-            .then(if (bgFrameHeight != null) Modifier.defaultMinSize(minHeight = bgFrameHeight.dp) else Modifier),
+            .then(if (bgFrameHeight != null) Modifier.defaultMinSize(minHeight = bgFrameHeight.dp) else Modifier)
+            .then(if (shouldClipToHeight) Modifier.clipToBounds() else Modifier),
         contentAlignment = modifiers.getAlignment()
     ) {
         BackgroundViews(

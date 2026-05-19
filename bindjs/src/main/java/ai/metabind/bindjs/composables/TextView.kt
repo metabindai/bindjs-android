@@ -7,6 +7,7 @@ import android.view.Gravity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -104,7 +105,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -115,7 +116,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -152,7 +153,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -163,7 +164,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -198,7 +199,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -209,7 +210,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -272,7 +273,7 @@ private fun Markdown(
     Box(
         modifier = modifiers
             .buildModifier(onUiEvent)
-            .then(Modifier.wrapContentSize()),
+            .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
         contentAlignment = modifiers.getAlignment()
     ) {
         AndroidView(
@@ -281,7 +282,7 @@ private fun Markdown(
                     onUiEvent,
                     exclude = listOf(LocalModifier::class)
                 )
-                .then(Modifier.wrapContentSize()),
+                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
             factory = { ctx ->
                 AndroidTextView(ctx).apply {
                     setTextColor(color.toArgb())

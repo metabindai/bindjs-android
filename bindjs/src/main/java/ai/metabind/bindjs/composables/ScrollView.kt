@@ -1,15 +1,18 @@
 package ai.metabind.bindjs.composables
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Modifier
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.model.ScrollAxis
 import ai.metabind.bindjs.model.ScrollComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.FrameModifier
 
 /**
  * Set to true when BindJS content is hosted inside a vertically-scrolling
@@ -28,9 +31,16 @@ fun ScrollView(
     onUiEvent: (UiEvent) -> Unit
 ) {
     if (component.props.axis == ScrollAxis.HORIZONTAL) {
+        // A horizontal ScrollView must take a bounded width to scroll; the
+        // upstream `addWrapIfNoFrame` adds wrapContentSize, which leaves
+        // maxWidth unbounded and collapses LazyRow's weighted children to 0.
+        // Force fillMaxWidth when no explicit frame width is set.
+        val hasExplicitWidth = modifiers.any { m ->
+            m is FrameModifier && (m.props.width != null || m.props.maxWidth != null)
+        }
+        val widthFill = if (!hasExplicitWidth) Modifier.fillMaxWidth() else Modifier
         LazyRow(
-            modifier = modifiers
-                .buildModifier(onUiEvent),
+            modifier = widthFill.then(modifiers.buildModifier(onUiEvent)),
         ) {
             component.props.children?.forEach { child ->
                 child?.let {

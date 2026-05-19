@@ -53,9 +53,14 @@ fun ColumnView(
         verticalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
         horizontalAlignment = component.props.horizontalAlignment(),
     ) {
+        // Only count a child as "framed" if its frame actually constrains
+        // height — a frame that only sets maxWidth=Infinity says nothing about
+        // height, so it shouldn't trigger weight-share among siblings (which
+        // would squeeze the non-framed sibling's intrinsic content).
         val hasFramedChild =
-            component.props.children?.any {
-                (it?.props as? ModifierProps)?.modifier is FrameModifier
+            component.props.children?.any { child ->
+                val mod = (child?.props as? ModifierProps)?.modifier as? FrameModifier
+                mod != null && (mod.props.height != null || mod.props.maxHeight != null)
             } ?: false
 
         // When the Column is inside a bounded-height context (has a Weight
@@ -69,6 +74,19 @@ fun ColumnView(
                 parentHasWeight &&
                 (nonSpacerChildren?.size ?: 0) > 1
 
+        // Walks nested ModifiedComponent chains (not just the top modifier)
+        // for an explicit height — so a child wrapped in padding/cornerRadius
+        // around a `.frame(height: …)` is still recognised as fixed-height.
+        val childHeights = nonSpacerChildren?.map { it?.calculateMaxHeight() } ?: emptyList()
+        val hasFixedHeightSibling = childHeights.any { it != null && it != Float.POSITIVE_INFINITY }
+        val hasFlexibleSibling = childHeights.any { it == null || it == Float.POSITIVE_INFINITY }
+        // When the Column is bounded and children mix fixed-height with
+        // flexible, flexible ones must absorb the remaining space via weight.
+        // Without this, the fixed-height child renders at its intrinsic size
+        // but flexible siblings also use intrinsic, overflowing the bound.
+        val mixedFixedAndFlexible = !hasSpacer && hasFrame &&
+                hasFixedHeightSibling && hasFlexibleSibling
+
         component.props.children?.forEach { child ->
             if (child is SpacerComponent) {
                 Spacer(
@@ -81,6 +99,9 @@ fun ColumnView(
             } else {
                 val isFramed =
                     (child?.props as? ModifierProps)?.modifier as? FrameModifier != null
+                val childMaxHeight = child?.calculateMaxHeight()
+                val childIsFlexible =
+                    childMaxHeight == null || childMaxHeight == Float.POSITIVE_INFINITY
                 val modifiersFinal = if (child is ModifiedComponent &&
                     child.props.modifier != null &&
                     child.props.modifier is LayoutPriorityModifier
@@ -88,6 +109,14 @@ fun ColumnView(
                     modifiers.modifiersToShareWithChildren() + LocalModifier.FillMaxWidth(
                         Modifier.fillMaxWidth(child.props.modifier.props.rawValue.toFloat())
                     )
+                } else if (mixedFixedAndFlexible) {
+                    if (childIsFlexible) {
+                        modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
+                            Modifier.weight(1f)
+                        )
+                    } else {
+                        modifiers.modifiersToShareWithChildren()
+                    }
                 } else if (hasFrame && isFramed) {
                     // Child with explicit frame in bounded-height Column - no weight,
                     // let its frame modifier apply the explicit size.

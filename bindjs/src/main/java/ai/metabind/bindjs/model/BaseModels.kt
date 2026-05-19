@@ -17,11 +17,42 @@ abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
             }
             return modifiedComponent.props.content?.firstOrNull()?.calculateMaxWidth()
         }
-        // Recurse into layout containers (VStack, HStack, ZStack) to find
-        // descendants that request infinite width, so the parent Row/Column
-        // can give this child flexible weight instead of equal distribution.
+        // A ComponentCall is a transparent slot — its single child is the
+        // rendered body, so propagate that child's width (finite or infinite).
+        // Without this, a Row of ComponentCalls with explicit per-card widths
+        // is misclassified as "all flexible" and weight-distributed.
+        if (this is Component) {
+            return props.children?.firstOrNull()?.calculateMaxWidth()
+        }
+        // Layout containers (VStack, HStack, ZStack) only propagate infinity:
+        // a finite width on one child doesn't describe the container's width.
         this.props.children?.forEach { child ->
             val childMax = child?.calculateMaxWidth()
+            if (childMax == Float.POSITIVE_INFINITY) return Float.POSITIVE_INFINITY
+        }
+        return null
+    }
+
+    fun calculateMaxHeight(): Float? {
+        (this as? ModifiedComponent)?.let { modifiedComponent ->
+            (this.props.modifier as? FrameModifier)?.let { frameModifier ->
+                // `minHeight` is a known floor — for weight-distribution
+                // siblings, that's enough to treat this child as having a
+                // fixed contribution rather than purely flexible. Without
+                // this, a `frame(minHeight: 160)` text section next to a
+                // greedy image leaves both classified as flexible, and the
+                // image consumes the whole column.
+                return frameModifier.props.height
+                    ?: frameModifier.props.maxHeight
+                    ?: frameModifier.props.minHeight
+            }
+            return modifiedComponent.props.content?.firstOrNull()?.calculateMaxHeight()
+        }
+        if (this is Component) {
+            return props.children?.firstOrNull()?.calculateMaxHeight()
+        }
+        this.props.children?.forEach { child ->
+            val childMax = child?.calculateMaxHeight()
             if (childMax == Float.POSITIVE_INFINITY) return Float.POSITIVE_INFINITY
         }
         return null
