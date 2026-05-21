@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,15 @@ fun RowView(
     modifiers: List<ComponentModifier<*>>,
     onUiEvent: (UiEvent) -> Unit,
 ) {
+    // A Row inside a horizontal LazyRow is measured with unbounded width.
+    // Modifier.weight against an infinite max collapses to 0, so any branch
+    // below that wraps a child in `Modifier.weight(...)` produces 0-width
+    // children. When this flag is set, fall through to the intrinsic-size
+    // branch (LocalModifier.InRow) for every child. Children inside the row
+    // themselves are not inside a horizontal scroll (the row bounds them),
+    // so reset the flag for the BindJSView call so nested Rows still get
+    // weight distribution where appropriate.
+    val inHorizontalScroll = LocalInHorizontalScroll.current
     Row(
         modifier = modifiers
             .buildModifier(onUiEvent, listOf(ShadowModifier::class)),
@@ -80,7 +90,12 @@ fun RowView(
                     val maxWidth = child?.calculateMaxWidth()
 
                     val childHasFixedSize = child?.hasFixedSizeModifier() == true
-                    val modifiersFinal = if (child is ModifiedComponent &&
+                    val modifiersFinal = if (inHorizontalScroll) {
+                        // Unbounded width: weight collapses to 0. Lay out at
+                        // intrinsic size and let the LazyRow handle scrolling.
+                        modifiers.modifiersToShareWithChildren() +
+                                LocalModifier.InRow(Modifier)
+                    } else if (child is ModifiedComponent &&
                         child.props.modifier != null &&
                         child.props.modifier is LayoutPriorityModifier
                     ) {
@@ -110,13 +125,18 @@ fun RowView(
                                 LocalModifier.InRow(Modifier)
                     }
                     child?.let {
-                        BindJSView(
-                            jsRuntime = jsRuntime,
-                            component = child,
-                            version = version,
-                            onUiEvent = onUiEvent,
-                            modifiers = modifiersFinal
-                        )
+                        // The Row itself bounds its children's widths, so
+                        // descendants don't need the horizontal-scroll
+                        // workaround. Clear the flag for the subtree.
+                        CompositionLocalProvider(LocalInHorizontalScroll provides false) {
+                            BindJSView(
+                                jsRuntime = jsRuntime,
+                                component = child,
+                                version = version,
+                                onUiEvent = onUiEvent,
+                                modifiers = modifiersFinal
+                            )
+                        }
                     }
                 }
             }

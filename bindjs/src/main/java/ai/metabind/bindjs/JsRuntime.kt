@@ -7,6 +7,17 @@ interface McpHost {
     fun openLink(url: String) {}
     fun sendMessage(message: String) {}
     fun updateModelContext(content: Map<String, Any?>) {}
+    fun log(level: String, message: String) {}
+
+    /**
+     * Invoked when JS calls `host.toolCall(name, args)`. Return value is
+     * serialized back to the awaiting JS promise as JSON. Throw to reject.
+     * Default implementation rejects with "tool not implemented" so missing
+     * tools surface clearly in JS rather than hanging the promise.
+     */
+    suspend fun toolCall(name: String, args: Map<String, Any?>): Any? {
+        throw NotImplementedError("tool '$name' not implemented by host")
+    }
 }
 
 interface JsRuntime {
@@ -39,5 +50,14 @@ interface JsRuntime {
     ): BaseComponent<*>?
 
     suspend fun awaitReady()
+
+    /**
+     * Register a listener that fires when JS state changes (`useState` /
+     * `useStore` setters) and the rendered tree needs to be re-fetched.
+     * Pass `null` to clear. The renderer typically responds by re-calling
+     * [callComponent] with the same args and swapping the result into its
+     * Compose state.
+     */
+    fun setOnRerenderRequested(listener: (() -> Unit)?)
 }
 

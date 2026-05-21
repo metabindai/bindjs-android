@@ -20,8 +20,10 @@ import ai.metabind.bindjs.model.modifier.PaddingModifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
@@ -35,6 +37,20 @@ class JsRuntimeImpl private constructor(
     @Volatile
     private var mcpHost: McpHost? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Long-lived scope for resolving JS→native `host.toolCall(...)` requests.
+    // SupervisorJob so one failing tool call doesn't kill the channel.
+    private val toolCallScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var onRerenderRequested: (() -> Unit)? = null
+
+    @Volatile
+    private var rerenderPosted = false
+
+    override fun setOnRerenderRequested(listener: (() -> Unit)?) {
+        onRerenderRequested = listener
+    }
 
     companion object {
         private const val TAG = "JsRuntimeImpl"
@@ -323,12 +339,33 @@ class JsRuntimeImpl private constructor(
     }
 
     private fun dispatchMcpMessage(text: String) {
-        val host = mcpHost ?: return
         val payload = text.removePrefix(MCP_PREFIX)
         val sepIdx = payload.indexOf("::")
         if (sepIdx < 0) return
         val method = payload.substring(0, sepIdx)
         val argsJson = payload.substring(sepIdx + 2)
+
+        // The rerender signal is host-independent — it must fire even when
+        // no McpHost is registered (e.g. previews) so the renderer can still
+        // refresh the tree after state changes. JS emits this synchronously
+        // (one console message per setState call), so coalesce bursts here:
+        // we only post once to the main handler at a time, and the posted
+        // runnable picks up whatever state JS has at the moment it runs.
+        if (method == "__rerender__") {
+            if (rerenderPosted) return
+            rerenderPosted = true
+            mainHandler.post {
+                rerenderPosted = false
+                try {
+                    onRerenderRequested?.invoke()
+                } catch (e: Exception) {
+                    Log.e(TAG, "rerender listener threw", e)
+                }
+            }
+            return
+        }
+
+        val host = mcpHost ?: return
         val args = try {
             gson.fromJson(argsJson, Array<Any?>::class.java) ?: return
         } catch (e: Exception) {
@@ -346,10 +383,55 @@ class JsRuntimeImpl private constructor(
                             host.updateModelContext(it)
                         }
                     }
+                    "log" -> {
+                        val level = args.getOrNull(0) as? String ?: "info"
+                        val payload = args.drop(1).joinToString(" ") { arg ->
+                            when (arg) {
+                                null -> "null"
+                                is String -> arg
+                                else -> gson.toJson(arg)
+                            }
+                        }
+                        host.log(level, payload)
+                    }
+                    "toolCall" -> dispatchToolCall(host, args)
                     else -> Log.w(TAG, "Unknown MCP method: $method")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "MCP handler threw for method: $method", e)
+            }
+        }
+    }
+
+    /**
+     * Handle a JS-originated `host.toolCall(name, args)`. The JS shim packs
+     * `[requestId, toolName, toolArgs]` into the MCP payload; we run the
+     * host's suspend handler off the main thread and resolve the awaiting
+     * JS promise via `__resolveToolCall(id, ok, value)`.
+     */
+    private fun dispatchToolCall(host: McpHost, args: Array<Any?>) {
+        val id = args.getOrNull(0) as? String
+        val name = args.getOrNull(1) as? String
+        if (id == null || name == null) {
+            Log.w(TAG, "toolCall missing id/name: ${args.toList()}")
+            return
+        }
+        @Suppress("UNCHECKED_CAST")
+        val toolArgs = (args.getOrNull(2) as? Map<String, Any?>) ?: emptyMap()
+        toolCallScope.launch {
+            val (ok, payload) = try {
+                true to host.toolCall(name, toolArgs)
+            } catch (e: Throwable) {
+                Log.e(TAG, "host.toolCall('$name') threw", e)
+                false to (e.message ?: e::class.simpleName ?: "tool call failed")
+            }
+            try {
+                val idJson = gson.toJson(id)
+                val payloadJson = gson.toJson(payload)
+                val script = "__resolveToolCall($idJson, $ok, $payloadJson);"
+                jsIsolate.evaluateJavaScriptAsync(script).await()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to resolve toolCall '$name' (id=$id) back into JS", e)
             }
         }
     }

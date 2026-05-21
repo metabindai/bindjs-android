@@ -51,8 +51,6 @@ import ai.metabind.bindjs.composables.ext.getBackgroundFrameHeight
 import ai.metabind.bindjs.composables.ext.has
 import ai.metabind.bindjs.composables.ext.hasFrame
 import ai.metabind.bindjs.composables.ext.modifiersToShareWithChildren
-import ai.metabind.bindjs.composables.ext.onAppearModifier
-import ai.metabind.bindjs.composables.ext.onDisappearModifier
 import ai.metabind.bindjs.composables.ext.process
 import ai.metabind.bindjs.model.AngularGradientComponent
 import ai.metabind.bindjs.model.BaseComponent
@@ -101,6 +99,8 @@ import ai.metabind.bindjs.model.modifier.ForegroundStyleModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.MaskModifier
+import ai.metabind.bindjs.model.modifier.OnAppearModifier
+import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
 
@@ -254,30 +254,6 @@ private fun NonModifiedComponent(
             modifiers = modifiers,
             hasFrame = hasFrame
         )
-
-        val onAppearModifier = modifiers.onAppearModifier()
-        onAppearModifier?.let {
-            LaunchedEffect(Unit) {
-                onUiEvent(
-                    UiEvent.OnAppear(
-                        it.props.handlerId
-                    )
-                )
-            }
-        }
-
-        val onDisappearModifier = modifiers.onDisappearModifier()
-        onDisappearModifier?.let {
-            DisposableEffect(Unit) {
-                onDispose {
-                    onUiEvent(
-                        UiEvent.OnDisappear(
-                            it.props.handlerId
-                        )
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -341,6 +317,46 @@ private fun ModifiedComponent(
             modifiers = updateModifiers,
             isBackground = isBackground
         )
+
+        // Fire effect modifiers at the layer they're attached to, before
+        // descending. Special modifier composables below us (FrameModifier,
+        // MaskModifier, ContextMenuModifier, ...) call InnerComponents with
+        // `modifiers.modifiersToShareWithChildren()`, which strips these
+        // out — handling them here means a `.frame(...).onAppear(...)` still
+        // fires correctly. Don't add the modifier to `updateModifiers`,
+        // otherwise NonModifiedComponent would fire it a second time at the
+        // leaf.
+        is OnAppearModifier -> {
+            LaunchedEffect(Unit) {
+                onUiEvent(UiEvent.OnAppear(modifier.props.handlerId))
+            }
+            InnerComponents(
+                jsRuntime = jsRuntime,
+                version = version,
+                onUiEvent = onUiEvent,
+                modifiers = modifiers,
+                components = modifierProps.content,
+                isBackground = isBackground,
+                hasFrame = hasFrame
+            )
+        }
+
+        is OnDisappearModifier -> {
+            DisposableEffect(Unit) {
+                onDispose {
+                    onUiEvent(UiEvent.OnDisappear(modifier.props.handlerId))
+                }
+            }
+            InnerComponents(
+                jsRuntime = jsRuntime,
+                version = version,
+                onUiEvent = onUiEvent,
+                modifiers = modifiers,
+                components = modifierProps.content,
+                isBackground = isBackground,
+                hasFrame = hasFrame
+            )
+        }
 
         else -> InnerComponents(
             jsRuntime = jsRuntime,

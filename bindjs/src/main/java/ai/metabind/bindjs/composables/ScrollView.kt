@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import ai.metabind.bindjs.JsRuntime
@@ -21,6 +22,15 @@ import ai.metabind.bindjs.model.modifier.FrameModifier
  * crashes with "infinity maximum height constraints".
  */
 val LocalHostScrollsVertically = compositionLocalOf { false }
+
+/**
+ * Set to true while rendering inside a horizontal [ScrollView] (a LazyRow).
+ * Children of a horizontal scroller see unbounded width constraints, so any
+ * weight-based layout inside collapses to zero width. Containers (notably
+ * [RowView]) check this and lay children out at their intrinsic size instead
+ * of using [Modifier.weight] when the flag is set.
+ */
+val LocalInHorizontalScroll = compositionLocalOf { false }
 
 @Composable
 fun ScrollView(
@@ -45,13 +55,19 @@ fun ScrollView(
             component.props.children?.forEach { child ->
                 child?.let {
                     item {
-                        BindJSView(
-                            jsRuntime = jsRuntime,
-                            component = child,
-                            version = version,
-                            onUiEvent = onUiEvent,
-                            modifiers = emptyList()
-                        )
+                        // Children of a horizontal scroll get unbounded width
+                        // constraints — flag it so downstream containers know
+                        // not to use Modifier.weight (which would collapse to
+                        // 0 width). See `LocalInHorizontalScroll`.
+                        CompositionLocalProvider(LocalInHorizontalScroll provides true) {
+                            BindJSView(
+                                jsRuntime = jsRuntime,
+                                component = child,
+                                version = version,
+                                onUiEvent = onUiEvent,
+                                modifiers = emptyList()
+                            )
+                        }
                     }
                 }
             }

@@ -3273,7 +3273,38 @@ function customJSONStringify(value, replacer, space) {
 
 const runtime = new BindJSRuntime({expandForEach: true});
 
+// `useState`/`useStore` setters call `runtime.needsRerender()` to ask the
+// renderer to re-evaluate the component tree. iOS binds this directly via
+// JSContext; on Android we don't have native bindings, so we emit a console
+// message and let the native side re-call callComponent(...).
+//
+// We emit *synchronously* — queueMicrotask isn't available in androidx
+// JavaScriptIsolate and throws a ReferenceError, which would propagate up
+// through the useState setter, abort the calling async function, and leave
+// promises like `await host.toolCall(...)` hanging forever. Multiple
+// setState calls per turn just emit multiple messages; the Kotlin side
+// coalesces them.
+runtime.needsRerender = () => {
+    console.log('__MCP__::__rerender__::[]');
+};
+
+// Pending host.toolCall() promises, keyed by a request id. The native side
+// receives the call via the __MCP__:: console bridge and resolves it later
+// by calling __resolveToolCall(id, ok, value) from Kotlin.
+const __pendingToolCalls = new Map();
+let __nextToolCallId = 0;
+
 Object.assign(this, {
+    __resolveToolCall: (id, ok, value) => {
+        const entry = __pendingToolCalls.get(id);
+        if (!entry) return;
+        __pendingToolCalls.delete(id);
+        if (ok) {
+            entry.resolve(value);
+        } else {
+            entry.reject(new Error(typeof value === 'string' ? value : customJSONStringify(value)));
+        }
+    },
     setComponents: (args) => runtime.registerComponents(args),
     setASTComponents: (components, modifiers) => runtime.registerASTComponents(components, modifiers),
     call: (args) => customJSONStringify(runtime.call(...args)(), null, 2),
@@ -3340,9 +3371,19 @@ Object.assign(this, {
                 openLink: send('openLink'),
                 sendMessage: send('sendMessage'),
                 updateModelContext: send('updateModelContext'),
+                log: send('log'),
+                toolCall: (name, args) => new Promise((resolve, reject) => {
+                    const id = String(++__nextToolCallId);
+                    __pendingToolCalls.set(id, { resolve, reject });
+                    console.log('__MCP__::toolCall::' + customJSONStringify([id, name, args]));
+                }),
             };
         } else {
             runtime.mcpHost = null;
+            for (const entry of __pendingToolCalls.values()) {
+                entry.reject(new Error('mcp host removed'));
+            }
+            __pendingToolCalls.clear();
         }
     }
 });
