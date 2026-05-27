@@ -47,7 +47,7 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "ai.metabind"
             artifactId = "bindjs-android"
-            version = "0.0.11"
+            version = "0.0.12"
 
             afterEvaluate {
                 from(components["default"])
