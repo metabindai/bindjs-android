@@ -16,6 +16,7 @@ import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.modifiersToShareWithChildren
 import ai.metabind.bindjs.model.BoxComponent
 import ai.metabind.bindjs.model.ColumnComponent
+import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.RowComponent
@@ -128,12 +129,15 @@ fun ColumnView(
                         Modifier.weight(1f, false)
                     )
                 } else if (hasSpacer || child is ModifiedComponent ||
-                    child is RowComponent || child is ColumnComponent || child is BoxComponent
+                    child is RowComponent || child is ColumnComponent || child is BoxComponent ||
+                    child is Component
                 ) {
                     // In SwiftUI, VStack children wrap their content by default and
                     // are positioned by the VStack's alignment.  Layout containers
-                    // (HStack, VStack, ZStack) and ModifiedComponents should not get
-                    // FillMaxWidth so the Column's horizontalAlignment can center them.
+                    // (HStack, VStack, ZStack), ModifiedComponents, and custom
+                    // component calls (whose size is their body's size) should not
+                    // get FillMaxWidth so the Column's horizontalAlignment can
+                    // center them.
                     modifiers.modifiersToShareWithChildren()
                 } else if (multipleFlexibleChildren) {
                     modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(

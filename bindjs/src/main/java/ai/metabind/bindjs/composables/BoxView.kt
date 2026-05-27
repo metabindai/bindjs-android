@@ -21,19 +21,33 @@ fun BoxView(
     onUiEvent: (UiEvent) -> Unit,
     hasFrame: Boolean = false,
 ) {
+    // In SwiftUI a ZStack sizes itself to the union of its children and lets
+    // each child keep its own size; only flexible views (Color, shapes, images)
+    // expand to fill. Those leaves already self-fill via ComponentInnerView's
+    // addFillIfNoFrame, so we must NOT force-fill content children (VStack,
+    // Group, Text) here — doing so makes the ZStack always stretch to full
+    // width, which left-aligns wrapped content and makes rotationEffect pivot
+    // around the parent's center instead of the content's own center.
+    //
+    // The exception is a ZStack the parent has already told to fill (a
+    // background layer, or a maxWidth:.infinity frame): there we keep
+    // stretching content children horizontally so the Box's contentAlignment
+    // can still position them (e.g. bottomLeading pushes content to the bottom).
+    val parentFills = modifiers.any {
+        it is LocalModifier.FillMaxWidth || it is LocalModifier.FillMaxSize
+    }
     Box(
         modifier = modifiers
             .buildModifier(onUiEvent),
         contentAlignment = component.props.uiAlignment(),
     ) {
         component.props.children?.forEach { child ->
-            // In SwiftUI, ZStack children are proposed the stack's bounds
-            // but choose their own size. Content views (VStack with text)
-            // wrap their content, while fill views (Color, shapes) expand.
-            // Use fillMaxWidth so children fill horizontally, but let them
-            // wrap vertically so the Box's contentAlignment can position
-            // them (e.g. bottomLeading alignment pushes content to the bottom).
-            val modifiersFinal = modifiers.modifiersToShareWithChildren() + LocalModifier.FillMaxSize(Modifier.fillMaxWidth())
+            val modifiersFinal = if (parentFills) {
+                modifiers.modifiersToShareWithChildren() +
+                    LocalModifier.FillMaxWidth(Modifier.fillMaxWidth())
+            } else {
+                modifiers.modifiersToShareWithChildren()
+            }
             child?.let {
                 BindJSView(
                     jsRuntime = jsRuntime,

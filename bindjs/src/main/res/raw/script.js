@@ -3294,7 +3294,52 @@ runtime.needsRerender = () => {
 const __pendingToolCalls = new Map();
 let __nextToolCallId = 0;
 
+// Timer bridge. androidx JavaScriptIsolate has no event loop, so setTimeout
+// can't run in the isolate (it's undefined here). We mirror iOS's JSTimers
+// over the __MCP__:: console channel: the callback is parked in __timers,
+// native schedules a delayed post, and calls __fireTimer(id) back when it
+// elapses. Keyed ids let clear* cancel the native-side post.
+const __timers = new Map(); // id -> { callback, repeats }
+let __nextTimerId = 0;
+
 Object.assign(this, {
+    // Invoked from Kotlin when a scheduled timer elapses.
+    __fireTimer: (id) => {
+        const key = String(id);
+        const entry = __timers.get(key);
+        if (!entry) return;
+        if (!entry.repeats) __timers.delete(key);
+        try {
+            entry.callback();
+        } catch (e) {
+            console.warn('timer callback threw', e);
+        }
+    },
+    setTimeout: (callback, delay) => {
+        if (typeof callback !== 'function') return 0;
+        const id = String(++__nextTimerId);
+        __timers.set(id, { callback, repeats: false });
+        console.log('__MCP__::setTimeout::' + customJSONStringify([id, delay ?? 0]));
+        return id;
+    },
+    clearTimeout: (id) => {
+        if (id == null) return;
+        __timers.delete(String(id));
+        console.log('__MCP__::clearTimeout::' + customJSONStringify([String(id)]));
+    },
+    setInterval: (callback, delay) => {
+        if (typeof callback !== 'function') return 0;
+        const id = String(++__nextTimerId);
+        __timers.set(id, { callback, repeats: true });
+        console.log('__MCP__::setInterval::' + customJSONStringify([id, delay ?? 0]));
+        return id;
+    },
+    clearInterval: (id) => {
+        if (id == null) return;
+        __timers.delete(String(id));
+        console.log('__MCP__::clearTimeout::' + customJSONStringify([String(id)]));
+    },
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     __resolveToolCall: (id, ok, value) => {
         const entry = __pendingToolCalls.get(id);
         if (!entry) return;

@@ -24,6 +24,10 @@ sealed class UiEvent {
 
     data class OnDrag(
         val handlerId: String,
+        // SwiftUI-style gesture state forwarded to the JS handler as its first
+        // argument: { phase, locationInView:{x,y}, translation:{x,y}, velocity:{x,y} }.
+        // Coordinates are in dp so they round-trip 1:1 through .offset().
+        val state: Map<String, Any>,
     ) : UiEvent()
 
     data class OnNavigationTap(

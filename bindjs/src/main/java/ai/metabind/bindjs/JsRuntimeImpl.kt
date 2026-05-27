@@ -26,6 +26,7 @@ import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
+import java.util.concurrent.ConcurrentHashMap
 
 class JsRuntimeImpl private constructor(
     context: Context,
@@ -47,6 +48,11 @@ class JsRuntimeImpl private constructor(
 
     @Volatile
     private var rerenderPosted = false
+
+    // setTimeout/setInterval scheduled from JS (the isolate has no event loop),
+    // keyed by the JS-side timer id so clearTimeout/clearInterval can cancel
+    // the pending main-handler post. See the timer bridge in script.js.
+    private val timers = ConcurrentHashMap<String, Runnable>()
 
     override fun setOnRerenderRequested(listener: (() -> Unit)?) {
         onRerenderRequested = listener
@@ -365,6 +371,25 @@ class JsRuntimeImpl private constructor(
             return
         }
 
+        // Timers are host-independent (they must fire in previews too, matching
+        // iOS's JSTimers): schedule/cancel a main-handler post and call back into
+        // JS via __fireTimer(id) when it elapses.
+        when (method) {
+            "setTimeout", "setInterval" -> {
+                val timerArgs = parseArgs(argsJson) ?: return
+                val id = timerArgs.getOrNull(0) as? String ?: return
+                val delayMs = (timerArgs.getOrNull(1) as? Number)?.toLong()?.coerceAtLeast(0L) ?: 0L
+                scheduleTimer(id, delayMs, repeats = method == "setInterval")
+                return
+            }
+            "clearTimeout" -> {
+                val timerArgs = parseArgs(argsJson) ?: return
+                val id = timerArgs.getOrNull(0) as? String ?: return
+                timers.remove(id)?.let { mainHandler.removeCallbacks(it) }
+                return
+            }
+        }
+
         val host = mcpHost ?: return
         val args = try {
             gson.fromJson(argsJson, Array<Any?>::class.java) ?: return
@@ -432,6 +457,44 @@ class JsRuntimeImpl private constructor(
                 jsIsolate.evaluateJavaScriptAsync(script).await()
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to resolve toolCall '$name' (id=$id) back into JS", e)
+            }
+        }
+    }
+
+    private fun parseArgs(argsJson: String): Array<Any?>? = try {
+        gson.fromJson(argsJson, Array<Any?>::class.java)
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to parse timer args: $argsJson", e)
+        null
+    }
+
+    /**
+     * Schedule a JS-originated timer. A one-shot removes itself after firing;
+     * a repeating timer re-posts itself until cancelled via clearInterval/
+     * clearTimeout. Re-using an id replaces the prior post.
+     */
+    private fun scheduleTimer(id: String, delayMs: Long, repeats: Boolean) {
+        val runnable = object : Runnable {
+            override fun run() {
+                if (repeats) {
+                    // Keep the same instance registered so clear* can still find it.
+                    mainHandler.postDelayed(this, delayMs)
+                } else {
+                    timers.remove(id)
+                }
+                fireTimer(id)
+            }
+        }
+        timers.put(id, runnable)?.let { mainHandler.removeCallbacks(it) }
+        mainHandler.postDelayed(runnable, delayMs)
+    }
+
+    private fun fireTimer(id: String) {
+        toolCallScope.launch {
+            try {
+                jsIsolate.evaluateJavaScriptAsync("__fireTimer('$id');").await()
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to fire timer $id back into JS", e)
             }
         }
     }
