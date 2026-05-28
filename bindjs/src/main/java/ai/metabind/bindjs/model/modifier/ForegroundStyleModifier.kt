@@ -64,7 +64,16 @@ fun Any?.asColorComponent(): ColorComponent? {
                 )
             } else {
                 val color = this["color"] as? String
-                if (color != null) ColorComponent(ColorProps(rawValue = color)) else null
+                if (color != null) {
+                    ColorComponent(ColorProps(rawValue = color))
+                } else {
+                    // A wrapper component (e.g. a `ComponentCall` like CardTextColor) that
+                    // resolves to a color through its children. `rawValue` is typed `Any?`,
+                    // so Gson hands it to us as a plain Map rather than a polymorphic
+                    // Component — recurse into the nested children to find the color.
+                    val props = this["props"] as? Map<*, *>
+                    (props?.get("children") as? List<*>)?.firstNotNullOfOrNull { it.asColorComponent() }
+                }
             }
         }
         else -> null
