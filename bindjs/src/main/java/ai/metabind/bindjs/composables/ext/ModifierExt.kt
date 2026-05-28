@@ -28,7 +28,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-<<<<<<< HEAD:bindjs/src/main/java/ai/metabind/bindjs/composables/ext/ModifierExt.kt
 import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ColorComponent

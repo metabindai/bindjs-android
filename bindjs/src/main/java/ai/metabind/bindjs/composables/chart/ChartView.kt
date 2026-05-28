@@ -4,15 +4,28 @@ import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import android.util.Log
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -31,12 +44,15 @@ import com.patrykandpatrick.vico.compose.cartesian.CartesianMeasuringContext
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.compose.cartesian.decoration.HorizontalLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerDimensions
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayerPadding
 import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
@@ -45,6 +61,7 @@ import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLa
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.hasFrame
@@ -63,6 +80,10 @@ import ai.metabind.bindjs.model.chart.ChartStacking
 import ai.metabind.bindjs.model.chart.ChartValue
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
 
 private const val TAG = "BindJSChartView"
 
@@ -157,24 +178,50 @@ fun ChartView(
     val xItemPlacer = remember(prepared.xLabels) {
         FiniteHorizontalAxisItemPlacer(prepared.xLabels.keys)
     }
+    val axisTitleComponent = rememberTextComponent()
+    val xTitle = model.axes.x?.label?.takeIf { it.isNotBlank() }
+    val yTitle = model.axes.y?.label?.takeIf { it.isNotBlank() }
     val bottomAxis =
         if (model.axes.x?.hidden == true || model.axes.x?.position == "top") null
-        else HorizontalAxis.rememberBottom(valueFormatter = xValueFormatter, itemPlacer = xItemPlacer)
+        else HorizontalAxis.rememberBottom(
+            valueFormatter = xValueFormatter,
+            itemPlacer = xItemPlacer,
+            titleComponent = axisTitleComponent,
+            title = { xTitle },
+        )
     val topAxis =
         if (model.axes.x?.hidden == true || model.axes.x?.position != "top") null
-        else HorizontalAxis.rememberTop(valueFormatter = xValueFormatter, itemPlacer = xItemPlacer)
+        else HorizontalAxis.rememberTop(
+            valueFormatter = xValueFormatter,
+            itemPlacer = xItemPlacer,
+            titleComponent = axisTitleComponent,
+            title = { xTitle },
+        )
     val startAxis =
         if (model.axes.y?.hidden == true || model.axes.y?.position == "trailing") null
-        else VerticalAxis.rememberStart(valueFormatter = yValueFormatter)
+        else VerticalAxis.rememberStart(
+            valueFormatter = yValueFormatter,
+            titleComponent = axisTitleComponent,
+            title = { yTitle },
+        )
     val endAxis =
         if (model.axes.y?.hidden == true || model.axes.y?.position != "trailing") null
-        else VerticalAxis.rememberEnd(valueFormatter = yValueFormatter)
+        else VerticalAxis.rememberEnd(
+            valueFormatter = yValueFormatter,
+            titleComponent = axisTitleComponent,
+            title = { yTitle },
+        )
+
+    // Honor an explicit y-domain when one is supplied; otherwise add headroom above the
+    // data so the topmost line/bar doesn't sit flush against the top edge (matches the
+    // horizontal breathing room and SwiftUI's automatic y-scaling).
+    val yRangeProvider = remember(model) { chartYRangeProvider(model) }
 
     val layers = mutableListOf<CartesianLayer<*>>()
     if (prepared.columns.isNotEmpty()) {
         val columns = prepared.columns.map { series ->
             rememberLineComponent(
-                fill = Fill(chartColor(series.colorName)),
+                fill = Fill(chartSeriesColor(series.colorName, series.autoPaletteIndex)),
                 thickness = 14.dp,
             )
         }
@@ -185,6 +232,7 @@ fun ChartView(
                     if (prepared.columnsStacked) ColumnCartesianLayer.MergeMode.Stacked
                     else ColumnCartesianLayer.MergeMode.Grouped()
                 },
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -193,7 +241,8 @@ fun ChartView(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     prepared.lines.map { it.rememberVicoLine(includeArea = false, includePoints = false) }
-                )
+                ),
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -202,7 +251,8 @@ fun ChartView(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     prepared.areas.map { it.rememberVicoLine(includeArea = true, includePoints = false) }
-                )
+                ),
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -211,7 +261,8 @@ fun ChartView(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     prepared.points.map { it.rememberVicoLine(includeArea = false, includePoints = true, lineVisible = false) }
-                )
+                ),
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -220,7 +271,8 @@ fun ChartView(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     prepared.xRules.map { it.rememberVicoLine(includeArea = false, includePoints = false) }
-                )
+                ),
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -229,7 +281,8 @@ fun ChartView(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     it.rememberVicoLine(includeArea = false, includePoints = false, lineVisible = false)
-                )
+                ),
+                rangeProvider = yRangeProvider,
             )
         )
     }
@@ -238,25 +291,75 @@ fun ChartView(
         HorizontalLine(
             y = { rule.y },
             line = rememberLineComponent(
-                fill = Fill(chartColor(rule.colorName)),
+                fill = Fill(chartSeriesColor(rule.colorName, rule.autoPaletteIndex)),
                 thickness = rule.width.dp,
             ),
             label = { rule.label },
         )
     }
 
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            *layers.toTypedArray(),
-            startAxis = startAxis,
-            bottomAxis = bottomAxis,
-            topAxis = topAxis,
-            endAxis = endAxis,
-            decorations = ruleDecorations,
-        ),
-        modelProducer = modelProducer,
-        modifier = chartModifier,
+    // Line/area/point layers place their first and last points flush against the plot
+    // edges, which pushes the outermost x-axis labels off-canvas. Bars inset themselves,
+    // so only the non-column layers need horizontal breathing room.
+    val needsEdgeInset = prepared.lines.isNotEmpty() ||
+        prepared.areas.isNotEmpty() ||
+        prepared.points.isNotEmpty() ||
+        prepared.xRules.isNotEmpty()
+
+    val chart = rememberCartesianChart(
+        *layers.toTypedArray(),
+        startAxis = startAxis,
+        bottomAxis = bottomAxis,
+        topAxis = topAxis,
+        endAxis = endAxis,
+        decorations = ruleDecorations,
+        layerPadding = {
+            if (needsEdgeInset) {
+                CartesianLayerPadding(unscalableStart = 24.dp, unscalableEnd = 24.dp)
+            } else {
+                CartesianLayerPadding()
+            }
+        },
     )
+
+    val showLegend = !model.legend.hidden && prepared.legendEntries.isNotEmpty()
+    Column(modifier = chartModifier) {
+        CartesianChartHost(
+            chart = chart,
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        )
+        if (showLegend) {
+            ChartLegend(prepared.legendEntries)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ChartLegend(entries: List<ChartLegendEntry>) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        entries.forEach { entry ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .clip(CircleShape)
+                        .background(chartSeriesColor(entry.colorName, entry.autoPaletteIndex))
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(entry.label)
+            }
+        }
+    }
 }
 
 @Composable
@@ -265,7 +368,7 @@ private fun ChartSeries.rememberVicoLine(
     includePoints: Boolean,
     lineVisible: Boolean = true,
 ): LineCartesianLayer.Line {
-    val color = chartColor(colorName)
+    val color = chartSeriesColor(colorName, autoPaletteIndex)
     val strokeWidth = if (lineVisible) (style.lineStyle?.width ?: 2.0).toFloat().dp else 0.dp
     val stroke = if (style.lineStyle?.dash?.isNotEmpty() == true) {
         val dash = style.lineStyle.dash
@@ -316,6 +419,12 @@ private fun ChartInterpolation?.toVicoInterpolator(): LineCartesianLayer.Interpo
         -> LineCartesianLayer.Interpolator.Sharp
     }
 
+// Resolves a series/legend color: palette-by-order when the series has no explicit
+// color, otherwise the named/hex color it was given.
+@Composable
+private fun chartSeriesColor(colorName: String, autoPaletteIndex: Int?): Color =
+    if (autoPaletteIndex != null) palette[autoPaletteIndex % palette.size] else chartColor(colorName)
+
 @Composable
 private fun chartColor(name: String): Color =
     when {
@@ -323,6 +432,45 @@ private fun chartColor(name: String): Color =
         name.startsWith("#") || namedColors.contains(name) -> Color(ColorComponent(ColorProps(rawValue = name)).color)
         else -> paletteColor(name)
     }
+
+private fun isExplicitChartColor(name: String): Boolean =
+    name == "clear" || name.startsWith("#") || namedColors.contains(name)
+
+private fun chartYRangeProvider(model: ChartModel): CartesianLayerRangeProvider {
+    val domain = model.scales.y?.domain?.mapNotNull { it.numberOrNull() }
+    if (domain != null && domain.size == 2) {
+        return CartesianLayerRangeProvider.fixed(
+            minY = minOf(domain[0], domain[1]),
+            maxY = maxOf(domain[0], domain[1]),
+        )
+    }
+    return HeadroomChartRangeProvider
+}
+
+// Extends the auto y-range by a small fraction so the topmost (or bottommost) value isn't
+// flush against the plot edge, then rounds to a clean bound so axis labels stay tidy.
+private object HeadroomChartRangeProvider : CartesianLayerRangeProvider {
+    private const val FRACTION = 0.12
+
+    override fun getMaxY(minY: Double, maxY: Double, extraStore: ExtraStore): Double {
+        if (minY == 0.0 && maxY == 0.0) return 1.0
+        if (maxY <= 0.0) return 0.0
+        val base = if (minY >= 0.0) 0.0 else minY
+        return niceCeil(maxY + (maxY - base) * FRACTION)
+    }
+
+    override fun getMinY(minY: Double, maxY: Double, extraStore: ExtraStore): Double {
+        if (minY >= 0.0) return 0.0
+        val top = if (maxY <= 0.0) 0.0 else maxY
+        return -niceCeil(-minY + (top - minY) * FRACTION)
+    }
+
+    private fun niceCeil(value: Double): Double {
+        if (value <= 0.0) return 0.0
+        val base = 10.0.pow(floor(log10(value)) - 1).coerceAtLeast(1.0)
+        return ceil(value / base) * base
+    }
+}
 
 private val namedColors = setOf(
     "red",
@@ -347,12 +495,13 @@ private val namedColors = setOf(
     "accentColor",
 )
 
+// Mirrors SwiftUI Charts' automatic ordering (blue, green, orange, …).
 private val palette = listOf(
     Color(AndroidColor.rgb(50, 120, 247)),
-    Color(AndroidColor.rgb(235, 78, 62)),
     Color(AndroidColor.rgb(101, 196, 102)),
     Color(AndroidColor.rgb(255, 149, 0)),
     Color(AndroidColor.rgb(126, 87, 194)),
+    Color(AndroidColor.rgb(235, 78, 62)),
     Color(AndroidColor.rgb(0, 150, 136)),
 )
 
@@ -527,6 +676,7 @@ private data class PreparedChartData(
     val columnsStacked: Boolean,
     val placeholder: ChartSeries?,
     val yLabels: Map<Double, String>,
+    val legendEntries: List<ChartLegendEntry>,
 ) {
     val isEmpty: Boolean
         get() = columns.isEmpty() &&
@@ -598,6 +748,7 @@ private data class PreparedChartData(
                     .any { it.style.stacking == ChartStacking.Standard },
                 placeholder = builder.placeholderSeries(),
                 yLabels = builder.yLabels(),
+                legendEntries = builder.legendEntries(),
             )
         }
     }
@@ -610,6 +761,17 @@ private class PreparedChartDataBuilder(
     private val xLabels = linkedMapOf<Double, String>()
     private val yCategories = linkedMapOf<String, Double>()
     private val yLabels = linkedMapOf<Double, String>()
+
+    // Series that don't carry an explicit color get palette colors assigned by the
+    // order their distinct keys first appear, matching SwiftUI Charts' automatic scale.
+    private val autoColorDomain: List<String> =
+        model.marks
+            .map { colorName(seriesKey(it), it.style) }
+            .filterNot { isExplicitChartColor(it) }
+            .distinct()
+
+    private fun autoPaletteIndex(colorName: String): Int? =
+        autoColorDomain.indexOf(colorName).takeIf { it >= 0 }
 
     init {
         (model.axes.x?.values as? ChartAxisValues.Values)?.values?.forEach { value ->
@@ -634,9 +796,11 @@ private class PreparedChartDataBuilder(
         }
         return grouped.map { (key, points) ->
             val style = styles[key] ?: ChartMarkStyle()
+            val name = colorName(key, style)
             ChartSeries(
                 key = key,
-                colorName = colorName(key, style),
+                colorName = name,
+                autoPaletteIndex = autoPaletteIndex(name),
                 xValues = points.map { it.x },
                 yValues = points.map { it.y },
                 style = style,
@@ -647,9 +811,11 @@ private class PreparedChartDataBuilder(
     fun rules(): List<ChartRule> =
         model.marks.filter { it.kind == ChartMarkKind.Rule }.mapNotNull { mark ->
             val y = mark.channels.y?.value?.numberOrNull() ?: return@mapNotNull null
+            val name = colorName(seriesKey(mark), mark.style)
             ChartRule(
                 y = y,
-                colorName = colorName(seriesKey(mark), mark.style),
+                colorName = name,
+                autoPaletteIndex = autoPaletteIndex(name),
                 width = (mark.style.lineStyle?.width ?: 1.0).toFloat(),
                 label = mark.style.annotation?.text.orEmpty(),
             )
@@ -659,9 +825,11 @@ private class PreparedChartDataBuilder(
         val yRange = yRange()
         return model.marks.filter { it.kind == ChartMarkKind.Rule }.mapNotNull { mark ->
             val x = mark.channels.x?.value ?: return@mapNotNull null
+            val name = colorName(seriesKey(mark), mark.style)
             ChartSeries(
                 key = "x-rule-${mark.id}",
-                colorName = colorName(seriesKey(mark), mark.style),
+                colorName = name,
+                autoPaletteIndex = autoPaletteIndex(name),
                 xValues = listOf(xNumber(x), xNumber(x)),
                 yValues = listOf(yRange.first, yRange.second),
                 style = mark.style,
@@ -672,6 +840,22 @@ private class PreparedChartDataBuilder(
     fun xLabels(): Map<Double, String> = xLabels
 
     fun yLabels(): Map<Double, String> = yLabels
+
+    // SwiftUI shows a legend whenever marks are differentiated by a categorical
+    // foregroundStyle(by:) channel. Mirror that: one entry per distinct series key.
+    fun legendEntries(): List<ChartLegendEntry> {
+        val entries = linkedMapOf<String, ChartLegendEntry>()
+        model.marks.forEach { mark ->
+            if (mark.style.foregroundStyle !is ChartForegroundStyle.SeriesValue) return@forEach
+            val key = seriesKey(mark)
+            val name = colorName(key, mark.style)
+            entries.putIfAbsent(
+                key,
+                ChartLegendEntry(label = key, colorName = name, autoPaletteIndex = autoPaletteIndex(name)),
+            )
+        }
+        return entries.values.toList()
+    }
 
     fun selectionRows(): List<ChartSelectionRow> =
         model.marks.filter { it.kind != ChartMarkKind.Rule }.mapNotNull { mark ->
@@ -692,6 +876,7 @@ private class PreparedChartDataBuilder(
         return ChartSeries(
             key = "_rules",
             colorName = "clear",
+            autoPaletteIndex = null,
             xValues = listOf(0.0),
             yValues = listOf(y),
             style = ChartMarkStyle(),
@@ -867,9 +1052,16 @@ private data class ChartPoint(
 private data class ChartSeries(
     val key: String,
     val colorName: String,
+    val autoPaletteIndex: Int?,
     val xValues: List<Double>,
     val yValues: List<Double>,
     val style: ChartMarkStyle,
+)
+
+private data class ChartLegendEntry(
+    val label: String,
+    val colorName: String,
+    val autoPaletteIndex: Int?,
 )
 
 private data class ChartSelectionRow(
@@ -904,6 +1096,7 @@ private fun String?.nonBlankOrNull(): String? =
 private data class ChartRule(
     val y: Double,
     val colorName: String,
+    val autoPaletteIndex: Int?,
     val width: Float,
     val label: String,
 )

@@ -5,7 +5,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BindJSChartPreview">
         <activity
-            android:name=".MainActivity"
+            android:name="ai.metabind.bindjs.chartpreview.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

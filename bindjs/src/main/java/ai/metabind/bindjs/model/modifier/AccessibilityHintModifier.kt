@@ -1,10 +1,10 @@
-package com.yapstudios.bindjs.model.modifier
+package ai.metabind.bindjs.model.modifier
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.google.gson.annotations.SerializedName
-import com.yapstudios.bindjs.composables.UiEvent
-import com.yapstudios.bindjs.model.BaseComponent
+import ai.metabind.bindjs.composables.UiEvent
+import ai.metabind.bindjs.model.BaseComponent
 
 class AccessibilityHintModifier(
     props: AccessibilityHintModifierProps,

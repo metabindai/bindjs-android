@@ -1,12 +1,12 @@
-package com.yapstudios.bindjs.model.modifier.chart
+package ai.metabind.bindjs.model.modifier.chart
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.google.gson.annotations.SerializedName
-import com.yapstudios.bindjs.composables.UiEvent
-import com.yapstudios.bindjs.model.BaseComponent
-import com.yapstudios.bindjs.model.modifier.ComponentModifier
-import com.yapstudios.bindjs.model.modifier.ComponentModifierProps
+import ai.metabind.bindjs.composables.UiEvent
+import ai.metabind.bindjs.model.BaseComponent
+import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.ComponentModifierProps
 
 abstract class ChartSemanticModifier<T : ComponentModifierProps>(
     props: T,

@@ -4,8 +4,11 @@ import android.graphics.Color as AndroidColor
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -116,7 +119,7 @@ fun PieChartView(
                 PieSize.Inner.Zero
             }
             val slices = prepared.slices.map { slice ->
-                VicoPieChart.Slice(fill = Fill(pieChartColor(slice.colorName)))
+                VicoPieChart.Slice(fill = Fill(slice.resolvedColor()))
             }
             PieChartHost(
                 chart = rememberPieChart(
@@ -138,16 +141,21 @@ fun PieChartView(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PieLegend(slices: List<PreparedPieSlice>) {
-    Column {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         slices.forEach { slice ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(
                     modifier = Modifier
                         .size(10.dp)
                         .clip(CircleShape)
-                        .background(pieChartColor(slice.colorName))
+                        .background(slice.resolvedColor())
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(slice.label ?: slice.id)
@@ -157,12 +165,23 @@ private fun PieLegend(slices: List<PreparedPieSlice>) {
 }
 
 @Composable
+private fun PreparedPieSlice.resolvedColor(): Color =
+    if (autoPaletteIndex != null) {
+        piePalette[autoPaletteIndex % piePalette.size]
+    } else {
+        pieChartColor(colorName)
+    }
+
+@Composable
 private fun pieChartColor(name: String): Color =
     when {
         name == "clear" -> Color.Transparent
         name.startsWith("#") || pieNamedColors.contains(name) -> Color(ColorComponent(ColorProps(rawValue = name)).color)
         else -> piePaletteColor(name)
     }
+
+private fun isExplicitPieColor(name: String): Boolean =
+    name == "clear" || name.startsWith("#") || pieNamedColors.contains(name)
 
 private val pieNamedColors = setOf(
     "red",
@@ -187,12 +206,14 @@ private val pieNamedColors = setOf(
     "accentColor",
 )
 
+// Default palette assigned by slice order when no explicit color is provided.
+// Mirrors SwiftUI Charts' automatic ordering (blue, green, orange, …).
 private val piePalette = listOf(
     Color(AndroidColor.rgb(50, 120, 247)),
-    Color(AndroidColor.rgb(235, 78, 62)),
     Color(AndroidColor.rgb(101, 196, 102)),
     Color(AndroidColor.rgb(255, 149, 0)),
     Color(AndroidColor.rgb(126, 87, 194)),
+    Color(AndroidColor.rgb(235, 78, 62)),
     Color(AndroidColor.rgb(0, 150, 136)),
 )
 
@@ -238,20 +259,26 @@ private data class PreparedPieChartData(
     }
 
     companion object {
-        fun from(model: PieChartModel): PreparedPieChartData =
-            PreparedPieChartData(
-                slices = model.slices
-                    .filter { it.value > 0.0 }
-                    .map { slice ->
-                        PreparedPieSlice(
-                            id = slice.id,
-                            value = slice.value,
-                            label = slice.label,
-                            colorName = colorName(slice, model),
-                        )
-                    },
+        fun from(model: PieChartModel): PreparedPieChartData {
+            val visibleSlices = model.slices.filter { it.value > 0.0 }
+            val colorNames = visibleSlices.map { colorName(it, model) }
+            // Slices without an explicit color are assigned palette colors by the
+            // order their distinct color keys first appear (matching SwiftUI Charts).
+            val autoDomain = colorNames.filterNot { isExplicitPieColor(it) }.distinct()
+            return PreparedPieChartData(
+                slices = visibleSlices.mapIndexed { index, slice ->
+                    val name = colorNames[index]
+                    PreparedPieSlice(
+                        id = slice.id,
+                        value = slice.value,
+                        label = slice.label,
+                        colorName = name,
+                        autoPaletteIndex = autoDomain.indexOf(name).takeIf { it >= 0 },
+                    )
+                },
                 innerRadius = (model.innerRadius ?: 0.0).coerceIn(0.0, 1.0).toFloat(),
             )
+        }
 
         private fun colorName(slice: PieSliceMark, model: PieChartModel): String {
             val fallback = slice.label ?: slice.id
@@ -270,6 +297,7 @@ private data class PreparedPieSlice(
     val value: Double,
     val label: String?,
     val colorName: String,
+    val autoPaletteIndex: Int?,
 )
 
 private fun PieChartModel.accessibilityDescription(): String? =

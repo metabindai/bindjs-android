@@ -101,8 +101,8 @@ object ChartCollector {
         }
 
         fun build(): ChartModel {
-            val hasRectangleMarks = marks.any { it.kind == com.yapstudios.bindjs.model.chart.ChartMarkKind.Rectangle }
-            val hasNonRectangleMarks = marks.any { it.kind != com.yapstudios.bindjs.model.chart.ChartMarkKind.Rectangle }
+            val hasRectangleMarks = marks.any { it.kind == ai.metabind.bindjs.model.chart.ChartMarkKind.Rectangle }
+            val hasNonRectangleMarks = marks.any { it.kind != ai.metabind.bindjs.model.chart.ChartMarkKind.Rectangle }
             if (hasRectangleMarks && hasNonRectangleMarks) {
                 diagnostics.add(
                     ChartDiagnostic(
