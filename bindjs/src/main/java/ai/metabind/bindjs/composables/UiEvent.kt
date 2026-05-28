@@ -39,4 +39,9 @@ sealed class UiEvent {
         val setterId: String,
         val tag: String
     ) : UiEvent()
+
+    data class OnChartSelection(
+        val handlerId: String,
+        val value: Any,
+    ) : UiEvent()
 }

@@ -7,11 +7,14 @@ kotlin = "2.3.10"
 coreKtx = "1.17.0"
 javascriptengine = "1.0.0"
 gson = "2.13.2"
+junit = "4.13.2"
 coil = "2.7.0"
 media3-exoplayer = "1.9.2"
 markwon = "4.6.2"
 sceneview = "2.3.3"
 android-compose = "1.10.4"
+androidx-activity-compose = "1.12.2"
+vico = "3.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -20,6 +23,7 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlin-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.10.2" }
 android-compose-material = { module = "androidx.compose.material3:material3", version = "1.4.0" }
 android-compose-ui = { module = "androidx.compose.ui:ui", version.ref = "android-compose" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
@@ -28,6 +32,9 @@ media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-dash", vers
 media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3-exoplayer" }
 markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
 sceneview = { group = "io.github.sceneview", name = "arsceneview", version.ref = "sceneview" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

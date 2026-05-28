@@ -46,7 +46,17 @@ import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
 import ai.metabind.bindjs.model.VideoComponent
+import ai.metabind.bindjs.model.chart.AreaMarkComponent
+import ai.metabind.bindjs.model.chart.BarMarkComponent
+import ai.metabind.bindjs.model.chart.ChartComponent
+import ai.metabind.bindjs.model.chart.LineMarkComponent
+import ai.metabind.bindjs.model.chart.PieChartComponent
+import ai.metabind.bindjs.model.chart.PieSliceMarkComponent
+import ai.metabind.bindjs.model.chart.PointMarkComponent
+import ai.metabind.bindjs.model.chart.RectangleMarkComponent
+import ai.metabind.bindjs.model.chart.RuleMarkComponent
 import ai.metabind.bindjs.model.modifier.AccessibilityHiddenModifier
+import ai.metabind.bindjs.model.modifier.AccessibilityHintModifier
 import ai.metabind.bindjs.model.modifier.AccessibilityLabelModifier
 import ai.metabind.bindjs.model.modifier.AccessibilityRemoveTraitsModifier
 import ai.metabind.bindjs.model.modifier.AccessibilityValueModifier
@@ -116,6 +126,23 @@ import ai.metabind.bindjs.model.modifier.TransformEffectModifier
 import ai.metabind.bindjs.model.modifier.UnderlineModifier
 import ai.metabind.bindjs.model.modifier.VisualEffectModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
+import ai.metabind.bindjs.model.modifier.chart.AnnotationModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartForegroundStyleScaleModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartLegendModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartSelectionModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartSymbolScaleModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartXAxisLabelModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartXAxisModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartXScaleModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartXSelectionModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartYAxisLabelModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartYAxisModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartYScaleModifier
+import ai.metabind.bindjs.model.modifier.chart.ChartYSelectionModifier
+import ai.metabind.bindjs.model.modifier.chart.InterpolationMethodModifier
+import ai.metabind.bindjs.model.modifier.chart.LineStyleModifier
+import ai.metabind.bindjs.model.modifier.chart.SymbolModifier
+import ai.metabind.bindjs.model.modifier.chart.SymbolSizeModifier
 import java.io.IOException
 
 class GsonProvider {
@@ -190,6 +217,7 @@ class GsonProvider {
                     .registerSubtype(TextSelectionModifier::class.java, "textSelection")
                     .registerSubtype(TrackingModifier::class.java, "tracking")
                     .registerSubtype(AccessibilityLabelModifier::class.java, "accessibilityLabel")
+                    .registerSubtype(AccessibilityHintModifier::class.java, "accessibilityHint")
                     .registerSubtype(AccessibilityValueModifier::class.java, "accessibilityValue")
                     .registerSubtype(AccessibilityHiddenModifier::class.java, "accessibilityHidden")
                     .registerSubtype(
@@ -203,11 +231,40 @@ class GsonProvider {
                     .registerSubtype(CoordinateSpaceModifier::class.java, "coordinateSpace")
                     .registerSubtype(VisualEffectModifier::class.java, "visualEffect")
                     .registerSubtype(ContextMenuModifier::class.java, "contextMenu")
+                    .registerSubtype(ChartXAxisModifier::class.java, "chartXAxis")
+                    .registerSubtype(ChartYAxisModifier::class.java, "chartYAxis")
+                    .registerSubtype(ChartXScaleModifier::class.java, "chartXScale")
+                    .registerSubtype(ChartYScaleModifier::class.java, "chartYScale")
+                    .registerSubtype(
+                        ChartForegroundStyleScaleModifier::class.java,
+                        "chartForegroundStyleScale"
+                    )
+                    .registerSubtype(ChartSymbolScaleModifier::class.java, "chartSymbolScale")
+                    .registerSubtype(ChartSelectionModifier::class.java, "chartSelection")
+                    .registerSubtype(ChartXSelectionModifier::class.java, "chartXSelection")
+                    .registerSubtype(ChartYSelectionModifier::class.java, "chartYSelection")
+                    .registerSubtype(ChartLegendModifier::class.java, "chartLegend")
+                    .registerSubtype(ChartXAxisLabelModifier::class.java, "chartXAxisLabel")
+                    .registerSubtype(ChartYAxisLabelModifier::class.java, "chartYAxisLabel")
+                    .registerSubtype(LineStyleModifier::class.java, "lineStyle")
+                    .registerSubtype(InterpolationMethodModifier::class.java, "interpolationMethod")
+                    .registerSubtype(SymbolModifier::class.java, "symbol")
+                    .registerSubtype(SymbolSizeModifier::class.java, "symbolSize")
+                    .registerSubtype(AnnotationModifier::class.java, "annotation")
             )
             .registerTypeAdapterFactory(
                 RuntimeTypeAdapterFactory
                     .of(BaseComponent::class.java, EmptyComponent::class.java, "type")
                     .registerSubtype(Component::class.java, "ComponentCall")
+                    .registerSubtype(ChartComponent::class.java, "Chart")
+                    .registerSubtype(PieChartComponent::class.java, "PieChart")
+                    .registerSubtype(BarMarkComponent::class.java, "BarMark")
+                    .registerSubtype(LineMarkComponent::class.java, "LineMark")
+                    .registerSubtype(AreaMarkComponent::class.java, "AreaMark")
+                    .registerSubtype(PointMarkComponent::class.java, "PointMark")
+                    .registerSubtype(RuleMarkComponent::class.java, "RuleMark")
+                    .registerSubtype(RectangleMarkComponent::class.java, "RectangleMark")
+                    .registerSubtype(PieSliceMarkComponent::class.java, "PieSliceMark")
                     .registerSubtype(ButtonComponent::class.java, "Button")
                     .registerSubtype(TextFieldComponent::class.java, "TextField")
                     .registerSubtype(LabelComponent::class.java, "Label")

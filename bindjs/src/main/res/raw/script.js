@@ -58,6 +58,15 @@ const componentNames = [
     "AssistiveAccess",
     "AsyncImage",
     "Body",
+    "Chart",
+    "PieChart",
+    "BarMark",
+    "LineMark",
+    "AreaMark",
+    "PointMark",
+    "RuleMark",
+    "RectangleMark",
+    "PieSliceMark",
     "Button",
     "Canvas",
     "Capsule",
@@ -734,6 +743,22 @@ function GenericModifier({ args, name }) {
     }
 
     return { props }
+}
+
+function ChartForegroundStyleScaleModifier({ args }) {
+    const props = args[0] ?? {};
+    if (props && typeof props == 'object' && !Array.isArray(props) && props.type == null) {
+        return { props: props.scale ? props : { scale: props } };
+    }
+    return { props: { rawValue: props } };
+}
+
+function ChartSymbolScaleModifier({ args }) {
+    const props = args[0] ?? {};
+    if (props && typeof props == 'object' && !Array.isArray(props) && props.type == null) {
+        return { props: props.scale ? props : { scale: props } };
+    }
+    return { props: { rawValue: props } };
 }
 
 GenericModifier.environmentValue = (name, args) => {
@@ -2071,6 +2096,8 @@ class BindJSRuntime {
         this.#registerBuiltInModifier('gallery', GalleryModifier);
         this.#registerBuiltInModifier('navigationDestination', NavigationDestinationModifier);
         this.#registerBuiltInModifier('animation', AnimationViewModifier);
+        this.#registerBuiltInModifier('chartForegroundStyleScale', ChartForegroundStyleScaleModifier);
+        this.#registerBuiltInModifier('chartSymbolScale', ChartSymbolScaleModifier);
 
         // Register event handlers
         ['onTapGesture', 'onDragGesture', 'onLongPressGesture', 'onHover', 'onAppear', 'onDisappear', 'onSubmit', 'onChange'].map(name => this.#registerBuiltInModifier(name, OnHandler));
