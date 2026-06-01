@@ -132,7 +132,11 @@ fun ChartView(
 
     val modelProducer = remember { CartesianChartModelProducer() }
     if (rectangleChart != null) {
-        RectangleChartView(rectangleChart, chartModifier)
+        RectangleChartView(
+            data = rectangleChart,
+            modifier = chartModifier,
+            showLegend = !model.legend.hidden && rectangleChart.legendEntries.isNotEmpty(),
+        )
         return
     }
 
@@ -513,6 +517,7 @@ private fun applyAlpha(color: Color, alpha: Float): Color = color.copy(alpha = a
 private fun RectangleChartView(
     data: PreparedRectangleChartData,
     modifier: Modifier,
+    showLegend: Boolean,
 ) {
     val marks = data.marks.map { mark ->
         RectangleChartDrawMark(
@@ -527,6 +532,26 @@ private fun RectangleChartView(
         )
     }
 
+    Column(modifier = modifier) {
+        RectangleChartCanvas(
+            data = data,
+            marks = marks,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        )
+        if (showLegend) {
+            ChartLegend(data.legendEntries)
+        }
+    }
+}
+
+@Composable
+private fun RectangleChartCanvas(
+    data: PreparedRectangleChartData,
+    marks: List<RectangleChartDrawMark>,
+    modifier: Modifier,
+) {
     Canvas(modifier = modifier) {
         val leftPadding = 72.dp.toPx()
         val topPadding = 22.dp.toPx()
@@ -963,6 +988,7 @@ private data class PreparedRectangleChartData(
     val marks: List<RectangleChartMark>,
     val xLabels: List<RectangleAxisLabel>,
     val yLabels: List<RectangleAxisLabel>,
+    val legendEntries: List<ChartLegendEntry>,
 ) {
     companion object {
         fun from(model: ChartModel): PreparedRectangleChartData? {
@@ -1008,10 +1034,26 @@ private data class PreparedRectangleChartData(
 
             if (marks.isEmpty()) return null
 
+            // Heatmap cells are colored explicitly (via foregroundStyleScale), so legend
+            // swatches use the same color resolution as the cells (chartColor on the
+            // resolved name) rather than palette-by-order.
+            val legendEntries = linkedMapOf<String, ChartLegendEntry>()
+            rectangleMarks.forEach { mark ->
+                val foreground = mark.style.foregroundStyle
+                if (foreground !is ChartForegroundStyle.SeriesValue) return@forEach
+                val key = foreground.channel.value.displayText
+                val colorName = model.style.foregroundStyleScale[key] ?: key
+                legendEntries.putIfAbsent(
+                    key,
+                    ChartLegendEntry(label = key, colorName = colorName, autoPaletteIndex = null),
+                )
+            }
+
             return PreparedRectangleChartData(
                 marks = marks,
                 xLabels = xCategories.map { (label, value) -> RectangleAxisLabel(value, label) },
                 yLabels = yCategories.map { (label, value) -> RectangleAxisLabel(value, label) },
+                legendEntries = legendEntries.values.toList(),
             )
         }
     }
