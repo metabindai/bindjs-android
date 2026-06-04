@@ -21,6 +21,7 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.LayoutPriorityModifier
@@ -43,14 +44,19 @@ fun ColumnView(
     // This matches SwiftUI VStack behaviour inside an HStack.
     val inRowNoWeight = modifiers.any { it is LocalModifier.InRow } &&
             modifiers.none { it is LocalModifier.Weight }
+    // Greedy children (Color/shapes/gradients) expand to fill offered height.
+    // In a bounded-height column they must share the leftover space via weight,
+    // otherwise they resolve fillMaxSize against an infinite max and collapse to
+    // zero height (e.g. a VStack of color swatches in an overlay).
+    val hasGreedyChild = component.props.children?.any { it?.isVerticallyGreedy() == true } ?: false
     Column(
         modifier = modifiers
             .buildModifier(onUiEvent)
             .then(if (inRowNoWeight) Modifier else Modifier.fillMaxWidth())
-            // When the Column has Spacers and is inside a bounded-height
-            // context, fill the available height so weighted Spacers can
-            // expand (matching SwiftUI VStack behaviour with Spacers).
-            .then(if (hasFrame && hasSpacer) Modifier.fillMaxHeight() else Modifier),
+            // When the Column has Spacers (or greedy leaves) and is inside a
+            // bounded-height context, fill the available height so the weighted
+            // children can expand (matching SwiftUI VStack behaviour).
+            .then(if (hasFrame && (hasSpacer || hasGreedyChild)) Modifier.fillMaxHeight() else Modifier),
         verticalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
         horizontalAlignment = component.props.horizontalAlignment(),
     ) {
@@ -109,6 +115,17 @@ fun ColumnView(
                 ) {
                     modifiers.modifiersToShareWithChildren() + LocalModifier.FillMaxWidth(
                         Modifier.fillMaxWidth(child.props.modifier.props.rawValue.toFloat())
+                    )
+                } else if (hasFrame && child?.isVerticallyGreedy() == true) {
+                    // Greedy leaf in a bounded-height column: take a weighted
+                    // share of the height so multiple greedy siblings (e.g.
+                    // stacked color swatches) split the space evenly instead of
+                    // collapsing. Runs before the generic ModifiedComponent
+                    // branch below, which would otherwise leave it unsized.
+                    modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
+                        Modifier.weight(1f)
+                    ) + LocalModifier.FillMaxWidth(
+                        Modifier.fillMaxWidth()
                     )
                 } else if (mixedFixedAndFlexible) {
                     if (childIsFlexible) {

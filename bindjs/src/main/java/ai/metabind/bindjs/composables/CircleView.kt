@@ -3,6 +3,7 @@ package ai.metabind.bindjs.composables
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,13 +24,22 @@ fun CircleView(
     onUiEvent: (UiEvent) -> Unit,
     hasFrame: Boolean = false
 ) {
-    Box(
-        modifier = modifiers
-            .buildModifier(onUiEvent)
-            .clip(CircleShape)
-            .aspectRatio(1f, matchHeightConstraintsFirst = true)
-            .backgroundModifier(component)
-    )
+    // The shape clip and the fill live on a nested child rather than on the
+    // same modifier chain as the user modifiers. A `.blur(Unbounded)` coming
+    // from `buildModifier()` would otherwise coalesce with the adjacent
+    // `.clip(CircleShape)` graphics layer, and the clip re-bounds the blur to
+    // the layout rectangle — turning soft blurred-circle glows (gradient
+    // washes) into hard-edged blocks. Keeping them on separate layout nodes
+    // lets the blur bleed past its bounds, matching iOS.
+    Box(modifier = modifiers.buildModifier(onUiEvent)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .aspectRatio(1f, matchHeightConstraintsFirst = true)
+                .backgroundModifier(component)
+        )
+    }
 }
 
 @Composable
