@@ -392,6 +392,13 @@ private fun OverlayModifier(
     modifiers: List<ComponentModifier<*>> = listOf(),
     isBackground: Boolean = false,
 ) {
+    // The outer Box already carries the full accumulated modifier chain
+    // (offset/shadow/cornerRadius/...). The base content and the overlay layer
+    // live *inside* that Box, so they must only inherit text-formatting
+    // modifiers — re-applying geometry modifiers here double-applies things
+    // like offset, pushing the overlay (e.g. a color-swatch palette) off its
+    // intended position. Matches MaskModifier / ContextMenuModifier.
+    val childModifiers = modifiers.modifiersToShareWithChildren()
     Box(
         modifier =
             modifiers
@@ -402,7 +409,7 @@ private fun OverlayModifier(
             jsRuntime = jsRuntime,
             version = version,
             onUiEvent = onUiEvent,
-            modifiers = modifiers,
+            modifiers = childModifiers,
             components = modifierProps.content,
             isBackground = isBackground
         )
@@ -412,13 +419,18 @@ private fun OverlayModifier(
                     .matchParentSize(),
                 contentAlignment = modifier.props.alignment.toAlignment()
             ) {
+                // matchParentSize gives the overlay layer the base's bounded
+                // size, so flag it as a bounded-height context — lets greedy
+                // content (e.g. a VStack of color swatches) fill and distribute
+                // instead of collapsing.
                 BindJSView(
                     jsRuntime = jsRuntime,
                     component = it,
                     version = version,
                     onUiEvent = onUiEvent,
-                    modifiers = modifiers,
-                    isBackground = isBackground
+                    modifiers = childModifiers,
+                    isBackground = isBackground,
+                    hasFrame = true
                 )
             }
         }

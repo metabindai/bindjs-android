@@ -59,6 +59,51 @@ abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
     }
 }
 
+/**
+ * Whether this component greedily expands to fill the vertical space offered
+ * to it (SwiftUI's "flexible" leaves: Color, shapes, gradients). Text, images
+ * and layout containers are *intrinsic* — they wrap their content — so they
+ * are NOT greedy. Walks transparent wrappers (ModifiedComponent / ComponentCall
+ * single child) down to the leaf, but treats an explicit `.frame(height/…)` as
+ * a fixed contribution (not greedy) unless it is `maxHeight: .infinity`.
+ *
+ * Used by ColumnView to decide which siblings should share leftover height via
+ * weight — without this, a VStack of pure Colors inside a bounded box collapses
+ * to zero height (each Color resolves fillMaxSize against an infinite max).
+ */
+fun BaseComponent<*>.isVerticallyGreedy(): Boolean {
+    return when (this) {
+        is ModifiedComponent -> {
+            val frame = (props.modifier as? FrameModifier)
+            if (frame != null) {
+                if (frame.props.maxHeight == Float.POSITIVE_INFINITY) return true
+                if (frame.props.height != null || frame.props.maxHeight != null ||
+                    frame.props.minHeight != null
+                ) {
+                    return false
+                }
+            }
+            props.content?.firstOrNull()?.isVerticallyGreedy() ?: false
+        }
+
+        is Component -> props.children?.firstOrNull()?.isVerticallyGreedy() ?: false
+
+        is ColorComponent,
+        is RectangleComponent,
+        is RoundedRectangleComponent,
+        is CircleComponent,
+        is EllipseComponent,
+        is CapsuleComponent,
+        is LinearGradientComponent,
+        is RadialGradientComponent,
+        is AngularGradientComponent,
+        is EllipticalGradientComponent,
+            -> true
+
+        else -> false
+    }
+}
+
 interface BrushComponent {
     @Composable
     fun createBrush(): Brush
