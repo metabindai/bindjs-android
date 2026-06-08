@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +33,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
@@ -46,6 +50,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.LineCartesianLayerModel
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.patrykandpatrick.vico.compose.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
@@ -60,7 +65,9 @@ import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesian
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Position
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
 import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.composables.ext.buildModifier
@@ -69,6 +76,7 @@ import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.ColorProps
 import ai.metabind.bindjs.model.chart.ChartComponent
 import ai.metabind.bindjs.model.chart.ChartDiagnostic
+import ai.metabind.bindjs.model.chart.ChartAnnotation
 import ai.metabind.bindjs.model.chart.ChartAxisValues
 import ai.metabind.bindjs.model.chart.ChartForegroundStyle
 import ai.metabind.bindjs.model.chart.ChartInterpolation
@@ -77,6 +85,7 @@ import ai.metabind.bindjs.model.chart.ChartMarkKind
 import ai.metabind.bindjs.model.chart.ChartMarkStyle
 import ai.metabind.bindjs.model.chart.ChartModel
 import ai.metabind.bindjs.model.chart.ChartStacking
+import ai.metabind.bindjs.model.chart.ChartSymbolName
 import ai.metabind.bindjs.model.chart.ChartValue
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import kotlin.math.abs
@@ -356,7 +365,7 @@ private fun ChartLegend(entries: List<ChartLegendEntry>) {
                 Spacer(
                     modifier = Modifier
                         .size(10.dp)
-                        .clip(CircleShape)
+                        .clip(chartSymbolShape(entry.symbol))
                         .background(chartSeriesColor(entry.colorName, entry.autoPaletteIndex))
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -385,15 +394,37 @@ private fun ChartSeries.rememberVicoLine(
         LineCartesianLayer.LineStroke.Continuous(thickness = strokeWidth)
     }
     val pointProvider = if (includePoints) {
-        val pointSize = (style.symbolSize ?: 8.0).toFloat().dp
-        LineCartesianLayer.PointProvider.single(
-            LineCartesianLayer.Point(
-                component = rememberLineComponent(Fill(color), thickness = pointSize),
-                size = pointSize,
-            )
+        // Remember one marker component per symbol shape. The set is fixed, so the number of
+        // composable calls is stable across recompositions; each point then selects the marker
+        // its resolved symbol maps to. Circle is the default when no symbol is set.
+        val pointBySymbol = mapOf(
+            ChartSymbolName.Circle to rememberSymbolPoint(color, ChartSymbolName.Circle, style.symbolSize),
+            ChartSymbolName.Square to rememberSymbolPoint(color, ChartSymbolName.Square, style.symbolSize),
+            ChartSymbolName.Diamond to rememberSymbolPoint(color, ChartSymbolName.Diamond, style.symbolSize),
+            ChartSymbolName.Triangle to rememberSymbolPoint(color, ChartSymbolName.Triangle, style.symbolSize),
+            ChartSymbolName.Plus to rememberSymbolPoint(color, ChartSymbolName.Plus, style.symbolSize),
+            ChartSymbolName.Cross to rememberSymbolPoint(color, ChartSymbolName.Cross, style.symbolSize),
         )
+        fun pointFor(symbol: ChartSymbolName?) = pointBySymbol.getValue(symbol ?: ChartSymbolName.Circle)
+
+        val distinctSymbols = symbolByX.values.map { it ?: ChartSymbolName.Circle }.distinct()
+        if (distinctSymbols.size <= 1) {
+            LineCartesianLayer.PointProvider.single(pointFor(distinctSymbols.firstOrNull()))
+        } else {
+            SymbolPointProvider(
+                pointsByX = symbolByX.mapValues { pointFor(it.value) },
+                fallback = pointFor(distinctSymbols.first()),
+            )
+        }
     } else {
         null
+    }
+
+    // Mark annotations (e.g. `.annotation("Peak")`) render as data labels positioned beside
+    // the mark; points without an annotation resolve to an empty (invisible) label.
+    val annotationLabel = if (annotationsByY.isNotEmpty()) rememberTextComponent() else null
+    val annotationFormatter = remember(annotationsByY) {
+        CartesianValueFormatter { _, value, _ -> annotationsByY[value].orEmpty() }
     }
 
     return LineCartesianLayer.rememberLine(
@@ -406,7 +437,66 @@ private fun ChartSeries.rememberVicoLine(
         },
         pointProvider = pointProvider,
         interpolator = style.interpolationMethod.toVicoInterpolator(),
+        dataLabel = annotationLabel,
+        dataLabelPosition = annotationPosition.toVerticalPosition(),
+        dataLabelValueFormatter = annotationFormatter,
     )
+}
+
+// SwiftUI's `.symbolSize` is the symbol's ink area (in square points). Convert it to a
+// bounding-box side, scaling per shape so different symbols of the same `symbolSize` carry
+// roughly equal ink (a diamond's box is larger than a square's for the same area). A null
+// size keeps a fixed default box so unsized markers stay uniform.
+@Composable
+private fun rememberSymbolPoint(
+    color: Color,
+    symbol: ChartSymbolName,
+    symbolSize: Double?,
+): LineCartesianLayer.Point {
+    val boxSide = if (symbolSize == null) {
+        DEFAULT_SYMBOL_BOX_DP
+    } else {
+        kotlin.math.sqrt(symbolSize.coerceAtLeast(0.0) * symbol.boxAreaFactor())
+    }
+    return LineCartesianLayer.Point(
+        component = rememberShapeComponent(fill = Fill(color), shape = chartSymbolShape(symbol)),
+        size = boxSide.toFloat().dp,
+    )
+}
+
+private const val DEFAULT_SYMBOL_BOX_DP = 8.0
+private const val SYMBOL_ARM_RATIO = 0.34
+
+// Ratio of bounding-box area to filled ink area for each symbol, so `side = sqrt(area * factor)`
+// yields equal ink across shapes.
+private fun ChartSymbolName.boxAreaFactor(): Double =
+    when (this) {
+        ChartSymbolName.Circle -> 4.0 / Math.PI
+        ChartSymbolName.Square -> 1.0
+        ChartSymbolName.Diamond, ChartSymbolName.Triangle -> 2.0
+        ChartSymbolName.Plus, ChartSymbolName.Cross -> 1.0 / (SYMBOL_ARM_RATIO * (2 - SYMBOL_ARM_RATIO))
+    }
+
+private fun ChartAnnotation.Position?.toVerticalPosition(): Position.Vertical =
+    when (this) {
+        ChartAnnotation.Position.Bottom -> Position.Vertical.Bottom
+        ChartAnnotation.Position.Center -> Position.Vertical.Center
+        else -> Position.Vertical.Top
+    }
+
+// Renders a different marker shape per point within one series, selecting by the entry's x
+// value. Used when a series mixes symbols; single-symbol series use PointProvider.single.
+private class SymbolPointProvider(
+    private val pointsByX: Map<Double, LineCartesianLayer.Point>,
+    private val fallback: LineCartesianLayer.Point,
+) : LineCartesianLayer.PointProvider {
+    override fun getPoint(
+        entry: LineCartesianLayerModel.Entry,
+        seriesIndex: Int,
+        extraStore: ExtraStore,
+    ): LineCartesianLayer.Point = pointsByX[entry.x] ?: fallback
+
+    override fun getLargestPoint(extraStore: ExtraStore): LineCartesianLayer.Point = fallback
 }
 
 private fun ChartInterpolation?.toVicoInterpolator(): LineCartesianLayer.Interpolator =
@@ -512,6 +602,68 @@ private val palette = listOf(
 private fun paletteColor(key: String): Color = palette[kotlin.math.abs(key.hashCode()) % palette.size]
 
 private fun applyAlpha(color: Color, alpha: Float): Color = color.copy(alpha = alpha)
+
+// Maps a SwiftUI chart symbol to a Compose shape used for point-mark markers and legend
+// swatches. A null symbol falls back to a circle, matching SwiftUI's default PointMark.
+private fun chartSymbolShape(symbol: ChartSymbolName?): Shape =
+    when (symbol) {
+        ChartSymbolName.Circle, null -> CircleShape
+        ChartSymbolName.Square -> RectangleShape
+        ChartSymbolName.Diamond -> DiamondSymbolShape
+        ChartSymbolName.Triangle -> TriangleSymbolShape
+        ChartSymbolName.Plus -> PlusSymbolShape
+        ChartSymbolName.Cross -> CrossSymbolShape
+    }
+
+private val DiamondSymbolShape = GenericShape { size, _ ->
+    val cx = size.width / 2f
+    val cy = size.height / 2f
+    moveTo(cx, 0f)
+    lineTo(size.width, cy)
+    lineTo(cx, size.height)
+    lineTo(0f, cy)
+    close()
+}
+
+private val TriangleSymbolShape = GenericShape { size, _ ->
+    moveTo(size.width / 2f, 0f)
+    lineTo(size.width, size.height)
+    lineTo(0f, size.height)
+    close()
+}
+
+// A filled "+" glyph; the cross is the same glyph rotated 45°.
+private val PlusSymbolShape = GenericShape { size, _ -> addSymbolGlyph(size, rotationDeg = 0f) }
+private val CrossSymbolShape = GenericShape { size, _ -> addSymbolGlyph(size, rotationDeg = 45f) }
+
+// Builds the 12-vertex plus polygon, rotated by [rotationDeg], then uniformly scaled so it
+// fits the marker's bounding box (rotation alone would push the cross's arms past the edges).
+private fun Path.addSymbolGlyph(size: Size, rotationDeg: Float) {
+    val half = minOf(size.width, size.height) / 2f
+    val arm = half * SYMBOL_ARM_RATIO.toFloat()
+    val base = listOf(
+        -arm to -half, arm to -half,
+        arm to -arm, half to -arm,
+        half to arm, arm to arm,
+        arm to half, -arm to half,
+        -arm to arm, -half to arm,
+        -half to -arm, -arm to -arm,
+    )
+    val rad = Math.toRadians(rotationDeg.toDouble())
+    val cos = kotlin.math.cos(rad).toFloat()
+    val sin = kotlin.math.sin(rad).toFloat()
+    val rotated = base.map { (px, py) -> (px * cos - py * sin) to (px * sin + py * cos) }
+    val maxExtent = rotated.maxOf { (x, y) -> maxOf(abs(x), abs(y)) }
+    val scale = if (maxExtent > 0f) half / maxExtent else 1f
+    val cx = size.width / 2f
+    val cy = size.height / 2f
+    rotated.forEachIndexed { index, (px, py) ->
+        val x = cx + px * scale
+        val y = cy + py * scale
+        if (index == 0) moveTo(x, y) else lineTo(x, y)
+    }
+    close()
+}
 
 @Composable
 private fun RectangleChartView(
@@ -816,8 +968,12 @@ private class PreparedChartDataBuilder(
             val y = yNumber(mark) ?: return@forEach
             val x = xNumber(mark.channels.x?.value)
             val key = seriesKey(mark)
-            grouped.getOrPut(key) { mutableListOf() }.add(ChartPoint(x, y))
-            styles.putIfAbsent(key, mark.preparedStyle())
+            val markStyle = mark.preparedStyle()
+            // A symbol can come from a per-mark `.symbol(...)` modifier or from the chart-level
+            // `chartSymbolScale`, keyed by the series' foregroundStyle(by:) value.
+            val symbol = markStyle.symbol ?: model.style.symbolScale[key]
+            grouped.getOrPut(key) { mutableListOf() }.add(ChartPoint(x, y, symbol, markStyle.annotation))
+            styles.putIfAbsent(key, markStyle)
         }
         return grouped.map { (key, points) ->
             val style = styles[key] ?: ChartMarkStyle()
@@ -829,6 +985,9 @@ private class PreparedChartDataBuilder(
                 xValues = points.map { it.x },
                 yValues = points.map { it.y },
                 style = style,
+                symbolByX = points.associate { it.x to it.symbol },
+                annotationsByY = points.mapNotNull { p -> p.annotation?.let { p.y to it.text } }.toMap(),
+                annotationPosition = points.firstNotNullOfOrNull { it.annotation?.position },
             )
         }
     }
@@ -876,7 +1035,12 @@ private class PreparedChartDataBuilder(
             val name = colorName(key, mark.style)
             entries.putIfAbsent(
                 key,
-                ChartLegendEntry(label = key, colorName = name, autoPaletteIndex = autoPaletteIndex(name)),
+                ChartLegendEntry(
+                    label = key,
+                    colorName = name,
+                    autoPaletteIndex = autoPaletteIndex(name),
+                    symbol = mark.style.symbol ?: model.style.symbolScale[key],
+                ),
             )
         }
         return entries.values.toList()
@@ -1089,6 +1253,8 @@ private data class RectangleAxisLabel(
 private data class ChartPoint(
     val x: Double,
     val y: Double,
+    val symbol: ChartSymbolName? = null,
+    val annotation: ChartAnnotation? = null,
 )
 
 private data class ChartSeries(
@@ -1098,12 +1264,19 @@ private data class ChartSeries(
     val xValues: List<Double>,
     val yValues: List<Double>,
     val style: ChartMarkStyle,
+    // Resolved symbol per x value. A PointMark's symbol can vary point-to-point within a
+    // single series (e.g. several `.symbol(...)` marks that share no foregroundStyle).
+    val symbolByX: Map<Double, ChartSymbolName?> = emptyMap(),
+    // Annotation text keyed by y value, drawn as a data label beside the mark.
+    val annotationsByY: Map<Double, String> = emptyMap(),
+    val annotationPosition: ChartAnnotation.Position? = null,
 )
 
 private data class ChartLegendEntry(
     val label: String,
     val colorName: String,
     val autoPaletteIndex: Int?,
+    val symbol: ChartSymbolName? = null,
 )
 
 private data class ChartSelectionRow(
