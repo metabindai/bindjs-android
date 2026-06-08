@@ -87,6 +87,7 @@ import ai.metabind.bindjs.model.chart.ChartModel
 import ai.metabind.bindjs.model.chart.ChartStacking
 import ai.metabind.bindjs.model.chart.ChartSymbolName
 import ai.metabind.bindjs.model.chart.ChartValue
+import ai.metabind.bindjs.model.chart.ChartValueFormatter
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -854,6 +855,10 @@ private data class PreparedChartData(
     val placeholder: ChartSeries?,
     val yLabels: Map<Double, String>,
     val legendEntries: List<ChartLegendEntry>,
+    val xFormatter: ChartValueFormatter?,
+    val yFormatter: ChartValueFormatter?,
+    val xIsCategory: Boolean,
+    val yIsCategory: Boolean,
 ) {
     val isEmpty: Boolean
         get() = columns.isEmpty() &&
@@ -863,11 +868,25 @@ private data class PreparedChartData(
             xRules.isEmpty() &&
             rules.isEmpty()
 
-    fun xLabel(value: Double): String =
-        xLabels[value] ?: if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
+    fun xLabel(value: Double): String = axisLabel(value, xLabels, xFormatter, xIsCategory)
 
-    fun yLabel(value: Double): String =
-        yLabels[value] ?: if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
+    fun yLabel(value: Double): String = axisLabel(value, yLabels, yFormatter, yIsCategory)
+
+    // Category axes carry fixed string labels keyed by a synthetic index, so a numeric/date
+    // formatter doesn't apply; a value axis formats every tick (data points and the
+    // auto-generated ticks between them alike) so the whole axis reads consistently.
+    private fun axisLabel(
+        value: Double,
+        labels: Map<Double, String>,
+        formatter: ChartValueFormatter?,
+        isCategory: Boolean,
+    ): String {
+        if (!isCategory && formatter != null) return formatter.format(value)
+        return labels[value] ?: defaultNumberLabel(value)
+    }
+
+    private fun defaultNumberLabel(value: Double): String =
+        if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
 
     fun selectionModifier(onUiEvent: (UiEvent) -> Unit): Modifier {
         if (selectionRows.isEmpty() || (xSelectionHandlerId == null && ySelectionHandlerId == null)) {
@@ -926,6 +945,10 @@ private data class PreparedChartData(
                 placeholder = builder.placeholderSeries(),
                 yLabels = builder.yLabels(),
                 legendEntries = builder.legendEntries(),
+                xFormatter = model.axes.x?.formatter,
+                yFormatter = model.axes.y?.formatter,
+                xIsCategory = builder.xIsCategory(),
+                yIsCategory = builder.yIsCategory(),
             )
         }
     }
@@ -1024,6 +1047,12 @@ private class PreparedChartDataBuilder(
     fun xLabels(): Map<Double, String> = xLabels
 
     fun yLabels(): Map<Double, String> = yLabels
+
+    // True when the axis maps string categories onto synthetic indices (e.g. "Jan" -> 0.0);
+    // such an axis must keep its category labels rather than format the index as a number.
+    fun xIsCategory(): Boolean = xCategories.isNotEmpty()
+
+    fun yIsCategory(): Boolean = yCategories.isNotEmpty()
 
     // SwiftUI shows a legend whenever marks are differentiated by a categorical
     // foregroundStyle(by:) channel. Mirror that: one entry per distinct series key.
