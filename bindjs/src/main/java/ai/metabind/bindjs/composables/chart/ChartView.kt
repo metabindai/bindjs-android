@@ -264,7 +264,9 @@ fun ChartView(
         layers.add(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    prepared.areas.map { it.rememberVicoLine(includeArea = true, includePoints = false) }
+                    prepared.areas.map {
+                        it.rememberVicoLine(includeArea = true, includePoints = false, solidArea = prepared.areasStacked)
+                    }
                 ),
                 rangeProvider = yRangeProvider,
             )
@@ -381,6 +383,7 @@ private fun ChartSeries.rememberVicoLine(
     includeArea: Boolean,
     includePoints: Boolean,
     lineVisible: Boolean = true,
+    solidArea: Boolean = false,
 ): LineCartesianLayer.Line {
     val color = chartSeriesColor(colorName, autoPaletteIndex)
     val strokeWidth = if (lineVisible) (style.lineStyle?.width ?: 2.0).toFloat().dp else 0.dp
@@ -432,7 +435,9 @@ private fun ChartSeries.rememberVicoLine(
         fill = LineCartesianLayer.LineFill.single(Fill(if (lineVisible) color else Color.Transparent)),
         stroke = stroke,
         areaFill = if (includeArea) {
-            LineCartesianLayer.AreaFill.single(Fill(applyAlpha(color, 0.4f)))
+            // Stacked bands must be opaque so each shorter band hides the taller one drawn behind
+            // it; unstacked areas keep a translucent fill so overlaps stay readable.
+            LineCartesianLayer.AreaFill.single(Fill(applyAlpha(color, if (solidArea) 1f else 0.4f)))
         } else {
             null
         },
@@ -852,6 +857,7 @@ private data class PreparedChartData(
     val xSelectionHandlerId: String?,
     val ySelectionHandlerId: String?,
     val columnsStacked: Boolean,
+    val areasStacked: Boolean,
     val placeholder: ChartSeries?,
     val yLabels: Map<Double, String>,
     val legendEntries: List<ChartLegendEntry>,
@@ -928,10 +934,14 @@ private data class PreparedChartData(
     companion object {
         fun from(model: ChartModel): PreparedChartData {
             val builder = PreparedChartDataBuilder(model)
+            val areasStacked = model.marks
+                .filter { it.kind == ChartMarkKind.Area }
+                .any { it.style.stacking == ChartStacking.Standard }
+            val rawAreas = builder.seriesFor(ChartMarkKind.Area)
             return PreparedChartData(
                 columns = builder.seriesFor(ChartMarkKind.Bar),
                 lines = builder.seriesFor(ChartMarkKind.Line),
-                areas = builder.seriesFor(ChartMarkKind.Area),
+                areas = if (areasStacked) stackedAreaSeries(rawAreas) else rawAreas,
                 points = builder.seriesFor(ChartMarkKind.Point),
                 xRules = builder.xRules(),
                 rules = builder.rules(),
@@ -942,6 +952,7 @@ private data class PreparedChartData(
                 columnsStacked = model.marks
                     .filter { it.kind == ChartMarkKind.Bar }
                     .any { it.style.stacking == ChartStacking.Standard },
+                areasStacked = areasStacked,
                 placeholder = builder.placeholderSeries(),
                 yLabels = builder.yLabels(),
                 legendEntries = builder.legendEntries(),
@@ -950,6 +961,16 @@ private data class PreparedChartData(
                 xIsCategory = builder.xIsCategory(),
                 yIsCategory = builder.yIsCategory(),
             )
+        }
+
+        // Vico's LineCartesianLayer has no native area stacking, so accumulate each series onto
+        // the running per-x total and (at the call site) fill opaquely down to the baseline.
+        // Series are returned in draw order — largest cumulative first, i.e. at the back — so
+        // each shorter band paints over the taller one's lower portion, leaving every series its
+        // own visible slice. This mirrors SwiftUI's stacked AreaMark.
+        private fun stackedAreaSeries(series: List<ChartSeries>): List<ChartSeries> {
+            val cumulative = cumulativeStackedYValues(series.map { it.xValues to it.yValues })
+            return series.mapIndexed { index, s -> s.copy(yValues = cumulative[index]) }.asReversed()
         }
     }
 }
