@@ -17,6 +17,7 @@ import ai.metabind.bindjs.model.CircleComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.ColumnComponent
 import ai.metabind.bindjs.model.Component
+import ai.metabind.bindjs.model.ContentUnavailableViewComponent
 import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
@@ -29,6 +30,7 @@ import ai.metabind.bindjs.model.LabelComponent
 import ai.metabind.bindjs.model.LinearGradientComponent
 import ai.metabind.bindjs.model.MaterialComponent
 import ai.metabind.bindjs.model.MenuComponent
+import ai.metabind.bindjs.model.OnChangeComponent
 import ai.metabind.bindjs.model.Model3DComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.NavigationLinkComponent
@@ -101,6 +103,7 @@ import ai.metabind.bindjs.model.modifier.MonospacedModifier
 import ai.metabind.bindjs.model.modifier.MultilineTextAlignmentModifier
 import ai.metabind.bindjs.model.modifier.OffsetModifier
 import ai.metabind.bindjs.model.modifier.OnAppearModifier
+import ai.metabind.bindjs.model.modifier.OnChangeModifier
 import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OnDragGestureModifier
 import ai.metabind.bindjs.model.modifier.OnLongPressModifier
@@ -210,6 +213,7 @@ class GsonProvider {
                     .registerSubtype(IDModifier::class.java, "id")
                     .registerSubtype(OnAppearModifier::class.java, "onAppear")
                     .registerSubtype(OnDisappearModifier::class.java, "onDisappear")
+                    .registerSubtype(OnChangeModifier::class.java, "onChange")
                     .registerSubtype(
                         AutocorrectionDisabledModifier::class.java,
                         "autocorrectionDisabled"
@@ -300,6 +304,8 @@ class GsonProvider {
                     .registerSubtype(RadialGradientComponent::class.java, "RadialGradient")
                     .registerSubtype(EllipticalGradientComponent::class.java, "EllipticalGradient")
                     .registerSubtype(MenuComponent::class.java, "Menu")
+                    .registerSubtype(OnChangeComponent::class.java, "onChange")
+                    .registerSubtype(ContentUnavailableViewComponent::class.java, "ContentUnavailableView")
             )
             .registerTypeAdapter(
                 object : TypeToken<Float?>() {}.type,

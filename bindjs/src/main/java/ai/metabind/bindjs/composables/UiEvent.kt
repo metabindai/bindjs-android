@@ -44,4 +44,10 @@ sealed class UiEvent {
         val handlerId: String,
         val value: Any,
     ) : UiEvent()
+
+    data class OnChange(
+        val handlerId: String,
+        val oldValue: String?,
+        val newValue: String?,
+    ) : UiEvent()
 }

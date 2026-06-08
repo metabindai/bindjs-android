@@ -64,6 +64,7 @@ import ai.metabind.bindjs.model.CircleComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.ColumnComponent
 import ai.metabind.bindjs.model.Component
+import ai.metabind.bindjs.model.ContentUnavailableViewComponent
 import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
@@ -74,6 +75,7 @@ import ai.metabind.bindjs.model.ImageComponent
 import ai.metabind.bindjs.model.LabelComponent
 import ai.metabind.bindjs.model.LinearGradientComponent
 import ai.metabind.bindjs.model.MenuComponent
+import ai.metabind.bindjs.model.OnChangeComponent
 import ai.metabind.bindjs.model.Model3DComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
@@ -111,6 +113,7 @@ import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.MaskModifier
 import ai.metabind.bindjs.model.modifier.OnAppearModifier
+import ai.metabind.bindjs.model.modifier.OnChangeModifier
 import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
@@ -357,6 +360,30 @@ private fun ModifiedComponent(
             DisposableEffect(Unit) {
                 onDispose {
                     onUiEvent(UiEvent.OnDisappear(modifier.props.handlerId))
+                }
+            }
+            InnerComponents(
+                jsRuntime = jsRuntime,
+                version = version,
+                onUiEvent = onUiEvent,
+                modifiers = modifiers,
+                components = modifierProps.content,
+                isBackground = isBackground,
+                hasFrame = hasFrame
+            )
+        }
+
+        // Mirrors SwiftUI `.onChange(of:)`: fire only when the watched value
+        // changes while mounted, never on first appearance. `version` is a
+        // plain parameter (not a Compose key), so the positional `remember`
+        // survives rerenders and `previous` tracks the last value across them.
+        is OnChangeModifier -> {
+            val value = modifier.props.value
+            var previous by remember(modifier.props.handlerId) { mutableStateOf(value) }
+            LaunchedEffect(modifier.props.handlerId, value) {
+                if (value != previous) {
+                    onUiEvent(UiEvent.OnChange(modifier.props.handlerId, previous, value))
+                    previous = value
                 }
             }
             InnerComponents(
@@ -1196,6 +1223,22 @@ private fun ComponentInnerView(
             component = component,
             version = version,
             modifiers = addWrapIfNoFrame(modifiers),
+            onUiEvent = onUiEvent
+        )
+
+        is OnChangeComponent -> OnChangeView(
+            jsRuntime = jsRuntime,
+            component = component,
+            modifiers = modifiers,
+            version = version,
+            onUiEvent = onUiEvent
+        )
+
+        is ContentUnavailableViewComponent -> ContentUnavailableView(
+            jsRuntime = jsRuntime,
+            component = component,
+            modifiers = modifiers,
+            version = version,
             onUiEvent = onUiEvent
         )
 
