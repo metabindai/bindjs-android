@@ -1,11 +1,14 @@
 package ai.metabind.bindjs.composables
 
+import android.content.Context
+import android.util.Base64
 import android.util.Log
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
@@ -18,8 +21,68 @@ import ai.metabind.bindjs.model.ImageComponent
 import ai.metabind.bindjs.model.ext.toContentScale
 import ai.metabind.bindjs.model.modifier.AccessibilityLabelModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 private const val TAG = "ImageView"
+
+/** Network/image load timeout. Generated images can take a while to be ready server-side. */
+private const val IMAGE_TIMEOUT_SECONDS = 70L
+
+@Volatile
+private var sharedImageLoader: ImageLoader? = null
+private val imageLoaderLock = Any()
+
+/**
+ * Decode a `data:` URI into raw bytes Coil can render. Coil 2.x has no built-in
+ * support for `data:` URIs, so a base64-encoded image (e.g. the output of the
+ * image-generator tool) fails to load and the image area renders empty. We decode
+ * the payload here and hand Coil a [ByteArray], which it does support (PNG/JPEG via
+ * the default decoder, SVG via the registered [SvgDecoder]).
+ *
+ * Returns null if [data] isn't a data URI or can't be decoded, so callers fall back
+ * to passing the original string through.
+ */
+private fun decodeDataUri(data: String?): ByteArray? {
+    if (data == null || !data.startsWith("data:")) return null
+    val comma = data.indexOf(',')
+    if (comma < 0) return null
+    val header = data.substring(5, comma)
+    val payload = data.substring(comma + 1)
+    return try {
+        if (header.contains("base64", ignoreCase = true)) {
+            Base64.decode(payload, Base64.DEFAULT)
+        } else {
+            java.net.URLDecoder.decode(payload, "UTF-8").toByteArray()
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to decode data URI", e)
+        null
+    }
+}
+
+/**
+ * Process-wide Coil [ImageLoader] with extended timeouts. Coil's default OkHttp client
+ * times out around 10s, which is too short for slow or server-generated images; a 70s
+ * timeout gives the backend time to return the asset.
+ */
+private fun bindJsImageLoader(context: Context): ImageLoader {
+    sharedImageLoader?.let { return it }
+    return synchronized(imageLoaderLock) {
+        sharedImageLoader ?: ImageLoader.Builder(context.applicationContext)
+            .okHttpClient {
+                OkHttpClient.Builder()
+                    .connectTimeout(IMAGE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .readTimeout(IMAGE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .callTimeout(IMAGE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .build()
+            }
+            .components { add(SvgDecoder.Factory()) }
+            .crossfade(true)
+            .build()
+            .also { sharedImageLoader = it }
+    }
+}
 
 @Composable
 fun ImageView(
@@ -39,16 +102,18 @@ fun ImageView(
             contentDescription = ""
         )
     } else if (svg != null) {
+        val context = LocalContext.current
         AsyncImage(
             modifier = modifiers.buildModifier(
                 onUiEvent,
                 exclude = listOf(AccessibilityLabelModifier::class)
             ),
-            model = ImageRequest.Builder(LocalContext.current)
+            model = ImageRequest.Builder(context)
                 .data(svg.toByteArray())
                 .decoderFactory(SvgDecoder.Factory())
                 .crossfade(true)
                 .build(),
+            imageLoader = bindJsImageLoader(context),
             contentDescription = contentDescription,
             alignment = Alignment.Center,
             contentScale = contentScale,
@@ -57,17 +122,25 @@ fun ImageView(
             }
         )
     } else {
+        val context = LocalContext.current
+        val url = component.props.url
+        // Coil 2.x can't load `data:` URIs directly — decode to bytes when present.
+        val model: Any? = decodeDataUri(url) ?: url
         AsyncImage(
             modifier = modifiers.buildModifier(
                 onUiEvent,
                 exclude = listOf(AccessibilityLabelModifier::class)
             ),
-            model = ImageRequest.Builder(LocalContext.current).data(component.props.url)
+            model = ImageRequest.Builder(context).data(model)
                 .crossfade(true)
                 .build(),
+            imageLoader = bindJsImageLoader(context),
             contentDescription = contentDescription,
             alignment = Alignment.Center,
-            contentScale = contentScale
+            contentScale = contentScale,
+            onError = { error ->
+                Log.e(TAG, "Coil image load error: ${error.result.throwable}")
+            }
         )
     }
 }
