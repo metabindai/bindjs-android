@@ -8,6 +8,7 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.modifiersToShareWithChildren
 import ai.metabind.bindjs.model.BoxComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.props.uiAlignment
@@ -41,7 +42,7 @@ fun BoxView(
             .buildModifier(onUiEvent),
         contentAlignment = component.props.uiAlignment(),
     ) {
-        component.props.children?.forEach { child ->
+        component.props.children.expandingForEach()?.forEach { child ->
             val modifiersFinal = if (parentFills) {
                 modifiers.modifiersToShareWithChildren() +
                     LocalModifier.FillMaxWidth(Modifier.fillMaxWidth())

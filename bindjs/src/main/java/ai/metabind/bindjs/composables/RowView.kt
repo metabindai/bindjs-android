@@ -20,6 +20,7 @@ import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LayoutPriorityModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
@@ -43,6 +44,9 @@ fun RowView(
     // so reset the flag for the BindJSView call so nested Rows still get
     // weight distribution where appropriate.
     val inHorizontalScroll = LocalInHorizontalScroll.current
+    // Splice any ForEach columns in as direct children so this Row lays them out
+    // (weight distribution / spacers / alignment) like SwiftUI's transparent ForEach.
+    val children = component.props.children.expandingForEach()
     Row(
         modifier = modifiers
             .buildModifier(onUiEvent, listOf(ShadowModifier::class)),
@@ -51,8 +55,8 @@ fun RowView(
     ) {
         @Composable
         fun doLayout() {
-            val hasSpacer = component.props.children?.firstOrNull { it is SpacerComponent } != null
-            val hasChildWithFixedSize = component.props.children?.any { child ->
+            val hasSpacer = children?.firstOrNull { it is SpacerComponent } != null
+            val hasChildWithFixedSize = children?.any { child ->
                 child?.hasFixedSizeModifier() == true
             } == true
 
@@ -63,7 +67,7 @@ fun RowView(
             // HStack behaviour).  HStacks whose children are ALL simple styled
             // content (e.g. ModifiedComponent wrapping Text words) should NOT
             // distribute evenly — they should wrap content naturally.
-            val nonSpacerChildren = component.props.children?.filter { it !is SpacerComponent }
+            val nonSpacerChildren = children?.filter { it !is SpacerComponent }
             val hasLayoutContainerChild = nonSpacerChildren?.any { child ->
                 child is Component || child is ColumnComponent ||
                         child is RowComponent || child is BoxComponent
@@ -77,7 +81,7 @@ fun RowView(
                     nonSpacerChildren.size > 1 &&
                     childrenWithoutExplicitWidth > 1
 
-            component.props.children?.forEach { child ->
+            children?.forEach { child ->
                 if (child is SpacerComponent) {
                     Spacer(
                         modifier = Modifier.then(
