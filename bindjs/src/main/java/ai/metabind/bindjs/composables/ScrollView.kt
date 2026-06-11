@@ -12,6 +12,7 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.model.ScrollAxis
 import ai.metabind.bindjs.model.ScrollComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 
@@ -52,7 +53,7 @@ fun ScrollView(
         LazyRow(
             modifier = widthFill.then(modifiers.buildModifier(onUiEvent)),
         ) {
-            component.props.children?.forEach { child ->
+            component.props.children.expandingForEach()?.forEach { child ->
                 child?.let {
                     item {
                         // Children of a horizontal scroll get unbounded width
@@ -76,7 +77,7 @@ fun ScrollView(
         Column(
             modifier = modifiers.buildModifier(onUiEvent)
         ) {
-            component.props.children?.forEach { child ->
+            component.props.children.expandingForEach()?.forEach { child ->
                 child?.let {
                     BindJSView(
                         jsRuntime = jsRuntime,
@@ -93,7 +94,7 @@ fun ScrollView(
             modifier = modifiers
                 .buildModifier(onUiEvent)
         ) {
-            component.props.children?.forEach { child ->
+            component.props.children.expandingForEach()?.forEach { child ->
                 child?.let {
                     item {
                         BindJSView(

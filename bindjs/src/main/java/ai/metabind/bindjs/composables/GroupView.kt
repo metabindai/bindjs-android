@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.R
 import ai.metabind.bindjs.model.GroupComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.props.horizontalAlignment
 
@@ -26,7 +27,7 @@ fun GroupView(
         ),
         horizontalAlignment = component.props.horizontalAlignment(),
     ) {
-        component.props.children?.forEach { child ->
+        component.props.children.expandingForEach()?.forEach { child ->
             child?.let {
                 BindJSView(
                     jsRuntime = jsRuntime,

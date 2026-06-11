@@ -11,6 +11,7 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.model.SectionComponent
 import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 
 @Composable
@@ -34,7 +35,7 @@ fun SectionView(
                 modifiers = modifiers
             )
         }
-        component.props.children?.forEach { child ->
+        component.props.children.expandingForEach()?.forEach { child ->
             if (child is SpacerComponent) {
                 Spacer(
                     modifier = Modifier.then(

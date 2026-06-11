@@ -104,6 +104,25 @@ fun BaseComponent<*>.isVerticallyGreedy(): Boolean {
     }
 }
 
+/**
+ * SwiftUI's `ForEach` is a transparent container: once expanded, its rows become
+ * direct children of the enclosing stack, inheriting that stack's width and
+ * alignment. On Android an expanded `ForEach` arrives as a single
+ * [ForEachComponent] child, so splice its children into the parent's child list.
+ * This lets the parent layout (Column / Row / Box / Group / Scroll) lay the rows
+ * out directly — with the correct fill-width and alignment handling — instead of
+ * routing them through the nested, alignment-blind `Column` in `ForEachView`
+ * (which neither fills the parent width nor honours its `horizontalAlignment`).
+ */
+fun List<BaseComponent<*>?>?.expandingForEach(): List<BaseComponent<*>?>? {
+    if (this == null) return null
+    if (none { it is ForEachComponent }) return this
+    return flatMap { child ->
+        if (child is ForEachComponent) child.props.children ?: emptyList()
+        else listOf(child)
+    }
+}
+
 interface BrushComponent {
     @Composable
     fun createBrush(): Brush

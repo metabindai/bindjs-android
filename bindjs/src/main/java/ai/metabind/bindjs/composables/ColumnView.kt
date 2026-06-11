@@ -21,6 +21,8 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.TextComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
@@ -37,8 +39,11 @@ fun ColumnView(
     onUiEvent: (UiEvent) -> Unit,
     hasFrame: Boolean = false,
 ) {
+    // Splice any ForEach rows in as direct children so this Column lays them out
+    // (and centers / fills them) exactly like SwiftUI's transparent ForEach.
+    val children = component.props.children.expandingForEach()
     val hasSpacer =
-        component.props.children?.any { it is SpacerComponent } ?: false
+        children?.any { it is SpacerComponent } ?: false
     // When a Column is a non-expanding child of a Row (InRow present, no
     // Weight), it should wrap its content width instead of filling the Row.
     // This matches SwiftUI VStack behaviour inside an HStack.
@@ -48,7 +53,7 @@ fun ColumnView(
     // In a bounded-height column they must share the leftover space via weight,
     // otherwise they resolve fillMaxSize against an infinite max and collapse to
     // zero height (e.g. a VStack of color swatches in an overlay).
-    val hasGreedyChild = component.props.children?.any { it?.isVerticallyGreedy() == true } ?: false
+    val hasGreedyChild = children?.any { it?.isVerticallyGreedy() == true } ?: false
     Column(
         modifier = modifiers
             .buildModifier(onUiEvent)
@@ -65,7 +70,7 @@ fun ColumnView(
         // height, so it shouldn't trigger weight-share among siblings (which
         // would squeeze the non-framed sibling's intrinsic content).
         val hasFramedChild =
-            component.props.children?.any { child ->
+            children?.any { child ->
                 val mod = (child?.props as? ModifierProps)?.modifier as? FrameModifier
                 mod != null && (mod.props.height != null || mod.props.maxHeight != null)
             } ?: false
@@ -75,7 +80,7 @@ fun ColumnView(
         // without explicit frames, give them equal weight so they share the
         // vertical space evenly (matching SwiftUI VStack behaviour).
         val parentHasWeight = modifiers.any { it is LocalModifier.Weight }
-        val nonSpacerChildren = component.props.children?.filter { it !is SpacerComponent }
+        val nonSpacerChildren = children?.filter { it !is SpacerComponent }
         val multipleFlexibleChildren = !hasSpacer &&
                 !hasFramedChild &&
                 parentHasWeight &&
@@ -94,7 +99,7 @@ fun ColumnView(
         val mixedFixedAndFlexible = !hasSpacer && hasFrame &&
                 hasFixedHeightSibling && hasFlexibleSibling
 
-        component.props.children?.forEach { child ->
+        children?.forEach { child ->
             if (child is SpacerComponent) {
                 Spacer(
                     modifier = Modifier.then(
@@ -147,14 +152,17 @@ fun ColumnView(
                     )
                 } else if (hasSpacer || child is ModifiedComponent ||
                     child is RowComponent || child is ColumnComponent || child is BoxComponent ||
-                    child is Component
+                    child is TextComponent || child is Component
                 ) {
                     // In SwiftUI, VStack children wrap their content by default and
                     // are positioned by the VStack's alignment.  Layout containers
-                    // (HStack, VStack, ZStack), ModifiedComponents, and custom
+                    // (HStack, VStack, ZStack), ModifiedComponents, Text, and custom
                     // component calls (whose size is their body's size) should not
                     // get FillMaxWidth so the Column's horizontalAlignment can
-                    // center them.
+                    // center them. Force-filling a Text instead pins it top-leading
+                    // (TextView wraps content at Alignment.TopStart), so a centered
+                    // VStack would render its Text left-aligned. Long text still
+                    // wraps to the available width since the Column bounds it.
                     modifiers.modifiersToShareWithChildren()
                 } else if (multipleFlexibleChildren) {
                     modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
