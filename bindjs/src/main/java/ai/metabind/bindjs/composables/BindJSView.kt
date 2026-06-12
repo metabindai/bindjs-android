@@ -65,6 +65,7 @@ import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.ColumnComponent
 import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ContentUnavailableViewComponent
+import ai.metabind.bindjs.model.containsOverflowingMedia
 import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
@@ -116,6 +117,7 @@ import ai.metabind.bindjs.model.modifier.OnAppearModifier
 import ai.metabind.bindjs.model.modifier.OnChangeModifier
 import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
+import ai.metabind.bindjs.model.modifier.PaddingModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
 import ai.metabind.bindjs.model.modifier.asColorComponent
 
@@ -432,14 +434,34 @@ private fun OverlayModifier(
                 .buildModifier(onUiEvent),
         contentAlignment = modifiers.getAlignment()
     ) {
-        InnerComponents(
-            jsRuntime = jsRuntime,
-            version = version,
-            onUiEvent = onUiEvent,
-            modifiers = childModifiers,
-            components = modifierProps.content,
-            isBackground = isBackground
-        )
+        if (isBackground) {
+            // As a background, the base layer (e.g. a hero's full-bleed video +
+            // gradient) must stay clipped to the bounded background area; only
+            // the overlay layer below is allowed to overflow (a hero image
+            // spilling past the header). Without the clip the base lays out at
+            // its intrinsic — often taller — size and bleeds over sibling
+            // content. fillMaxSize (constraint-based) avoids the matchParentSize
+            // circular-sizing pass that would otherwise collapse the Box.
+            Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
+                InnerComponents(
+                    jsRuntime = jsRuntime,
+                    version = version,
+                    onUiEvent = onUiEvent,
+                    modifiers = childModifiers,
+                    components = modifierProps.content,
+                    isBackground = isBackground
+                )
+            }
+        } else {
+            InnerComponents(
+                jsRuntime = jsRuntime,
+                version = version,
+                onUiEvent = onUiEvent,
+                modifiers = childModifiers,
+                components = modifierProps.content,
+                isBackground = isBackground
+            )
+        }
         modifier.props.content?.let {
             Box(
                 modifier = Modifier
@@ -835,13 +857,24 @@ private fun FrameModifier(
         modifierProps.content?.any { it is GeometryReaderComponent } == true
 
     val bgFrameHeight = effectiveModifiers.getBackgroundFrameHeight()
+    // Keep padding OFF the frame box and apply it to the content instead.
+    // A shape/image background is drawn via BackgroundViews with matchParentSize,
+    // which matches the box's content area *inside* its padding — so padding on
+    // the box would shrink the background to the content and leave the padding as
+    // invisible margin (e.g. a "Buy" pill that hugged its text). SwiftUI draws
+    // the background outside the padding; excluding padding here and re-applying
+    // it around the content makes the background fill the full box to match.
+    val hasPadding = effectiveModifiers.any { it is PaddingModifier }
+    val paddingModifier = effectiveModifiers.buildModifierFromSubset(
+        onUiEvent, include = listOf(PaddingModifier::class)
+    )
     val boxModifier = if (contentHasGeometryReader && frameModifier?.props?.height != null) {
         effectiveModifiers
-            .buildModifier(onUiEvent, exclude = listOf(FrameModifier::class))
+            .buildModifier(onUiEvent, exclude = listOf(FrameModifier::class, PaddingModifier::class))
             .then(if (frameModifier.props.width != null) Modifier.width(frameModifier.props.width.dp) else Modifier)
             .then(Modifier.heightIn(max = frameModifier.props.height.dp))
     } else {
-        effectiveModifiers.buildModifier(onUiEvent)
+        effectiveModifiers.buildModifier(onUiEvent, exclude = listOf(PaddingModifier::class))
     }
     // A height-only frame (no explicit width) is typically an inner content
     // box — e.g. a fixed-height text slot. Compose Text doesn't auto-trim by
@@ -849,9 +882,15 @@ private fun FrameModifier(
     // bounds and overlap siblings. Clip to enforce the explicit height.
     // Width-and-height frames are skipped because they're typically card-like
     // containers whose shadow modifiers need to render outside the bounds.
+    // Frames wrapping media (image/3D/video) are also skipped: such content is
+    // often scaled/offset to overflow intentionally (e.g. a hero image spilling
+    // past the header), which iOS allows since clipping there is opt-in.
+    val contentHasOverflowingMedia =
+        modifierProps.content?.any { it?.containsOverflowingMedia() == true } == true
     val shouldClipToHeight = frameModifier?.props?.height != null &&
             frameModifier.props.width == null &&
-            !contentHasGeometryReader
+            !contentHasGeometryReader &&
+            !contentHasOverflowingMedia
     Box(
         modifier = boxModifier
             .then(if (bgFrameHeight != null) Modifier.defaultMinSize(minHeight = bgFrameHeight.dp) else Modifier)
@@ -867,15 +906,24 @@ private fun FrameModifier(
         )
         // Preserve bounded height from either this frame or an ancestor frame
         val hasBoundedHeight = frameModifier?.props?.height != null || parentHasFrame
-        InnerComponents(
-            jsRuntime = jsRuntime,
-            version = version,
-            onUiEvent = onUiEvent,
-            modifiers = modifiers.modifiersToShareWithChildren(),
-            components = modifierProps.content,
-            isBackground = isBackground,
-            hasFrame = hasBoundedHeight
-        )
+        val content = @Composable {
+            InnerComponents(
+                jsRuntime = jsRuntime,
+                version = version,
+                onUiEvent = onUiEvent,
+                modifiers = modifiers.modifiersToShareWithChildren(),
+                components = modifierProps.content,
+                isBackground = isBackground,
+                hasFrame = hasBoundedHeight
+            )
+        }
+        if (hasPadding) {
+            Box(modifier = paddingModifier, contentAlignment = modifiers.getAlignment()) {
+                content()
+            }
+        } else {
+            content()
+        }
     }
 }
 

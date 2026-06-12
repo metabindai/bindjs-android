@@ -2,7 +2,9 @@ package ai.metabind.bindjs.model
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
+import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
+import ai.metabind.bindjs.model.modifier.OverlayModifier
 import java.io.Serializable
 
 abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
@@ -102,6 +104,42 @@ fun BaseComponent<*>.isVerticallyGreedy(): Boolean {
 
         else -> false
     }
+}
+
+/**
+ * Whether this subtree contains a visual media leaf (image, 3D model, video)
+ * that may be scaled or offset to render outside its frame — e.g. a hero image
+ * that intentionally spills past a fixed-height header into the content below.
+ *
+ * A height-only frame is auto-clipped to enforce its height (see FrameModifier),
+ * which is correct for text slots but wrongly crops such overflowing media. iOS
+ * never clips unless asked (an explicit `clipped`/`clipShape` modifier still
+ * works), so when media is present we skip the auto-clip to match it.
+ */
+fun BaseComponent<*>.containsOverflowingMedia(): Boolean {
+    when (this) {
+        is ImageComponent, is Model3DComponent, is VideoComponent -> return true
+        else -> {}
+    }
+    (this as? ModifiedComponent)?.let { modified ->
+        // A hero header carries its background/foreground media inside a
+        // background (or overlay) modifier — not in `content` — so the
+        // overflowing image is reachable only through the modifier's content.
+        when (val mod = modified.props.modifier) {
+            is BackgroundModifier ->
+                if (mod.props.content?.containsOverflowingMedia() == true) return true
+            is OverlayModifier ->
+                if (mod.props.content?.containsOverflowingMedia() == true) return true
+            else -> {}
+        }
+        modified.props.content?.forEach { child ->
+            if (child?.containsOverflowingMedia() == true) return true
+        }
+    }
+    props.children?.forEach { child ->
+        if (child?.containsOverflowingMedia() == true) return true
+    }
+    return false
 }
 
 /**
