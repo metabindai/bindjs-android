@@ -27,6 +27,20 @@ interface JsRuntime {
     suspend fun callComponent(name: String): BaseComponent<*>
     suspend fun callComponent(name: String, arguments: Map<String, Any?>?): BaseComponent<*>
     suspend fun callComponentPreview(name: String, previewIndex: Int = 0): BaseComponent<*>
+
+    /**
+     * Render a component atomically: `willRender()` + `callComponent()` under a
+     * single lock hold so no event handler or other render can interleave
+     * between them. The renderer walks one shared, mutable hook state that
+     * `willRender()` resets and the component call consumes; splitting the pair
+     * lets a concurrent call corrupt that state, leaving the rendered tree bound
+     * to stale handler ids (taps/drags silently stop firing). Prefer this over
+     * calling [willRender] and [callComponent] separately.
+     */
+    suspend fun renderComponent(name: String, arguments: Map<String, Any?>? = null): BaseComponent<*>
+
+    /** Atomic [willRender] + [callComponentPreview]; see [renderComponent]. */
+    suspend fun renderComponentPreview(name: String, previewIndex: Int = 0): BaseComponent<*>
     suspend fun callComponentThumbnail(name: String, isContent: Boolean = true): BaseComponent<*>
     suspend fun setEnvironment(environment: Map<String, Any>)
     suspend fun callEventHandler(handlerId: String, data: Array<Any> = emptyArray()): String?
@@ -59,5 +73,14 @@ interface JsRuntime {
      * Compose state.
      */
     fun setOnRerenderRequested(listener: (() -> Unit)?)
+
+    /**
+     * Release this runtime's JS isolate and listeners. Call when a per-instance
+     * runtime (see `JsRuntimeImpl.create`) is no longer needed — e.g. a chat
+     * bubble leaving composition — so its isolate and handler/hook state are
+     * freed. Safe to call before the isolate finishes initializing. The shared
+     * process-wide sandbox is not affected. No-op semantics after close.
+     */
+    fun close()
 }
 

@@ -22,8 +22,11 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -38,6 +41,16 @@ class JsRuntimeImpl private constructor(
     @Volatile
     private var mcpHost: McpHost? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // The JS isolate is single-threaded: `evaluateJavaScriptAsync` accepts
+    // concurrent submissions but interleaving them corrupts the renderer's
+    // mutable JS state (MET-1229 — rapid drag events racing with re-renders).
+    // Serialize every JS entry point so one evaluation fully completes before
+    // the next starts. A Mutex (not a single-thread dispatcher) is required
+    // because `.await()` suspends and would otherwise release the thread mid-
+    // evaluation, allowing a second eval to start. Use `evalJs` for all
+    // isolate access except the one-time init script.
+    private val jsLock = Mutex()
 
     // Long-lived scope for resolving JS→native `host.toolCall(...)` requests.
     // SupervisorJob so one failing tool call doesn't kill the channel.
@@ -65,10 +78,35 @@ class JsRuntimeImpl private constructor(
         @Volatile
         private var instance: JsRuntime? = null
 
+        // Only one JavaScriptSandbox (a separate process) may be connected per
+        // app process, so it's shared across all runtimes. Each runtime gets its
+        // own *isolate* from it — isolates are independent JS contexts, cheap
+        // relative to the sandbox, and give each runtime its own global state
+        // (handler table, hook store, rerender listener, mcpHost).
+        @Volatile
+        private var sandboxDeferred: Deferred<JavaScriptSandbox>? = null
+
+        private fun sandbox(context: Context): Deferred<JavaScriptSandbox> =
+            sandboxDeferred ?: synchronized(this) {
+                sandboxDeferred ?: CoroutineScope(Dispatchers.IO).async {
+                    JavaScriptSandbox.createConnectedInstanceAsync(context.applicationContext).await()
+                }.also { sandboxDeferred = it }
+            }
+
+        /** Process-wide shared runtime, for screens that render a single
+         *  component tree at a time. */
         fun getInstance(context: Context): JsRuntime =
             instance ?: synchronized(this) {
                 instance ?: JsRuntimeImpl(context.applicationContext).also { instance = it }
             }
+
+        /**
+         * Create an independent runtime with its own JS isolate. Use one per
+         * concurrently-live component (e.g. each chat tool bubble) so their
+         * handler ids, hook state, and rerender/host callbacks don't collide in
+         * a shared isolate. Call [JsRuntime.close] when done to free the isolate.
+         */
+        fun create(context: Context): JsRuntime = JsRuntimeImpl(context.applicationContext)
     }
 
     init {
@@ -78,7 +116,7 @@ class JsRuntimeImpl private constructor(
         }
         gson = GsonProvider.get()
         initDeferred = CoroutineScope(Dispatchers.IO).async {
-            val jsSandbox = JavaScriptSandbox.createConnectedInstanceAsync(context).get()
+            val jsSandbox = sandbox(context).await()
             jsIsolate = jsSandbox.createIsolate()
 
             if (jsSandbox.isFeatureSupported(JavaScriptSandbox.JS_FEATURE_CONSOLE_MESSAGING)) {
@@ -94,17 +132,53 @@ class JsRuntimeImpl private constructor(
 
             val mainScript = loadMainScript(context)
 
-            jsIsolate.evaluateJavaScriptAsync(mainScript).get()
+            jsIsolate.evaluateJavaScriptAsync(mainScript).await()
+        }
+    }
+
+    override fun close() {
+        initDeferred.cancel()
+        onRerenderRequested = null
+        mcpHost = null
+        timers.values.forEach { mainHandler.removeCallbacks(it) }
+        timers.clear()
+        toolCallScope.cancel()
+        try {
+            if (::jsIsolate.isInitialized) jsIsolate.close()
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error closing isolate", e)
         }
     }
 
     override suspend fun awaitReady() = initDeferred.await()
 
+    /** Run a single JS evaluation, serialized against all other JS access. */
+    private suspend fun evalJs(script: String): String =
+        jsLock.withLock { evalLocked(script) }
+
+    /** Evaluate assuming [jsLock] is already held — used to keep multi-call
+     *  sequences (e.g. willRender + callComponent) atomic under one lock. */
+    private suspend fun evalLocked(script: String): String =
+        jsIsolate.evaluateJavaScriptAsync(script).await()
+
+    /** willRender assuming [jsLock] is already held. */
+    private suspend fun willRenderLocked() {
+        val result = evalLocked("willRender();")
+        Log.d(TAG, "willRender result:\n$result")
+    }
+
+    private fun parseComponent(result: String): BaseComponent<*> {
+        val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
+        val component: BaseComponent<*> = gson.fromJson(result, typeToken)
+        printComponent(component)
+        return component
+    }
+
     override suspend fun callEventHandler(handlerId: String, data: Array<Any>): String? {
         try {
             val eventHandlerScript =
                 "callEventHandler('$handlerId',${data.joinToString { gson.toJson(it) }});"
-            return jsIsolate.evaluateJavaScriptAsync(eventHandlerScript).await()
+            return evalJs(eventHandlerScript)
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null
@@ -135,7 +209,7 @@ class JsRuntimeImpl private constructor(
         val label = gson.toJson(labelComponent)
         return try {
             val eventHandlerScript = "callButtonStyleHandler('$handlerId', $label, $isPressed);"
-            val result = jsIsolate.evaluateJavaScriptAsync(eventHandlerScript).await()
+            val result = evalJs(eventHandlerScript)
             val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
             val component: BaseComponent<*> = gson.fromJson(result, typeToken)
             printComponent(component)
@@ -156,7 +230,7 @@ class JsRuntimeImpl private constructor(
             val envArg = if (environmentId != null) "'$environmentId'" else "null"
             val eventHandlerScript =
                 "callGeometryReaderComponent('$handlerId', $jsonData, $envArg);"
-            val result = jsIsolate.evaluateJavaScriptAsync(eventHandlerScript).await()
+            val result = evalJs(eventHandlerScript)
             val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
             val component: BaseComponent<*> = gson.fromJson(result, typeToken)
             printComponent(component)
@@ -174,7 +248,7 @@ class JsRuntimeImpl private constructor(
     ): String? {
         try {
             val eventHandlerScript = "callForEachFunction('$functionId','$element','$index');"
-            return jsIsolate.evaluateJavaScriptAsync(eventHandlerScript).await()
+            return evalJs(eventHandlerScript)
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null
@@ -183,27 +257,27 @@ class JsRuntimeImpl private constructor(
 
     override suspend fun restoreForEachData(dataId: String): String {
         val callScript = "restoreForEachData('$dataId');"
-        return jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        return evalJs(callScript)
     }
 
     override suspend fun restoreEnvironment(id: String) {
         val script = "restoreEnvironment('$id',[]);"
-        jsIsolate.evaluateJavaScriptAsync(script).await()
+        evalJs(script)
     }
 
     override suspend fun restoreEnvironmentOnly(id: String) {
         val script = "restoreEnvironmentOnly('$id');"
-        jsIsolate.evaluateJavaScriptAsync(script).await()
+        evalJs(script)
     }
 
     override suspend fun restorePickerValue(currentValueId: String): String {
         val script = "restorePickerValue('$currentValueId',[]);"
-        return jsIsolate.evaluateJavaScriptAsync(script).await()
+        return evalJs(script)
     }
 
     override suspend fun callPickerSetter(setterId: String, value: String): String {
         val script = "callEventHandler('$setterId', '$value',[]);"
-        val result = jsIsolate.evaluateJavaScriptAsync(script).await()
+        val result = evalJs(script)
         Log.d(TAG, "callPickerSetter result: $result")
 
         return result
@@ -218,12 +292,12 @@ class JsRuntimeImpl private constructor(
         val componentObject = "{'${component.name}': $contentJson}"
 
         val registerScript = "setComponents($componentObject);"
-        jsIsolate.evaluateJavaScriptAsync(registerScript).await()
+        evalJs(registerScript)
     }
 
     override suspend fun willRender() {
         val callScript = "willRender();"
-        val result = jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        val result = evalJs(callScript)
 
         Log.d(TAG, "willRender result:\n$result")
     }
@@ -239,7 +313,7 @@ class JsRuntimeImpl private constructor(
         Log.d(TAG, "Calling component: $name (args=${arguments?.keys})")
         val argsJson = gson.toJson(arguments ?: emptyMap<String, Any?>())
         val callScript = "callComponent(['$name', $argsJson]);"
-        val result = jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        val result = evalJs(callScript)
 
         val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
         val component: BaseComponent<*> = gson.fromJson(result, typeToken)
@@ -252,7 +326,7 @@ class JsRuntimeImpl private constructor(
     override suspend fun callComponentPreview(name: String, previewIndex: Int): BaseComponent<*> {
         Log.d(TAG, "Calling component preview: $name (index: $previewIndex)")
         val callScript = "callComponentPreview(['$name', $previewIndex]);"
-        val result = jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        val result = evalJs(callScript)
 
         val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
         val component: BaseComponent<*> = gson.fromJson(result, typeToken)
@@ -262,12 +336,31 @@ class JsRuntimeImpl private constructor(
         return component
     }
 
+    override suspend fun renderComponent(
+        name: String,
+        arguments: Map<String, Any?>?,
+    ): BaseComponent<*> = jsLock.withLock {
+        Log.d(TAG, "Rendering component: $name (args=${arguments?.keys})")
+        willRenderLocked()
+        val argsJson = gson.toJson(arguments ?: emptyMap<String, Any?>())
+        parseComponent(evalLocked("callComponent(['$name', $argsJson]);"))
+    }
+
+    override suspend fun renderComponentPreview(
+        name: String,
+        previewIndex: Int,
+    ): BaseComponent<*> = jsLock.withLock {
+        Log.d(TAG, "Rendering component preview: $name (index: $previewIndex)")
+        willRenderLocked()
+        parseComponent(evalLocked("callComponentPreview(['$name', $previewIndex]);"))
+    }
+
     override suspend fun callComponentThumbnail(name: String, isContent: Boolean): BaseComponent<*> {
         val thumbnailType = if (isContent) "content" else "component"
         Log.d(TAG, "Calling component thumbnail: $name (type: $thumbnailType)")
         val callScript =
             "callComponentThumbnail('$name', { type: '$thumbnailType', defaultPlatform: 'mobile', padding: 0 }, {}, [], true, []);"
-        val result = jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        val result = evalJs(callScript)
 
         val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
         val component: BaseComponent<*> = gson.fromJson(result, typeToken)
@@ -341,7 +434,7 @@ class JsRuntimeImpl private constructor(
         awaitReady()
         mcpHost = host
         val script = if (host != null) "setMcpHost(true);" else "setMcpHost(false);"
-        jsIsolate.evaluateJavaScriptAsync(script).await()
+        evalJs(script)
     }
 
     private fun dispatchMcpMessage(text: String) {
@@ -454,7 +547,7 @@ class JsRuntimeImpl private constructor(
                 val idJson = gson.toJson(id)
                 val payloadJson = gson.toJson(payload)
                 val script = "__resolveToolCall($idJson, $ok, $payloadJson);"
-                jsIsolate.evaluateJavaScriptAsync(script).await()
+                evalJs(script)
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to resolve toolCall '$name' (id=$id) back into JS", e)
             }
@@ -492,7 +585,7 @@ class JsRuntimeImpl private constructor(
     private fun fireTimer(id: String) {
         toolCallScope.launch {
             try {
-                jsIsolate.evaluateJavaScriptAsync("__fireTimer('$id');").await()
+                evalJs("__fireTimer('$id');")
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to fire timer $id back into JS", e)
             }
@@ -502,7 +595,7 @@ class JsRuntimeImpl private constructor(
     override suspend fun setEnvironment(environment: Map<String, Any>) {
         Log.d(TAG, "Calling set environment: $environment")
         val callScript = "setEnvironment(['$environment']);"
-        val result = jsIsolate.evaluateJavaScriptAsync(callScript).await()
+        val result = evalJs(callScript)
 
         Log.d(TAG, "setEnvironment result: $result")
     }
