@@ -114,7 +114,25 @@ class JsRuntimeImpl private constructor(
 
     /** Run a single JS evaluation, serialized against all other JS access. */
     private suspend fun evalJs(script: String): String =
-        jsLock.withLock { jsIsolate.evaluateJavaScriptAsync(script).await() }
+        jsLock.withLock { evalLocked(script) }
+
+    /** Evaluate assuming [jsLock] is already held — used to keep multi-call
+     *  sequences (e.g. willRender + callComponent) atomic under one lock. */
+    private suspend fun evalLocked(script: String): String =
+        jsIsolate.evaluateJavaScriptAsync(script).await()
+
+    /** willRender assuming [jsLock] is already held. */
+    private suspend fun willRenderLocked() {
+        val result = evalLocked("willRender();")
+        Log.d(TAG, "willRender result:\n$result")
+    }
+
+    private fun parseComponent(result: String): BaseComponent<*> {
+        val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
+        val component: BaseComponent<*> = gson.fromJson(result, typeToken)
+        printComponent(component)
+        return component
+    }
 
     override suspend fun callEventHandler(handlerId: String, data: Array<Any>): String? {
         try {
@@ -276,6 +294,25 @@ class JsRuntimeImpl private constructor(
         printComponent(component)
 
         return component
+    }
+
+    override suspend fun renderComponent(
+        name: String,
+        arguments: Map<String, Any?>?,
+    ): BaseComponent<*> = jsLock.withLock {
+        Log.d(TAG, "Rendering component: $name (args=${arguments?.keys})")
+        willRenderLocked()
+        val argsJson = gson.toJson(arguments ?: emptyMap<String, Any?>())
+        parseComponent(evalLocked("callComponent(['$name', $argsJson]);"))
+    }
+
+    override suspend fun renderComponentPreview(
+        name: String,
+        previewIndex: Int,
+    ): BaseComponent<*> = jsLock.withLock {
+        Log.d(TAG, "Rendering component preview: $name (index: $previewIndex)")
+        willRenderLocked()
+        parseComponent(evalLocked("callComponentPreview(['$name', $previewIndex]);"))
     }
 
     override suspend fun callComponentThumbnail(name: String, isContent: Boolean): BaseComponent<*> {
