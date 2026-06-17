@@ -22,6 +22,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -77,10 +78,35 @@ class JsRuntimeImpl private constructor(
         @Volatile
         private var instance: JsRuntime? = null
 
+        // Only one JavaScriptSandbox (a separate process) may be connected per
+        // app process, so it's shared across all runtimes. Each runtime gets its
+        // own *isolate* from it — isolates are independent JS contexts, cheap
+        // relative to the sandbox, and give each runtime its own global state
+        // (handler table, hook store, rerender listener, mcpHost).
+        @Volatile
+        private var sandboxDeferred: Deferred<JavaScriptSandbox>? = null
+
+        private fun sandbox(context: Context): Deferred<JavaScriptSandbox> =
+            sandboxDeferred ?: synchronized(this) {
+                sandboxDeferred ?: CoroutineScope(Dispatchers.IO).async {
+                    JavaScriptSandbox.createConnectedInstanceAsync(context.applicationContext).await()
+                }.also { sandboxDeferred = it }
+            }
+
+        /** Process-wide shared runtime, for screens that render a single
+         *  component tree at a time. */
         fun getInstance(context: Context): JsRuntime =
             instance ?: synchronized(this) {
                 instance ?: JsRuntimeImpl(context.applicationContext).also { instance = it }
             }
+
+        /**
+         * Create an independent runtime with its own JS isolate. Use one per
+         * concurrently-live component (e.g. each chat tool bubble) so their
+         * handler ids, hook state, and rerender/host callbacks don't collide in
+         * a shared isolate. Call [JsRuntime.close] when done to free the isolate.
+         */
+        fun create(context: Context): JsRuntime = JsRuntimeImpl(context.applicationContext)
     }
 
     init {
@@ -90,7 +116,7 @@ class JsRuntimeImpl private constructor(
         }
         gson = GsonProvider.get()
         initDeferred = CoroutineScope(Dispatchers.IO).async {
-            val jsSandbox = JavaScriptSandbox.createConnectedInstanceAsync(context).get()
+            val jsSandbox = sandbox(context).await()
             jsIsolate = jsSandbox.createIsolate()
 
             if (jsSandbox.isFeatureSupported(JavaScriptSandbox.JS_FEATURE_CONSOLE_MESSAGING)) {
@@ -106,7 +132,21 @@ class JsRuntimeImpl private constructor(
 
             val mainScript = loadMainScript(context)
 
-            jsIsolate.evaluateJavaScriptAsync(mainScript).get()
+            jsIsolate.evaluateJavaScriptAsync(mainScript).await()
+        }
+    }
+
+    override fun close() {
+        initDeferred.cancel()
+        onRerenderRequested = null
+        mcpHost = null
+        timers.values.forEach { mainHandler.removeCallbacks(it) }
+        timers.clear()
+        toolCallScope.cancel()
+        try {
+            if (::jsIsolate.isInitialized) jsIsolate.close()
+        } catch (e: Throwable) {
+            Log.e(TAG, "Error closing isolate", e)
         }
     }
 

@@ -73,5 +73,14 @@ interface JsRuntime {
      * Compose state.
      */
     fun setOnRerenderRequested(listener: (() -> Unit)?)
+
+    /**
+     * Release this runtime's JS isolate and listeners. Call when a per-instance
+     * runtime (see `JsRuntimeImpl.create`) is no longer needed — e.g. a chat
+     * bubble leaving composition — so its isolate and handler/hook state are
+     * freed. Safe to call before the isolate finishes initializing. The shared
+     * process-wide sandbox is not affected. No-op semantics after close.
+     */
+    fun close()
 }
 
