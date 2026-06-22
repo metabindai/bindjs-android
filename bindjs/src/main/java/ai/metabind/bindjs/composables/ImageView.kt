@@ -3,11 +3,15 @@ package ai.metabind.bindjs.composables
 import android.content.Context
 import android.util.Base64
 import android.util.Log
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
@@ -16,11 +20,13 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.getContentDescription
 import ai.metabind.bindjs.composables.ext.getContentScale
+import ai.metabind.bindjs.composables.ext.getNearestFontPointSize
 import ai.metabind.bindjs.composables.ext.systemImage
 import ai.metabind.bindjs.model.ImageComponent
 import ai.metabind.bindjs.model.ext.toContentScale
 import ai.metabind.bindjs.model.modifier.AccessibilityLabelModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.LocalModifier
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -28,6 +34,16 @@ private const val TAG = "ImageView"
 
 /** Network/image load timeout. Generated images can take a while to be ready server-side. */
 private const val IMAGE_TIMEOUT_SECONDS = 70L
+
+/** Fallback glyph size (pt) for a font-relative SVG icon with no resolvable
+ *  `.font(...)` in its modifier chain — SwiftUI's default body size. */
+private const val DEFAULT_ICON_POINT_SIZE = 17f
+
+/** Whether an SVG declares its size in font-relative `em` units (e.g.
+ *  `width="1em"`), the hallmark of an SF-Symbol glyph that should scale with the
+ *  surrounding font rather than fill its container. */
+private fun String.containsEmSizing(): Boolean =
+    Regex("""(width|height)\s*=\s*"[\d.]+em"""").containsMatchIn(this)
 
 @Volatile
 private var sharedImageLoader: ImageLoader? = null
@@ -103,11 +119,30 @@ fun ImageView(
         )
     } else if (svg != null) {
         val context = LocalContext.current
-        AsyncImage(
-            modifier = modifiers.buildModifier(
+        // SF-Symbol glyphs arrive as SVGs sized in `em` (e.g. width="1em"),
+        // meaning "scale to the current font size" — that's how SwiftUI sizes
+        // them. Without a frame these images otherwise inherit fillMaxSize and
+        // Coil stretches the glyph to fill its container (a star/heart ballooning
+        // to the whole row/photo). Detect the em sizing and pin the icon to the
+        // nearest font's point size, like iOS, instead of letting it fill.
+        val isFontRelative = svg.containsEmSizing()
+        val iconSizeDp = if (isFontRelative) {
+            (modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE).dp
+        } else null
+        val svgModifier = if (iconSizeDp != null) {
+            modifiers.buildModifier(
                 onUiEvent,
-                exclude = listOf(AccessibilityLabelModifier::class)
-            ),
+                exclude = listOf(
+                    AccessibilityLabelModifier::class,
+                    LocalModifier.FillMaxSize::class,
+                    LocalModifier.FillMaxWidth::class,
+                )
+            ).then(Modifier.size(iconSizeDp))
+        } else {
+            modifiers.buildModifier(onUiEvent, exclude = listOf(AccessibilityLabelModifier::class))
+        }
+        AsyncImage(
+            modifier = svgModifier,
             model = ImageRequest.Builder(context)
                 .data(svg.toByteArray())
                 .decoderFactory(SvgDecoder.Factory())
@@ -116,7 +151,7 @@ fun ImageView(
             imageLoader = bindJsImageLoader(context),
             contentDescription = contentDescription,
             alignment = Alignment.Center,
-            contentScale = contentScale,
+            contentScale = if (iconSizeDp != null) ContentScale.Fit else contentScale,
             onError = { error ->
                 Log.e(TAG, "Coil SVG Error $error")
             }

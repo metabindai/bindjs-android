@@ -427,7 +427,14 @@ private fun OverlayModifier(
     // modifiers — re-applying geometry modifiers here double-applies things
     // like offset, pushing the overlay (e.g. a color-swatch palette) off its
     // intended position. Matches MaskModifier / ContextMenuModifier.
-    val childModifiers = modifiers.modifiersToShareWithChildren()
+    //
+    // Keep the InRow flag, though: it's a parent-context hint (not a geometry
+    // modifier), and the base content occupies the same row slot as this
+    // overlay wrapper. Without it, a base VStack inside a Row would fillMaxWidth
+    // instead of wrapping its content — which collapses the scrolling columns
+    // beside a fixed "label column" overlay (the quote comparison table).
+    val childModifiers = modifiers.modifiersToShareWithChildren() +
+            modifiers.filter { it is LocalModifier.InRow }
     Box(
         modifier =
             modifiers

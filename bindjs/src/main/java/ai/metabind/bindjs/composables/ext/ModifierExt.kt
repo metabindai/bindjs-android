@@ -156,6 +156,50 @@ fun List<ComponentModifier<*>>.getFontSize(): Number? {
     return (firstOrNull { it is FontModifier } as? FontModifier)?.props?.rawValue as? Number
 }
 
+/**
+ * Point size of SwiftUI's named text styles, used to size font-relative content
+ * (e.g. an SF-Symbol glyph declared `1em`) the way iOS does. Mirrors the default
+ * Dynamic Type sizes at the standard content-size category.
+ */
+fun String.namedFontPointSize(): Float? = when (this) {
+    "largeTitle" -> 34f
+    "title" -> 28f
+    "title2" -> 22f
+    "title3" -> 20f
+    "headline" -> 17f
+    "body" -> 17f
+    "callout" -> 16f
+    "subheadline" -> 15f
+    "footnote" -> 13f
+    "caption" -> 12f
+    "caption2" -> 11f
+    else -> null
+}
+
+/**
+ * Resolves the effective font point size from the *nearest* `.font(...)` in the
+ * chain (innermost wins, matching SwiftUI), looking through numeric sizes, named
+ * text styles, and custom fonts. Modifiers accumulate outermost-first, so the
+ * innermost `.font` is the last one — scan in reverse. Used to size SF-Symbol
+ * SVG glyphs, which the JS bridge emits as `1em`-sized images.
+ */
+fun List<ComponentModifier<*>>.getNearestFontPointSize(): Float? {
+    for (modifier in asReversed()) {
+        if (modifier is FontModifier) {
+            when (val raw = modifier.props.rawValue) {
+                is Number -> return raw.toFloat()
+                is String -> raw.namedFontPointSize()?.let { return it }
+                is Map<*, *> -> {
+                    // Custom font: { type: "CustomFont", props: { size: N, ... } }
+                    val size = (raw["props"] as? Map<*, *>)?.get("size") as? Number
+                    if (size != null) return size.toFloat()
+                }
+            }
+        }
+    }
+    return null
+}
+
 @Composable
 fun List<ComponentModifier<*>>.getTextStyle(): TextStyle? {
     firstOrNull { it is FontModifier }?.let { modifier ->
