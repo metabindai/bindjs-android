@@ -3,6 +3,7 @@ package ai.metabind.bindjs.composables
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -47,9 +48,18 @@ fun RowView(
     // Splice any ForEach columns in as direct children so this Row lays them out
     // (weight distribution / spacers / alignment) like SwiftUI's transparent ForEach.
     val children = component.props.children.expandingForEach()
+    // A horizontally-greedy child (e.g. a nested horizontal ScrollView, reported
+    // as infinite-width) is laid out with Modifier.weight below — but weight
+    // resolves to 0 against an unbounded Row. A plain HStack wraps its content
+    // width, so fill the row width when such a child is present so the weight has
+    // real space to distribute (the "fixed column + scrolling columns" table).
+    // Skip inside a horizontal scroll, where width is intentionally unbounded.
+    val hasGreedyChild = !inHorizontalScroll &&
+            (children?.any { it?.calculateMaxWidth() == Float.POSITIVE_INFINITY } ?: false)
     Row(
         modifier = modifiers
-            .buildModifier(onUiEvent, listOf(ShadowModifier::class)),
+            .buildModifier(onUiEvent, listOf(ShadowModifier::class))
+            .then(if (hasGreedyChild) Modifier.fillMaxWidth() else Modifier),
         horizontalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
         verticalAlignment = component.props.verticalAlignment()
     ) {
@@ -117,8 +127,16 @@ fun RowView(
                             Modifier.weight(1.0f)
                         )
                     } else if (maxWidth == Float.POSITIVE_INFINITY) {
+                        // FillMaxWidth alongside Weight so NonModifiedComponent
+                        // doesn't wrap this child in wrapContentSize (which it
+                        // does when no fill modifier is present) — that would
+                        // offer an unbounded width to a greedy child like a
+                        // horizontal ScrollView and collapse it to 0. With fill,
+                        // the weighted box fills its allotted slot.
                         modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
                             Modifier.weight(1.0f)
+                        ) + LocalModifier.FillMaxWidth(
+                            Modifier.fillMaxWidth()
                         )
                     } else if (multipleFlexibleChildren && maxWidth == null && !childHasFixedSize) {
                         modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(

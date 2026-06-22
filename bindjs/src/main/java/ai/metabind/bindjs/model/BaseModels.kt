@@ -13,6 +13,16 @@ abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
     }
 
     fun calculateMaxWidth(): Float? {
+        // A horizontal ScrollView greedily fills the width offered to it (it
+        // scrolls its content within those bounds). Reporting it as infinite-
+        // width lets a parent Row hand it the *remaining* space via weight —
+        // without this it's measured at intrinsic width, and a LazyRow's
+        // intrinsic width is ~0, so a side-by-side "fixed column + scrolling
+        // columns" table (e.g. the quote comparison) renders the scroll area
+        // empty and unscrollable.
+        if (this is ScrollComponent && props.axis == ScrollAxis.HORIZONTAL) {
+            return Float.POSITIVE_INFINITY
+        }
         (this as? ModifiedComponent)?.let { modifiedComponent ->
             (this.props.modifier as? FrameModifier)?.let { frameModifier ->
                 return frameModifier.props.width ?: frameModifier.props.maxWidth
