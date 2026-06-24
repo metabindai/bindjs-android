@@ -114,7 +114,7 @@ fun TextView(
                             modifier = modifiers
                                 .buildModifier(
                                     onUiEvent,
-                                    exclude = listOf(LocalModifier::class)
+                                    exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
                                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                             fontStyle = fontStyle,
@@ -162,7 +162,7 @@ fun TextView(
                             modifier = modifiers
                                 .buildModifier(
                                     onUiEvent,
-                                    exclude = listOf(LocalModifier::class)
+                                    exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
                                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
                             fontStyle = fontStyle,

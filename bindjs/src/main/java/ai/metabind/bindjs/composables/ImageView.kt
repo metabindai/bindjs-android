@@ -125,7 +125,15 @@ fun ImageView(
         // Coil stretches the glyph to fill its container (a star/heart ballooning
         // to the whole row/photo). Detect the em sizing and pin the icon to the
         // nearest font's point size, like iOS, instead of letting it fill.
-        val isFontRelative = svg.containsEmSizing()
+        //
+        // Not every SF-Symbol SVG declares `em` units (some carry only a px
+        // viewBox), so also treat the image as a font-relative glyph when its
+        // modifier chain carries a `.font(...)` — that's the signature of an
+        // `Image(systemName:).font(...)` symbol (e.g. a "heart" favorite button).
+        // A raster/photo image (`Image(url:)`) is never given a font modifier,
+        // so this won't shrink real images.
+        val isFontRelative = svg.containsEmSizing() ||
+            modifiers.getNearestFontPointSize() != null
         val iconSizeDp = if (isFontRelative) {
             (modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE).dp
         } else null
