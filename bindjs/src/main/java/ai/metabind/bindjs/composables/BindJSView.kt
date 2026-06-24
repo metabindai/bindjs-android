@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
@@ -898,6 +899,25 @@ private fun FrameModifier(
             frameModifier.props.width == null &&
             !contentHasGeometryReader &&
             !contentHasOverflowingMedia
+    // A width-and-height frame is a fixed layout slot (e.g. a comparison-table
+    // cell). In SwiftUI `.frame(width:height:)` sizes the slot but never clips
+    // content that exceeds it — a pill whose text + padding is taller than the
+    // slot still draws in full, overflowing symmetrically. Compose's
+    // `Modifier.height()` instead hands the content a hard max-height
+    // constraint, so a too-tall child (e.g. a "Recommended" badge in a 26pt
+    // row) gets squeezed and then clipped by the leaf's own clipToBounds,
+    // leaving an empty capsule. Measure such content with unbounded height so
+    // it overflows the slot instead of being clipped, matching iOS. Height-only
+    // frames (shouldClipToHeight) and media frames are intentionally excluded.
+    val allowHeightOverflow = frameModifier?.props?.height != null &&
+            frameModifier.props.width != null &&
+            !contentHasGeometryReader &&
+            !contentHasOverflowingMedia
+    val verticalOverflowAlign = when (frameModifier?.props?.alignment) {
+        "top", "topLeading", "topTrailing" -> Alignment.Top
+        "bottom", "bottomLeading", "bottomTrailing" -> Alignment.Bottom
+        else -> Alignment.CenterVertically
+    }
     Box(
         modifier = boxModifier
             .then(if (bgFrameHeight != null) Modifier.defaultMinSize(minHeight = bgFrameHeight.dp) else Modifier)
@@ -924,12 +944,24 @@ private fun FrameModifier(
                 hasFrame = hasBoundedHeight
             )
         }
-        if (hasPadding) {
-            Box(modifier = paddingModifier, contentAlignment = modifiers.getAlignment()) {
+        val laidOut = @Composable {
+            if (hasPadding) {
+                Box(modifier = paddingModifier, contentAlignment = modifiers.getAlignment()) {
+                    content()
+                }
+            } else {
                 content()
             }
+        }
+        if (allowHeightOverflow) {
+            Box(
+                modifier = Modifier.wrapContentHeight(verticalOverflowAlign, unbounded = true),
+                contentAlignment = modifiers.getAlignment()
+            ) {
+                laidOut()
+            }
         } else {
-            content()
+            laidOut()
         }
     }
 }
