@@ -46,10 +46,24 @@ import ai.metabind.bindjs.model.BrushComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.FixedSizeModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
 import io.noties.markwon.Markwon
 import android.widget.TextView as AndroidTextView
+
+/**
+ * Clip text to its layout bounds — except when `.fixedSize()` is present.
+ *
+ * `TextView` wraps every text in a `wrapContentSize` + `clipToBounds` Box, which
+ * is correct for framed/truncating text. But SwiftUI's `.fixedSize()` means
+ * "use the ideal size and ignore the parent's constraints," so such a label is
+ * allowed to overflow its container (e.g. a hotspot annotation offset out of a
+ * tiny ZStack). Clipping it to the (parent-coerced) bounds erased it entirely.
+ * When a FixedSizeModifier is present we skip the clip so the label can render.
+ */
+private fun List<ComponentModifier<*>>.textClipModifier(): Modifier =
+    if (any { it is FixedSizeModifier }) Modifier else Modifier.clipToBounds()
 
 @Composable
 fun TextView(
@@ -105,7 +119,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -116,7 +130,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -153,7 +167,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -164,7 +178,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -199,7 +213,7 @@ fun TextView(
                 Box(
                     modifier = modifiers
                         .buildModifier(onUiEvent)
-                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                        .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                     contentAlignment = modifiers.getAlignment()
                 ) {
                     @Composable
@@ -210,7 +224,7 @@ fun TextView(
                                     onUiEvent,
                                     exclude = listOf(PaddingModifier::class, LocalModifier::class)
                                 )
-                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
                             text = text,
                             fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
@@ -273,7 +287,7 @@ private fun Markdown(
     Box(
         modifier = modifiers
             .buildModifier(onUiEvent)
-            .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+            .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
         contentAlignment = modifiers.getAlignment()
     ) {
         AndroidView(
@@ -282,7 +296,7 @@ private fun Markdown(
                     onUiEvent,
                     exclude = listOf(LocalModifier::class)
                 )
-                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(Modifier.clipToBounds()),
+                .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
             factory = { ctx ->
                 AndroidTextView(ctx).apply {
                     setTextColor(color.toArgb())

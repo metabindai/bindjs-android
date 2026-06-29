@@ -45,6 +45,27 @@ private const val DEFAULT_ICON_POINT_SIZE = 17f
 private fun String.containsEmSizing(): Boolean =
     Regex("""(width|height)\s*=\s*"[\d.]+em"""").containsMatchIn(this)
 
+/**
+ * Intrinsic size (width, height) declared in an SVG header, used to render a
+ * plain `Image(svg:)` glyph at its natural size rather than letting it fill its
+ * container. Reads the px `width`/`height` attributes (the quote must follow the
+ * number directly, so `em`-based sizes are intentionally skipped — those are
+ * handled as font-relative glyphs); falls back to the `viewBox` extents when
+ * width/height are absent. Returns null when no usable dimensions are found.
+ */
+private fun String.svgIntrinsicSizeDp(): Pair<Float, Float>? {
+    val w = Regex("""\bwidth\s*=\s*"([\d.]+)"""").find(this)?.groupValues?.get(1)?.toFloatOrNull()
+    val h = Regex("""\bheight\s*=\s*"([\d.]+)"""").find(this)?.groupValues?.get(1)?.toFloatOrNull()
+    if (w != null && h != null) return Pair(w, h)
+    val viewBox = Regex("""viewBox\s*=\s*"\s*[\d.-]+\s+[\d.-]+\s+([\d.]+)\s+([\d.]+)""").find(this)
+    if (viewBox != null) {
+        val vw = viewBox.groupValues[1].toFloatOrNull()
+        val vh = viewBox.groupValues[2].toFloatOrNull()
+        if (vw != null && vh != null) return Pair(vw, vh)
+    }
+    return null
+}
+
 @Volatile
 private var sharedImageLoader: ImageLoader? = null
 private val imageLoaderLock = Any()
@@ -134,10 +155,21 @@ fun ImageView(
         // so this won't shrink real images.
         val isFontRelative = svg.containsEmSizing() ||
             modifiers.getNearestFontPointSize() != null
-        val iconSizeDp = if (isFontRelative) {
-            (modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE).dp
-        } else null
-        val svgModifier = if (iconSizeDp != null) {
+        // A plain `Image(svg:)` glyph (no em units, no font) still carries its
+        // own intrinsic size in its `<svg width=".." height="..">` header. iOS
+        // renders such an un-resized image at that natural size; without it we'd
+        // again inherit fillMaxSize and Coil would stretch the glyph to fill its
+        // container (e.g. a 15×12 "see all results" arrow ballooning to fill the
+        // whole button). Pin it to the declared dimensions instead.
+        val intrinsicSizeDp = if (!isFontRelative) svg.svgIntrinsicSizeDp() else null
+        val explicitSize: Modifier? = when {
+            isFontRelative ->
+                Modifier.size((modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE).dp)
+            intrinsicSizeDp != null ->
+                Modifier.size(intrinsicSizeDp.first.dp, intrinsicSizeDp.second.dp)
+            else -> null
+        }
+        val svgModifier = if (explicitSize != null) {
             modifiers.buildModifier(
                 onUiEvent,
                 exclude = listOf(
@@ -145,7 +177,7 @@ fun ImageView(
                     LocalModifier.FillMaxSize::class,
                     LocalModifier.FillMaxWidth::class,
                 )
-            ).then(Modifier.size(iconSizeDp))
+            ).then(explicitSize)
         } else {
             modifiers.buildModifier(onUiEvent, exclude = listOf(AccessibilityLabelModifier::class))
         }
@@ -159,7 +191,7 @@ fun ImageView(
             imageLoader = bindJsImageLoader(context),
             contentDescription = contentDescription,
             alignment = Alignment.Center,
-            contentScale = if (iconSizeDp != null) ContentScale.Fit else contentScale,
+            contentScale = if (explicitSize != null) ContentScale.Fit else contentScale,
             onError = { error ->
                 Log.e(TAG, "Coil SVG Error $error")
             }
