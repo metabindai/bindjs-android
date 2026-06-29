@@ -44,6 +44,25 @@ interface JsRuntime {
     suspend fun callComponentThumbnail(name: String, isContent: Boolean = true): BaseComponent<*>
     suspend fun setEnvironment(environment: Map<String, Any>)
     suspend fun callEventHandler(handlerId: String, data: Array<Any> = emptyArray()): String?
+
+    /**
+     * Dispatch a drag-gesture event with backpressure so a fast pointer can't
+     * outrun the serialized JS pipeline (MET-1229).
+     *
+     * The continuous `changed` phase is coalesced latest-wins: while the JS
+     * lock + render loop is busy, a newer `changed` overwrites the queued one
+     * instead of piling up, so a physical device emitting ~168 moves/sec
+     * collapses to whatever the pipeline can actually drain (~30/sec) with no
+     * growing backlog or latency. The `began`, `ended` and `cancelled` phases
+     * are barriers — never dropped, order preserved — so the handler always
+     * sees a well-formed gesture.
+     *
+     * Fire-and-forget: the handler's own state change drives the re-render via
+     * the listener registered with [setOnRerenderRequested], so callers must
+     * NOT render explicitly per event. For discrete events that must never be
+     * dropped (tap, change, appear) use [callEventHandler] instead.
+     */
+    fun dispatchDragEvent(handlerId: String, state: Map<String, Any>)
     suspend fun callForResultComponent(handlerId: String): Component?
     suspend fun restoreForEachData(dataId: String): String
     suspend fun restoreEnvironment(id: String)

@@ -56,6 +56,24 @@ class JsRuntimeImpl private constructor(
     // SupervisorJob so one failing tool call doesn't kill the channel.
     private val toolCallScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Drag-gesture backpressure (see [dispatchDragEvent]). A physical-device
+    // pointer fires `changed` events (~168/sec) far faster than the jsLock +
+    // render loop can drain (~30/sec); queuing each one builds an unbounded
+    // backlog (MET-1229: 30+ second drag latency). Coalesce so only the newest
+    // `changed` survives while the pipeline is busy, while `began`/`ended`/
+    // `cancelled` stay ordered barriers. The queue and [dragDraining] are
+    // guarded by the queue's own monitor; a single drain coroutine runs at a
+    // time on [gestureScope].
+    private val gestureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val dragQueue = ArrayDeque<DragEvent>()
+    private var dragDraining = false
+
+    private class DragEvent(
+        val handlerId: String,
+        val data: Array<Any>,
+        val coalescable: Boolean,
+    )
+
     @Volatile
     private var onRerenderRequested: (() -> Unit)? = null
 
@@ -143,6 +161,11 @@ class JsRuntimeImpl private constructor(
         timers.values.forEach { mainHandler.removeCallbacks(it) }
         timers.clear()
         toolCallScope.cancel()
+        gestureScope.cancel()
+        synchronized(dragQueue) {
+            dragQueue.clear()
+            dragDraining = false
+        }
         try {
             if (::jsIsolate.isInitialized) jsIsolate.close()
         } catch (e: Throwable) {
@@ -182,6 +205,43 @@ class JsRuntimeImpl private constructor(
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null
+        }
+    }
+
+    override fun dispatchDragEvent(handlerId: String, state: Map<String, Any>) {
+        // Only the continuous middle of the gesture is safe to drop; phase
+        // transitions carry state the handler must observe.
+        val coalescable = state["phase"] == "changed"
+        val event = DragEvent(handlerId, arrayOf(state), coalescable)
+        val startDrain: Boolean
+        synchronized(dragQueue) {
+            val last = dragQueue.lastOrNull()
+            if (coalescable && last != null && last.coalescable && last.handlerId == handlerId) {
+                // Replace the queued `changed` — only the latest position matters.
+                dragQueue[dragQueue.lastIndex] = event
+            } else {
+                dragQueue.addLast(event)
+            }
+            // Start a drain only if one isn't already running. Checking and
+            // clearing [dragDraining] under the same monitor that the drain
+            // uses to dequeue closes the lost-wakeup window.
+            startDrain = !dragDraining
+            if (startDrain) dragDraining = true
+        }
+        if (startDrain) gestureScope.launch { drainDragQueue() }
+    }
+
+    private suspend fun drainDragQueue() {
+        while (true) {
+            val next = synchronized(dragQueue) {
+                val e = dragQueue.removeFirstOrNull()
+                if (e == null) dragDraining = false
+                e
+            } ?: break
+            // Serialized via jsLock inside callEventHandler; the handler's own
+            // setState fires the (coalesced) rerender signal, so we don't
+            // render here.
+            callEventHandler(next.handlerId, next.data)
         }
     }
 
