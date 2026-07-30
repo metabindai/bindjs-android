@@ -47,6 +47,15 @@ publishing {
         register<MavenPublication>("release") {
             groupId = "ai.metabind"
             artifactId = "bindjs-android"
+
+            pom {
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+            }
             version = "0.0.20"
 
             afterEvaluate {
