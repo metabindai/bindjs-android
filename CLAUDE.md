@@ -11,27 +11,36 @@ Published as `ai.metabind:bindjs-android` to GitHub Packages. The Apple counterp
 ## Consumers (be aware before changing public API or runtime contracts)
 
 ```
-bindjs-android   (this repo, publishes :bindjs)
-  └── consumed by metabind-ai-android (via includeBuild substitution when developing locally)
-        └── consumed by metabind-assistant-demo-android (the chat demo)
+bindjs-android   (this repo, publishes :bindjs as ai.metabind:bindjs-android)
+  └── consumed by metabind-android (the :metabindai and :mcpappshost modules,
+      pinned via `bindjs` in metabind-android/gradle/libs.versions.toml)
+        └── exercised by metabind-android/samples/assistant-demo (the chat demo)
 ```
 
-When the Apple/Android pair diverges in semantics, treat `bindjs-apple` as the reference for what the JS runtime expects — both Android and Apple host the same `script.js`-derived runtime so behavior must match.
+By default `metabind-android` consumes the published GitHub Packages artifact. To develop against a local checkout, uncomment the `includeBuild("../bindjs-android")` dependency-substitution block at the bottom of `metabind-android/settings.gradle.kts`.
+
+When the Apple/Android pair diverges in semantics, treat `bindjs-apple` as the reference for what the JS runtime expects — both Android and Apple host the same bindjs-runtime-derived `script.js` so behavior must match.
 
 ## Module layout
 
-**Single Gradle module**: `:bindjs`. The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
+**Two Gradle modules**: `:bindjs` (the library) and `:chart-preview` (a standalone chart-rendering preview app). The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
 
 ```
 bindjs/src/main/
   res/raw/
-    script.js                      ← the JS-side runtime (~3.4k LOC). SOURCE OF TRUTH for
-                                     hooks (useState/useMCPHost/useEnvironment), the
+    script.js                      ← the JS-side runtime (~3.4k LOC): hooks
+                                     (useState/useMCPHost/useEnvironment), the
                                      component AST schema, the __MCP__:: protocol, the
                                      `setMcpHost(true|false)` shim, `__resolveToolCall`,
                                      `runtime.needsRerender`. Read this when investigating
                                      anything that "should be there but isn't" — it
                                      usually is, just on the JS side.
+                                     NOTE: this file is a bundled COPY of the BindJS
+                                     runtime from the bindjs-runtime repo (npm
+                                     @metabindai/bindjs-runtime). bindjs-runtime is the
+                                     source of truth; the copy here is synced manually
+                                     today. Fix runtime bugs upstream, then re-sync —
+                                     don't let this copy drift.
   java/ai/metabind/bindjs/
     DesignerComponent.kt           ← root bundle: name + content (JS source) + dependencies
     JsRuntime.kt / JsRuntimeImpl.kt← isolate lifecycle, JS↔Kotlin bridge, callComponent
@@ -61,6 +70,7 @@ Wire format: `__MCP__::<method>::<JSON-array-of-args>`
 | `__MCP__::openLink::[url]` | `host.openLink(url)` |
 | `__MCP__::sendMessage::[text]` | `host.sendMessage(text)` |
 | `__MCP__::updateModelContext::[obj]` | `host.updateModelContext(obj)` |
+| `__MCP__::setTimeout/setInterval/clearTimeout::[…]` | Host-independent. `JsRuntimeImpl` schedules/cancels the timer (the isolate has no event loop) and calls back into JS on fire. |
 | `__MCP__::toolCall::[id, name, args]` | `dispatchToolCall` → suspend `host.toolCall(name, args)` off-main on `toolCallScope` → `payload = gson.toJson(result)` → `evaluateJavaScriptAsync("__resolveToolCall($id, $ok, $payload);")` resolves the pending JS Promise. |
 
 Returning the other way, Kotlin → JS is **always** `evaluateJavaScriptAsync(...).await()`. There is no two-way binding API.
@@ -164,14 +174,15 @@ is OnDisappearModifier -> {
 
 Publishing target: `https://maven.pkg.github.com/metabindai/bindjs-android-binary`. Auth via `gpr.user`/`gpr.key` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR`/`GITHUB_TOKEN` env vars with `write:packages` scope.
 
-For coordinated three-repo releases (`bindjs-android` → `metabind-ai-android` → `metabind-android` → re-pin demo app), the `publish-metabind-binaries` skill orchestrates the full chain. Don't run that for local verification — consumers like `metabind-assistant-demo-android` already use composite-build substitutions.
+For coordinated releases (`bindjs-android` → `metabind-android`), publish here first, then bump the `bindjs` pin in `metabind-android/gradle/libs.versions.toml` — the samples (including `samples/assistant-demo`) build from the same Gradle project, so there is no separate demo-app re-pin. Don't publish for local verification — `metabind-android` can substitute a local checkout via the commented-out `includeBuild("../bindjs-android")` block in its `settings.gradle.kts`.
+
 
 ## Tech stack
 
-- **Kotlin 2.2.10**, **AGP 9.0.1**, Compose, `compileSdk` 36, `minSdk` 26, Java 21
+- **Kotlin 2.3.10**, **AGP 9.0.1**, Compose, `compileSdk` 36, `minSdk` 26, Java 21
 - `androidx.javascriptengine` (Android JS Sandbox) — isolate, console messaging, `evaluateJavaScriptAsync`
 - **Gson** + custom `RuntimeTypeAdapterFactory` (vendored from Google) for polymorphic AST deserialization
-- **Coil** (image loading), **SceneView** (3D models), **Media3/ExoPlayer** (video), **Markwon** (markdown)
+- **Coil** (image loading), **SceneView** (3D models), **Media3/ExoPlayer** (video), **Markwon** (markdown), **Vico** (charts)
 
 ## Logcat tags
 
