@@ -11,6 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
+import ai.metabind.bindjs.composables.ext.systemIcon
 import ai.metabind.bindjs.composables.ext.systemImage
 import ai.metabind.bindjs.model.LabelComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
@@ -25,16 +26,24 @@ fun LabelView(
     onUiEvent: (UiEvent) -> Unit,
 ) {
     val systemIconId = component.props.systemImage.systemImage()
+    val systemIcon = if (systemIconId == null) component.props.systemImage.systemIcon() else null
     Row(
         modifier = modifiers
             .buildModifier(onUiEvent),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        systemIconId?.let {
-            Icon(
-                painter = painterResource(id = systemIconId),
-                contentDescription = ""
-            )
+        if (systemIconId != null || systemIcon != null) {
+            if (systemIconId != null) {
+                Icon(
+                    painter = painterResource(id = systemIconId),
+                    contentDescription = ""
+                )
+            } else {
+                Icon(
+                    imageVector = systemIcon!!,
+                    contentDescription = ""
+                )
+            }
             Spacer(modifier = Modifier.width(4.dp))
         }
         BindJSView(

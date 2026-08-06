@@ -5,9 +5,11 @@ import android.util.Base64
 import android.util.Log
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -20,7 +22,10 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.getContentDescription
 import ai.metabind.bindjs.composables.ext.getContentScale
+import ai.metabind.bindjs.composables.ext.getForegroundColor
 import ai.metabind.bindjs.composables.ext.getNearestFontPointSize
+import ai.metabind.bindjs.composables.ext.hasFrame
+import ai.metabind.bindjs.composables.ext.systemIcon
 import ai.metabind.bindjs.composables.ext.systemImage
 import ai.metabind.bindjs.model.ImageComponent
 import ai.metabind.bindjs.model.ext.toContentScale
@@ -129,15 +134,49 @@ fun ImageView(
     onUiEvent: (UiEvent) -> Unit,
 ) {
     val systemIconId = component.props.systemName.systemImage()
+    val systemIcon = if (systemIconId == null) component.props.systemName.systemIcon() else null
     val svg = component.props.svg?.trimStart()
     val contentMode = component.props.contentMode.toContentScale()
     val contentScale = contentMode ?: modifiers.getContentScale()
     val contentDescription = modifiers.getContentDescription()
-    if (systemIconId != null) {
-        Icon(
-            painter = painterResource(id = systemIconId),
-            contentDescription = ""
-        )
+    if (systemIconId != null || systemIcon != null) {
+        // A symbol is a glyph, not a photo: it sizes off the nearest `.font(...)` the way
+        // iOS does, or off an explicit `.frame(...)`, and otherwise keeps the icon's own
+        // 24dp intrinsic size. What it must never inherit is the synthetic fillMaxSize
+        // BindJSView adds to un-framed images (see addFillIfNoFrame) — that stretches a
+        // body-sized glyph across its whole container. Same exclusion the SVG branch makes.
+        val glyphSize = modifiers.getNearestFontPointSize()
+            ?.takeIf { !modifiers.hasFrame() }
+            ?.let { Modifier.size(it.dp) }
+        val iconModifier = modifiers.buildModifier(
+            onUiEvent,
+            exclude = listOf(
+                AccessibilityLabelModifier::class,
+                LocalModifier.FillMaxSize::class,
+                LocalModifier.FillMaxWidth::class,
+            )
+        ).then(glyphSize ?: Modifier)
+        // `getForegroundColor` reports Transparent when the chain carries no
+        // `.foregroundStyle(...)`; that means "unstyled", so defer to the ambient content
+        // color rather than painting the glyph invisible.
+        val tint = modifiers.getForegroundColor()
+            .takeIf { it != Color.Transparent }
+            ?: LocalContentColor.current
+        if (systemIconId != null) {
+            Icon(
+                painter = painterResource(id = systemIconId),
+                contentDescription = contentDescription,
+                modifier = iconModifier,
+                tint = tint,
+            )
+        } else {
+            Icon(
+                imageVector = systemIcon!!,
+                contentDescription = contentDescription,
+                modifier = iconModifier,
+                tint = tint,
+            )
+        }
     } else if (svg != null) {
         val context = LocalContext.current
         // SF-Symbol glyphs arrive as SVGs sized in `em` (e.g. width="1em"),

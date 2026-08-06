@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlin.coroutines.guava)
     implementation(libs.android.compose.material)
+    implementation(libs.android.compose.material.icons)
     implementation(libs.android.compose.ui)
     implementation(libs.coil)
     implementation(libs.coil.compose)

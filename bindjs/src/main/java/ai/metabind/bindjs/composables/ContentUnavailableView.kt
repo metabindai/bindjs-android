@@ -17,6 +17,7 @@ import com.google.gson.JsonElement
 import ai.metabind.bindjs.GsonProvider
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
+import ai.metabind.bindjs.composables.ext.systemIcon
 import ai.metabind.bindjs.composables.ext.systemImage
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ContentUnavailableViewComponent
@@ -38,6 +39,7 @@ fun ContentUnavailableView(
 ) {
     val props = component.props
     val systemIconId = props.systemImage.systemImage()
+    val systemIcon = if (systemIconId == null) props.systemImage.systemIcon() else null
 
     Column(
         modifier = modifiers.buildModifier(onUiEvent),
@@ -48,8 +50,10 @@ fun ContentUnavailableView(
         if (label != null) {
             Slot(jsRuntime, label, version, onUiEvent, secondary = false)
         } else {
-            systemIconId?.let {
-                Icon(painter = painterResource(id = it), contentDescription = "")
+            if (systemIconId != null) {
+                Icon(painter = painterResource(id = systemIconId), contentDescription = "")
+            } else if (systemIcon != null) {
+                Icon(imageVector = systemIcon, contentDescription = "")
             }
             props.title?.let { Slot(jsRuntime, it, version, onUiEvent, secondary = false) }
         }
