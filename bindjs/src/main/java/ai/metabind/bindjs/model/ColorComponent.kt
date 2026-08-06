@@ -2,11 +2,11 @@ package ai.metabind.bindjs.model
 
 import android.graphics.Color
 import android.util.Log
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.google.gson.annotations.SerializedName
+import ai.metabind.bindjs.composables.LocalAccentColor
 
 class ColorComponent(
     props: ColorProps,
@@ -48,12 +48,52 @@ class ColorComponent(
             "bar",
             "chrome"
         )
+
+        // Packed by hand rather than through `Color.argb`: the companion initialises
+        // during JVM unit tests, where android.graphics is a throwing stub.
+        private fun argb(r: Int, g: Int, b: Int, a: Float = 1f): Int =
+            ((a * 255f).toInt() shl 24) or (r shl 16) or (g shl 8) or b
+
+        // UIKit's semantic palette, light-mode values. bindjs-apple resolves these
+        // through UIColor so they adapt to dark mode; this renderer draws unstyled
+        // text as black regardless of theme, so adaptive fills here would put black
+        // labels on near-black surfaces. Light values keep the pair readable — swap
+        // both together if the renderer ever gains a colour scheme.
+        private val LABEL = argb(0, 0, 0)
+        private val SECONDARY_LABEL = argb(60, 60, 67, 0.60f)
+        private val TERTIARY_LABEL = argb(60, 60, 67, 0.30f)
+        private val QUATERNARY_LABEL = argb(60, 60, 67, 0.18f)
+
+        private val SYSTEM_BACKGROUND = argb(255, 255, 255)
+        private val SECONDARY_SYSTEM_BACKGROUND = argb(242, 242, 247)
+
+        private val SYSTEM_GRAY_2 = argb(174, 174, 178)
+        private val SYSTEM_GRAY_3 = argb(199, 199, 204)
+        private val SYSTEM_GRAY_4 = argb(209, 209, 214)
+        private val SYSTEM_GRAY_5 = argb(229, 229, 234)
+        private val SYSTEM_GRAY_6 = argb(242, 242, 247)
+
+        private val SYSTEM_FILL = argb(120, 120, 128, 0.20f)
+        private val SECONDARY_SYSTEM_FILL = argb(120, 120, 128, 0.16f)
+        private val TERTIARY_SYSTEM_FILL = argb(118, 118, 128, 0.12f)
+        private val QUATERNARY_SYSTEM_FILL = argb(116, 116, 128, 0.08f)
+
+        private val SEPARATOR = argb(60, 60, 67, 0.29f)
+        private val OPAQUE_SEPARATOR = argb(198, 198, 200)
     }
 
     fun isMaterial(): Boolean {
         return props.rawValue in MATERIALS
     }
 
+    /**
+     * Mirrors `bindjs-apple`'s `Color.namedColors`. The names are SwiftUI/UIKit's, so
+     * their meanings have to be too: `primary`/`secondary` are *label* colours in
+     * SwiftUI, not a Material scheme's brand roles, and the unknown-name fallback is
+     * the label colour rather than an accent. Resolving them against
+     * `MaterialTheme.colorScheme` painted A2UI's grey button fills and secondary text
+     * in the theme's purple.
+     */
     @Composable
     private fun colorByName(name: String): Int {
         return when (name) {
@@ -72,15 +112,40 @@ class ColorComponent(
             "brown" -> Color.valueOf(.58f, .3f, 0f).toArgb()
             "black" -> Color.BLACK
             "white" -> Color.WHITE
-            "gray" -> Color.GRAY
-            "primary" -> MaterialTheme.colorScheme.primary.toArgb()
-            "background" -> MaterialTheme.colorScheme.background.toArgb()
-            "secondary" -> MaterialTheme.colorScheme.secondary.toArgb()
-            "accentColor" -> hexColor("#007AFF")
-            "accent" -> hexColor("#007AFF")
-            "tertiary" -> MaterialTheme.colorScheme.tertiary.toArgb()
-            "quaternary" -> MaterialTheme.colorScheme.onTertiary.toArgb()
-            else -> MaterialTheme.colorScheme.primary.toArgb()
+            "gray", "systemGray" -> Color.GRAY
+
+            "accent", "accentColor", "link" -> LocalAccentColor.current.toArgb()
+
+            // Labels
+            "primary", "label" -> LABEL
+            "secondary", "secondaryLabel" -> SECONDARY_LABEL
+            "tertiary", "tertiaryLabel", "placeholderText" -> TERTIARY_LABEL
+            "quaternary", "quaternaryLabel" -> QUATERNARY_LABEL
+
+            // Backgrounds. `background` is SwiftUI's `.systemBackground`, and the
+            // grouped variants alternate the same two greys iOS does.
+            "background", "systemBackground", "tertiarySystemBackground",
+            "secondarySystemGroupedBackground" -> SYSTEM_BACKGROUND
+
+            "secondarySystemBackground", "systemGroupedBackground",
+            "tertiarySystemGroupedBackground" -> SECONDARY_SYSTEM_BACKGROUND
+
+            "systemGray2" -> SYSTEM_GRAY_2
+            "systemGray3" -> SYSTEM_GRAY_3
+            "systemGray4" -> SYSTEM_GRAY_4
+            "systemGray5" -> SYSTEM_GRAY_5
+            "systemGray6" -> SYSTEM_GRAY_6
+
+            // Fills — the translucent greys behind buttons, chips and fields.
+            "systemFill" -> SYSTEM_FILL
+            "secondarySystemFill" -> SECONDARY_SYSTEM_FILL
+            "tertiarySystemFill" -> TERTIARY_SYSTEM_FILL
+            "quaternarySystemFill" -> QUATERNARY_SYSTEM_FILL
+
+            "separator" -> SEPARATOR
+            "opaqueSeparator" -> OPAQUE_SEPARATOR
+
+            else -> LABEL
         }
     }
 
@@ -120,7 +185,7 @@ class ColorComponent(
                 8 -> {
                     r = ((hexValue and 0xFF000000) shr 24) / 255.0f
                     g = ((hexValue and 0x00FF0000) shr 16) / 255.0f
-                    b = ((hexValue and 0x00FF0000) shr 8) / 255.0f
+                    b = ((hexValue and 0x0000FF00) shr 8) / 255.0f
                     a = (hexValue and 0x000000FF) / 255.0f
                 }
 

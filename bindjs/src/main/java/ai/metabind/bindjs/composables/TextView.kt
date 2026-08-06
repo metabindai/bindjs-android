@@ -246,7 +246,10 @@ fun TextView(
                                 platformStyle = PlatformTextStyle(
                                     includeFontPadding = true
                                 ),
-                                color = Color.Black,
+                                // Unstyled text is black everywhere except inside a
+                                // Button label, which SwiftUI tints with the accent
+                                // colour — see LocalContentTint.
+                                color = LocalContentTint.current ?: Color.Black,
                                 letterSpacing = tracking.sp
                             ).merge(textStyle)
                         )
@@ -293,7 +296,7 @@ private fun Markdown(
 
     val color = when (foregroundStyleComponent) {
         is ColorComponent -> foregroundStyleComponent.getForegroundColor()
-        else -> Color.Black
+        else -> LocalContentTint.current ?: Color.Black
     }
 
     val gravity = when (textAlign) {
