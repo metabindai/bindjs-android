@@ -33,6 +33,7 @@ import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
+import ai.metabind.bindjs.model.ext.namedFontWeight
 import ai.metabind.bindjs.model.ext.toAlignment
 import ai.metabind.bindjs.model.ext.toFontFamily
 import ai.metabind.bindjs.model.ext.toTextAlign
@@ -195,6 +196,20 @@ fun List<ComponentModifier<*>>.getNearestFontPointSize(): Float? {
                     if (size != null) return size.toFloat()
                 }
             }
+        }
+    }
+    return null
+}
+
+/**
+ * Weight implied by the nearest named `.font(...)` — semibold for `headline`, regular
+ * otherwise. Companion to [getNearestFontPointSize]; an explicit `.fontWeight(...)`
+ * (see [getFontWeight]) takes precedence over this.
+ */
+fun List<ComponentModifier<*>>.getNearestNamedFontWeight(): FontWeight? {
+    for (modifier in asReversed()) {
+        if (modifier is FontModifier) {
+            (modifier.props.rawValue as? String)?.let { return it.namedFontWeight() }
         }
     }
     return null

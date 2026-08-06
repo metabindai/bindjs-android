@@ -1,6 +1,7 @@
 package ai.metabind.bindjs.composables
 
 import android.graphics.Typeface
+import android.os.Build
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -35,6 +36,8 @@ import ai.metabind.bindjs.composables.ext.getFontWeight
 import ai.metabind.bindjs.composables.ext.getForegroundColor
 import ai.metabind.bindjs.composables.ext.getForegroundStyleModifierComponent
 import ai.metabind.bindjs.composables.ext.getLineSpacing
+import ai.metabind.bindjs.composables.ext.getNearestFontPointSize
+import ai.metabind.bindjs.composables.ext.getNearestNamedFontWeight
 import ai.metabind.bindjs.composables.ext.getMaxLines
 import ai.metabind.bindjs.composables.ext.getTextAlign
 import ai.metabind.bindjs.composables.ext.getTextDecoration
@@ -84,7 +87,11 @@ fun TextView(
     val defaultLineHeight = if (!LocalTextStyle.current.lineHeight.value.isNaN()) {
         LocalTextStyle.current.lineHeight.value
     } else {
+        // getFontSize() only sees a numeric `.font(20)`; a named `.font("title3")` has
+        // to come from the point-size ladder, or `.lineSpacing(...)` on a named style
+        // would compute its leading from the 16f fallback instead of the real size.
         val baseFontSize = fontSize?.toFloat()
+            ?: modifiers.getNearestFontPointSize()
             ?: LocalTextStyle.current.fontSize.value.takeIf { !it.isNaN() }
             ?: 16f
         baseFontSize * 1.2f
@@ -272,6 +279,18 @@ private fun Markdown(
     val context = LocalContext.current
     val markwon = remember { Markwon.create(context) }
 
+    // Most BindJS text arrives as `Text({ markdown: ... })` — it is the only spelling
+    // that renders on both the Compose and SwiftUI backends — so this branch, not the
+    // Compose one, is where named font styles have to be honoured. `fontSize` here comes
+    // from getFontSize(), which only sees a numeric `.font(20)`; without the ladder
+    // fallback every `.font("title2")` collapsed to the AndroidView default size.
+    val effectiveSizeSp = fontSize?.toFloat() ?: modifiers.getNearestFontPointSize()
+
+    // An explicit `.fontWeight(...)` wins, else the named style's own weight. The old
+    // `>= 700` test dropped semibold (600), which is exactly what A2UIText applies to
+    // h1–h4, so every heading rendered regular.
+    val effectiveWeight = (fontWeight ?: modifiers.getNearestNamedFontWeight())?.weight
+
     val color = when (foregroundStyleComponent) {
         is ColorComponent -> foregroundStyleComponent.getForegroundColor()
         else -> Color.Black
@@ -299,24 +318,44 @@ private fun Markdown(
                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
             factory = { ctx ->
                 AndroidTextView(ctx).apply {
-                    setTextColor(color.toArgb())
                     setGravity(gravity)
-                    if (fontSize != null) {
-                        setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize.toFloat())
-                    }
                     if (maxLines > 0) {
                         this.maxLines = maxLines
                         ellipsize = TextUtils.TruncateAt.END
                     }
-                    if (fontWeight != null && fontWeight.weight >= 700) {
-                        setTypeface(typeface, Typeface.BOLD)
-                    }
                 }
             },
+            // Typography is applied here rather than in `factory` so a re-render that
+            // changes the style actually lands — AndroidView only runs `factory` once.
             update = { textView ->
                 markwon.setMarkdown(textView, text)
                 textView.setTextColor(color.toArgb())
+                if (effectiveSizeSp != null) {
+                    textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, effectiveSizeSp)
+                }
+                textView.applyWeight(effectiveWeight)
             }
         )
+    }
+}
+
+/**
+ * Apply a numeric font weight to a platform TextView.
+ *
+ * API 28+ can set an arbitrary weight, so semibold (600) renders as semibold rather than
+ * being rounded to bold. Below that, Typeface only offers normal/bold, so anything at or
+ * above semibold becomes bold — closer than dropping it, which is what the previous
+ * `>= 700` check did to every A2UI heading.
+ */
+private fun AndroidTextView.applyWeight(weight: Int?) {
+    val base = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+    if (weight == null) {
+        typeface = base
+        return
+    }
+    typeface = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        Typeface.create(base, weight, false)
+    } else {
+        Typeface.create(base, if (weight >= 600) Typeface.BOLD else Typeface.NORMAL)
     }
 }

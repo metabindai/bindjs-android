@@ -14,6 +14,8 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.ColorSchemeModifier
+import ai.metabind.bindjs.model.modifier.FontModifier
+import ai.metabind.bindjs.model.modifier.FontWeightModifier
 import ai.metabind.bindjs.model.modifier.ForegroundStyleModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
@@ -455,6 +457,8 @@ class JsRuntimeImpl private constructor(
                         is PaddingModifier,
                         is ForegroundStyleModifier,
                         is FrameModifier,
+                        is FontWeightModifier,
+                        is FontModifier,
                         is BackgroundModifier,
                         is ColorSchemeModifier,
                             -> it.toString()
@@ -479,7 +483,7 @@ class JsRuntimeImpl private constructor(
                     ""
                 }
                 if (component is TextComponent) {
-                    componentName = "$componentName (val: ${component.props.rawValue})"
+                    componentName = "$componentName (val: ${component.props.rawValue} markdown: ${component.props.markdown})"
                 }
                 sb.appendLine("$indentStr$componentName$modifiersStr")
 
@@ -653,8 +657,20 @@ class JsRuntimeImpl private constructor(
     }
 
     override suspend fun setEnvironment(environment: Map<String, Any>) {
-        Log.d(TAG, "Calling set environment: $environment")
-        val callScript = "setEnvironment(['$environment']);"
+        // Two bugs lived in the old one-liner (`setEnvironment(['$environment'])`):
+        //   1. `'$environment'` interpolated Kotlin's Map.toString() — i.e.
+        //      `{toolName=Carousel, toolResult={...}}` — into a single-quoted JS
+        //      string, so the JS never saw a real object.
+        //   2. The value was wrapped in a JS array. iOS's bridge passes the env dict
+        //      as the single argument, and the JS side
+        //      (`setEnvironment: (environment) => runtime.registerEnvironment(environment)`)
+        //      expects exactly that — not an array.
+        // Effect: env was never populated on Android, so components reading
+        // `env.toolResult` / `env.toolArguments` (e.g. a product carousel pulling
+        // product data out of a tool result) ran with no inputs and rendered empty.
+        val envJson = gson.toJson(environment)
+        Log.d(TAG, "Calling set environment: $envJson")
+        val callScript = "setEnvironment($envJson);"
         val result = evalJs(callScript)
 
         Log.d(TAG, "setEnvironment result: $result")
