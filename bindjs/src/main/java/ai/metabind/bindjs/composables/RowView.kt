@@ -22,6 +22,7 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.expandingForEach
+import ai.metabind.bindjs.model.layoutChildren
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LayoutPriorityModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
@@ -47,7 +48,7 @@ fun RowView(
     val inHorizontalScroll = LocalInHorizontalScroll.current
     // Splice any ForEach columns in as direct children so this Row lays them out
     // (weight distribution / spacers / alignment) like SwiftUI's transparent ForEach.
-    val children = component.props.children.expandingForEach()
+    val children = component.props.children.expandingForEach().layoutChildren()
     // A horizontally-greedy child (e.g. a nested horizontal ScrollView, reported
     // as infinite-width) is laid out with Modifier.weight below — but weight
     // resolves to 0 against an unbounded Row. A plain HStack wraps its content

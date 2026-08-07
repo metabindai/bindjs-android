@@ -23,6 +23,7 @@ import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.expandingForEach
+import ai.metabind.bindjs.model.layoutChildren
 import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
@@ -41,7 +42,7 @@ fun ColumnView(
 ) {
     // Splice any ForEach rows in as direct children so this Column lays them out
     // (and centers / fills them) exactly like SwiftUI's transparent ForEach.
-    val children = component.props.children.expandingForEach()
+    val children = component.props.children.expandingForEach().layoutChildren()
     val hasSpacer =
         children?.any { it is SpacerComponent } ?: false
     // When a Column is a non-expanding child of a Row (InRow present, no

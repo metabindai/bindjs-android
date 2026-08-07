@@ -70,6 +70,7 @@ import ai.metabind.bindjs.model.containsOverflowingMedia
 import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
+import ai.metabind.bindjs.model.EmptyComponent
 import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GeometryReaderComponent
 import ai.metabind.bindjs.model.GroupComponent
@@ -90,6 +91,7 @@ import ai.metabind.bindjs.model.RoundedRectangleComponent
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.ScrollComponent
 import ai.metabind.bindjs.model.SectionComponent
+import ai.metabind.bindjs.model.SecureFieldComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
@@ -162,6 +164,15 @@ private fun BindJSViewImpl(
     isBackground: Boolean = false,
     hasFrame: Boolean = false,
 ) {
+    if (component is EmptyComponent) {
+        // SwiftUI's EmptyView emits no layout node, and neither may this. Falling
+        // through would hand the component to NonModifiedComponent, which wraps every
+        // child in a Box carrying the parent's fill/weight modifiers — so an `Empty()`
+        // beside a Toggle became an invisible `fillMaxWidth` Box that stretched its
+        // VStack across the whole Row and starved the siblings of width.
+        Log.d(TAG, "Nothing to render for $component")
+        return
+    }
     if (component is ModifiedComponent) {
         ModifiedComponent(
             component = component,
@@ -1088,6 +1099,14 @@ private fun ComponentInnerView(
         )
 
         is TextFieldComponent -> TextFieldView(
+            jsRuntime = jsRuntime,
+            component = component,
+            version = version,
+            modifiers = wrapContentSize(modifiers),
+            onUiEvent = onUiEvent
+        )
+
+        is SecureFieldComponent -> SecureFieldView(
             jsRuntime = jsRuntime,
             component = component,
             version = version,

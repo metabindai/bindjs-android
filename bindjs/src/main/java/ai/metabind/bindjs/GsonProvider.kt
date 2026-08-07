@@ -44,6 +44,7 @@ import ai.metabind.bindjs.model.ScrollComponent
 import ai.metabind.bindjs.model.SectionComponent
 import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.TextComponent
+import ai.metabind.bindjs.model.SecureFieldComponent
 import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
@@ -271,6 +272,7 @@ class GsonProvider {
                     .registerSubtype(PieSliceMarkComponent::class.java, "PieSliceMark")
                     .registerSubtype(ButtonComponent::class.java, "Button")
                     .registerSubtype(TextFieldComponent::class.java, "TextField")
+                    .registerSubtype(SecureFieldComponent::class.java, "SecureField")
                     .registerSubtype(LabelComponent::class.java, "Label")
                     .registerSubtype(CircleComponent::class.java, "Circle")
                     .registerSubtype(ColorComponent::class.java, "Color")

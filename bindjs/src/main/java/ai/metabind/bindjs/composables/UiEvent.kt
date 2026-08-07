@@ -18,6 +18,19 @@ sealed class UiEvent {
         val checked: Boolean
     ) : UiEvent()
 
+    /**
+     * A text input's new contents, for the JS `setText` closure.
+     *
+     * Text entry used to dispatch a bare [OnTap], which calls the handler with no
+     * arguments — so `setText(undefined)` wiped the bound value on the first keystroke
+     * and the field fell back to its placeholder. The text has to travel with the
+     * event, the way [OnSwitch] carries its boolean.
+     */
+    data class OnTextChange(
+        val handlerId: String,
+        val text: String,
+    ) : UiEvent()
+
     data class OnLongPress(
         val handlerId: String,
     ) : UiEvent()

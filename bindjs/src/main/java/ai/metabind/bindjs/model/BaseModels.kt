@@ -171,6 +171,21 @@ fun List<BaseComponent<*>?>?.expandingForEach(): List<BaseComponent<*>?>? {
     }
 }
 
+/**
+ * Children that take part in stack layout, i.e. everything except [EmptyComponent].
+ *
+ * `Empty()` is how a BindJS component says "nothing here" — the else-branch of an
+ * optional label, hint or badge — and SwiftUI's `EmptyView` neither draws nor occupies
+ * space. It must not sway how its siblings are sized either: a Row that counts an
+ * `Empty()` among its flexible children hands out weights that no longer match what is
+ * actually on screen.
+ */
+fun List<BaseComponent<*>?>?.layoutChildren(): List<BaseComponent<*>?>? {
+    if (this == null) return null
+    if (none { it is EmptyComponent }) return this
+    return filter { it !is EmptyComponent }
+}
+
 interface BrushComponent {
     @Composable
     fun createBrush(): Brush
