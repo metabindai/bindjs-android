@@ -54,4 +54,37 @@ class SystemIconMappingTest {
         assertNull("waveform.path.ecg".matchSystemIcon())
         assertNull("".matchSystemIcon())
     }
+
+    @Test
+    fun `keeps skip distinct from seek`() {
+        // `forward.end` must not shorten to `forward`: A2UI's skipNext/skipPrevious and
+        // fastForward/rewind are four separate icons that would otherwise collapse to two.
+        assertEquals(VendoredIcons.SkipNext, "forward.end".matchSystemIcon())
+        assertEquals(VendoredIcons.SkipPrevious, "backward.end".matchSystemIcon())
+        assertEquals(VendoredIcons.FastForward, "forward".matchSystemIcon())
+        assertEquals(VendoredIcons.FastRewind, "backward".matchSystemIcon())
+    }
+
+    @Test
+    fun `maps every symbol the A2UI icon catalog emits`() {
+        // The A2UI `Icon` primitive names 59 icons and resolves each to one of these SF
+        // Symbols before the renderer ever sees it, so a miss here is a blank space on
+        // screen — which is exactly how the music-player controls came out empty.
+        val a2uiSymbols = listOf(
+            "person.crop.circle", "plus", "arrow.left", "arrow.right", "paperclip",
+            "calendar", "phone", "camera", "checkmark", "xmark", "trash",
+            "arrow.down.circle", "pencil", "calendar.badge.clock", "exclamationmark.circle",
+            "forward", "heart.fill", "heart", "folder", "questionmark.circle", "house",
+            "info.circle", "location", "lock", "lock.open", "envelope", "line.3.horizontal",
+            "ellipsis", "bell.slash", "bell", "pause", "creditcard", "person", "photo",
+            "play", "printer", "arrow.clockwise", "backward", "magnifyingglass",
+            "paperplane", "gearshape", "square.and.arrow.up", "cart", "forward.end",
+            "backward.end", "star.fill", "star.leadinghalf.filled", "star", "stop",
+            "arrow.up.circle", "eye", "eye.slash", "speaker.wave.1", "speaker",
+            "speaker.slash", "speaker.wave.3", "exclamationmark.triangle",
+        )
+        // `photo` is the one name served by a drawable rather than an ImageVector.
+        val unmapped = a2uiSymbols.filter { it != "photo" && it.matchSystemIcon() == null }
+        assertEquals(emptyList<String>(), unmapped)
+    }
 }

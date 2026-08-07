@@ -77,6 +77,11 @@ fun String?.systemImage(): Int? {
  * a single entry covers a whole SF Symbol family: `xmark.circle.fill` → `xmark.circle` →
  * `xmark`. The cost is that decorations are flattened — `heart` and `heart.fill` both come
  * out filled, since Material's base set has no consistent outlined/filled pairing.
+ *
+ * The table covers every symbol the A2UI catalog's `Icon` primitive can emit — its 59 named
+ * icons all route through SF Symbol names, and anything it can't name falls back to
+ * `questionmark.circle`, so a gap here is a blank space on screen rather than a wrong glyph.
+ * Symbols with no `material-icons-core` counterpart come from [VendoredIcons].
  */
 private val SYSTEM_ICONS: Map<String, ImageVector> = mapOf(
     // Navigation / chevrons
@@ -90,6 +95,8 @@ private val SYSTEM_ICONS: Map<String, ImageVector> = mapOf(
     "arrow.forward" to Icons.AutoMirrored.Filled.ArrowForward,
     "arrow.left" to Icons.AutoMirrored.Filled.ArrowBack,
     "arrow.backward" to Icons.AutoMirrored.Filled.ArrowBack,
+    "arrow.up" to Icons.Filled.KeyboardArrowUp,
+    "arrow.down" to Icons.Filled.KeyboardArrowDown,
     "arrow.clockwise" to Icons.Filled.Refresh,
     "arrow.counterclockwise" to Icons.Filled.Refresh,
     "arrow.triangle.2.circlepath" to Icons.Filled.Refresh,
@@ -110,11 +117,33 @@ private val SYSTEM_ICONS: Map<String, ImageVector> = mapOf(
     "pencil" to Icons.Filled.Edit,
     "square.and.pencil" to Icons.Filled.Create,
     "square.and.arrow.up" to Icons.Filled.Share,
-    "play" to Icons.Filled.PlayArrow,
     "gear" to Icons.Filled.Settings,
     "gearshape" to Icons.Filled.Settings,
     "wrench" to Icons.Filled.Build,
     "hammer" to Icons.Filled.Build,
+    "paperclip" to VendoredIcons.AttachFile,
+    "printer" to VendoredIcons.Print,
+    "arrow.down.circle" to VendoredIcons.FileDownload,
+    "arrow.up.circle" to VendoredIcons.FileUpload,
+
+    // Media transport. `forward.end`/`backward.end` are matched ahead of the bare
+    // `forward`/`backward` they'd otherwise shorten to, so skip and seek stay distinct.
+    "play" to Icons.Filled.PlayArrow,
+    "pause" to VendoredIcons.Pause,
+    "stop" to VendoredIcons.Stop,
+    "forward.end" to VendoredIcons.SkipNext,
+    "backward.end" to VendoredIcons.SkipPrevious,
+    "forward" to VendoredIcons.FastForward,
+    "backward" to VendoredIcons.FastRewind,
+
+    // Volume. SF grades loudness by wave count; Material has only up/down, so 2 and 3 waves
+    // both land on `VolumeUp`.
+    "speaker.wave.3" to VendoredIcons.VolumeUp,
+    "speaker.wave.2" to VendoredIcons.VolumeUp,
+    "speaker.wave.1" to VendoredIcons.VolumeDown,
+    "speaker.wave" to VendoredIcons.VolumeUp,
+    "speaker.slash" to VendoredIcons.VolumeOff,
+    "speaker" to VendoredIcons.VolumeMute,
 
     // Objects / status
     "heart" to Icons.Filled.Favorite,
@@ -137,6 +166,13 @@ private val SYSTEM_ICONS: Map<String, ImageVector> = mapOf(
     "map" to Icons.Filled.Place,
     "info.circle" to Icons.Filled.Info,
     "exclamationmark.triangle" to Icons.Filled.Warning,
+    "exclamationmark.circle" to VendoredIcons.Error,
+    "questionmark" to VendoredIcons.Help,
+    "camera" to VendoredIcons.PhotoCamera,
+    "folder" to VendoredIcons.Folder,
+    "creditcard" to VendoredIcons.CreditCard,
+    "eye" to VendoredIcons.Visibility,
+    "eye.slash" to VendoredIcons.VisibilityOff,
 )
 
 /** Names already reported by [systemIcon], so the warning fires once per name, not per frame. */
