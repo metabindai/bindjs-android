@@ -72,11 +72,16 @@ fun RowView(
 
             // Count non-spacer children that have no explicit width.
             // When multiple such children exist and at least one is a layout
-            // container (ComponentCall, VStack, HStack, ZStack), give them
-            // equal weight so they share the Row space evenly (matching SwiftUI
-            // HStack behaviour).  HStacks whose children are ALL simple styled
-            // content (e.g. ModifiedComponent wrapping Text words) should NOT
-            // distribute evenly — they should wrap content naturally.
+            // container (ComponentCall, VStack, HStack, ZStack), cap each at an
+            // equal share of the Row so one wide child can't measure at the full
+            // width and starve its siblings (Compose offers an unweighted child
+            // all the remaining space; SwiftUI's HStack splits it). The cap is
+            // `fill = false`, so a child still reports its own width and the Row
+            // packs them at the leading edge — an HStack is content-sized in
+            // SwiftUI, and stretching each child to exactly 1/N turns a
+            // `Row [Text("FROM"), Text(email)]` into evenly-spread columns.
+            // HStacks whose children are ALL simple styled content (e.g.
+            // ModifiedComponent wrapping Text words) skip this entirely.
             val nonSpacerChildren = children?.filter { it !is SpacerComponent }
             val hasLayoutContainerChild = nonSpacerChildren?.any { child ->
                 child is Component || child is ColumnComponent ||
@@ -140,7 +145,7 @@ fun RowView(
                         )
                     } else if (multipleFlexibleChildren && maxWidth == null && !childHasFixedSize) {
                         modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
-                            Modifier.weight(1.0f)
+                            Modifier.weight(1.0f, fill = false)
                         )
                     } else {
                         modifiers.modifiersToShareWithChildren() +
