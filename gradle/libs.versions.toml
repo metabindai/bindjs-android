@@ -4,6 +4,9 @@ android-min-sdk = "26"
 android-target-sdk = "36"
 agp = "9.3.1"
 kotlin = "2.4.10"
+# core-ktx 1.19.0+ requires consumers to compile against API 37. Raising `compileSdk`
+# here propagates that floor to everything that depends on `ai.metabind:bindjs-android`,
+# so it stays on the last 1.18.x until that bump is made deliberately.
 coreKtx = "1.18.0"
 javascriptengine = "1.1.0"
 gson = "2.14.0"
@@ -11,6 +14,9 @@ junit = "4.13.2"
 coil = "2.7.0"
 media3-exoplayer = "1.10.1"
 markwon = "4.6.2"
+# SceneView 3.0.0 reshaped the `Scene` composable — `childNodes` and `onViewCreated` are
+# gone, and the engine/skybox receivers and touch handling moved. Model3DView.kt has to be
+# rewritten before this can advance past the 2.x line.
 sceneview = "2.3.3"
 android-compose = "1.11.4"
 androidx-activity-compose = "1.13.0"
