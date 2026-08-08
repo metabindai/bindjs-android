@@ -29,6 +29,7 @@ import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ButtonComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
+import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.OnTapModifier
 import ai.metabind.bindjs.model.modifier.OnTapModifierProps
 
@@ -116,7 +117,16 @@ fun ButtonView(
                 },
             contentAlignment = Alignment.Center,
         ) {
-            val modifiersFinal = modifiers.modifiersToShareWithChildren()
+            // Keep the InRow flag alongside the text-formatting modifiers: it's a
+            // parent-context hint (not a geometry modifier), and the label occupies
+            // the button's own row slot. Without it a label VStack fillMaxWidths
+            // instead of wrapping, so the first Button in an HStack swallows the
+            // whole row and its siblings collapse to zero width — an A2UI tab bar
+            // showed only "Overview", with the zero-width "Ingredients"/"Instructions"
+            // labels wrapping one letter per line and stretching the bar. Same
+            // reasoning as OverlayModifier's childModifiers.
+            val modifiersFinal = modifiers.modifiersToShareWithChildren() +
+                    modifiers.filter { it is LocalModifier.InRow }
 
             TintedLabel {
                 BindJSView(

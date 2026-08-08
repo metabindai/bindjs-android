@@ -2,10 +2,12 @@ package ai.metabind.bindjs.composables
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -24,6 +26,7 @@ import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.layoutChildren
+import ai.metabind.bindjs.model.isHorizontallyGreedy
 import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
@@ -55,10 +58,22 @@ fun ColumnView(
     // otherwise they resolve fillMaxSize against an infinite max and collapse to
     // zero height (e.g. a VStack of color swatches in an overlay).
     val hasGreedyChild = children?.any { it?.isVerticallyGreedy() == true } ?: false
+    // A width-greedy leaf (a shape/color — it reaches its view with a synthetic
+    // fillMaxSize) resolves that fill against the *incoming* max width, so in a
+    // wrapping Column it drags the whole stack out to the parent's width. SwiftUI
+    // instead sizes the stack off its intrinsic children and stretches the shape to
+    // that: an A2UI tab button is `VStack { Text(title); Rectangle().frame(height: 2) }`,
+    // and without this the first tab's underline claimed the entire tab bar, leaving
+    // its siblings at zero width (their titles then wrapped one letter per line).
+    // IntrinsicSize.Max reproduces SwiftUI's rule — the fill child reports 0 intrinsic
+    // width, so the widest real child sets the stack's width.
+    val wrapsToIntrinsicWidth = inRowNoWeight &&
+            (children?.any { it?.isHorizontallyGreedy() == true } ?: false)
     Column(
         modifier = modifiers
             .buildModifier(onUiEvent)
             .then(if (inRowNoWeight) Modifier else Modifier.fillMaxWidth())
+            .then(if (wrapsToIntrinsicWidth) Modifier.width(IntrinsicSize.Max) else Modifier)
             // When the Column has Spacers (or greedy leaves) and is inside a
             // bounded-height context, fill the available height so the weighted
             // children can expand (matching SwiftUI VStack behaviour).

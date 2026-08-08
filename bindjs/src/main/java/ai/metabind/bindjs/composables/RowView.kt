@@ -91,21 +91,33 @@ fun RowView(
             val childrenWithoutExplicitWidth = nonSpacerChildren?.count { child ->
                 child?.calculateMaxWidth() == null && child?.hasFixedSizeModifier() != true
             } ?: 0
+            // A `maxWidth: .infinity` sibling changes the split: in SwiftUI it
+            // absorbs the slack *after* the intrinsic children have measured, so
+            // capping those at 1/N steals width from it (an A2UI track row's
+            // 192pt-tall artwork rendered a quarter as wide as on iOS, and the
+            // titles beside it wrapped). Leave them intrinsic and let the greedy
+            // child take what's left.
             val multipleFlexibleChildren = !hasSpacer &&
                     !hasChildWithFixedSize &&
+                    !hasGreedyChild &&
                     hasLayoutContainerChild &&
                     nonSpacerChildren.size > 1 &&
                     childrenWithoutExplicitWidth > 1
 
             children?.forEach { child ->
                 if (child is SpacerComponent) {
-                    Spacer(
-                        modifier = Modifier.then(
-                            if (child.props.minLength != null) Modifier.width(
-                                child.props.minLength.dp
-                            ) else Modifier.weight(1.0f)
-                        )
-                    )
+                    // Alongside a `maxWidth: .infinity` sibling the Spacer does NOT
+                    // get an equal share: SwiftUI lets the greedy child take the
+                    // leftover and the Spacer collapses to its minimum. Compose's
+                    // weight is a hard constraint, so an equal split here compresses
+                    // the greedy child below its content's intrinsic width — the
+                    // A2UI chip picker rendered "Monthly" one letter per line.
+                    val spacerWidth = when {
+                        child.props.minLength != null -> Modifier.width(child.props.minLength.dp)
+                        hasGreedyChild -> Modifier
+                        else -> Modifier.weight(1.0f)
+                    }
+                    Spacer(modifier = spacerWidth)
                 } else {
                     val maxWidth = child?.calculateMaxWidth()
 

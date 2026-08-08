@@ -25,7 +25,14 @@ abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
         }
         (this as? ModifiedComponent)?.let { modifiedComponent ->
             (this.props.modifier as? FrameModifier)?.let { frameModifier ->
-                return frameModifier.props.width ?: frameModifier.props.maxWidth
+                // Only a frame that actually constrains *width* answers the
+                // question — a height-only frame says nothing about it, so keep
+                // walking inward. SwiftUI stacks these as separate overloads
+                // (`.frame(maxWidth: .infinity).frame(height: 192)`, the A2UI
+                // Image envelope); stopping at the outer height frame reports
+                // the image as intrinsic-width and a Row then hands it an equal
+                // share instead of the leftover space.
+                (frameModifier.props.width ?: frameModifier.props.maxWidth)?.let { return it }
             }
             return modifiedComponent.props.content?.firstOrNull()?.calculateMaxWidth()
         }
@@ -99,6 +106,50 @@ fun BaseComponent<*>.isVerticallyGreedy(): Boolean {
         }
 
         is Component -> props.children?.firstOrNull()?.isVerticallyGreedy() ?: false
+
+        is ColorComponent,
+        is RectangleComponent,
+        is RoundedRectangleComponent,
+        is CircleComponent,
+        is EllipseComponent,
+        is CapsuleComponent,
+        is LinearGradientComponent,
+        is RadialGradientComponent,
+        is AngularGradientComponent,
+        is EllipticalGradientComponent,
+            -> true
+
+        else -> false
+    }
+}
+
+/**
+ * The horizontal counterpart of [isVerticallyGreedy]: whether this component expands
+ * to fill the width offered to it. Same leaves (Color, shapes, gradients — they reach
+ * their view with a synthetic fillMaxSize), same walk through transparent wrappers,
+ * and an explicit `.frame(width/minWidth/maxWidth)` again pins it unless that frame is
+ * `maxWidth: .infinity`.
+ *
+ * Used by ColumnView to size a *wrapping* VStack off its intrinsic children, the way
+ * SwiftUI does: in `VStack { Text("Overview"); Rectangle().frame(height: 2) }` the
+ * rectangle stretches to the text's width, it doesn't stretch the stack to the parent's.
+ */
+fun BaseComponent<*>.isHorizontallyGreedy(): Boolean {
+    return when (this) {
+        is ModifiedComponent -> {
+            val frame = (props.modifier as? FrameModifier)
+            if (frame != null) {
+                if (frame.props.maxWidth == Float.POSITIVE_INFINITY) return true
+                if (frame.props.width != null || frame.props.maxWidth != null ||
+                    frame.props.minWidth != null
+                ) {
+                    return false
+                }
+            }
+            props.content?.firstOrNull()?.isHorizontallyGreedy() ?: false
+        }
+
+        is Component -> props.children?.firstOrNull()?.isHorizontallyGreedy() ?: false
 
         is ColorComponent,
         is RectangleComponent,
