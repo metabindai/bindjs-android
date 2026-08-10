@@ -22,6 +22,8 @@ import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
 import ai.metabind.bindjs.model.EmptyComponent
+import ai.metabind.bindjs.model.LazyColumnComponent
+import ai.metabind.bindjs.model.LazyRowComponent
 import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GeometryReaderComponent
 import ai.metabind.bindjs.model.GroupComponent
@@ -279,6 +281,14 @@ class GsonProvider {
                     .registerSubtype(MaterialComponent::class.java, "Material")
                     .registerSubtype(ForEachComponent::class.java, "ForEach")
                     .registerSubtype(RowComponent::class.java, "HStack")
+                    // A lazy stack carries the same props as its eager twin, and the
+                    // laziness is already provided one level up: a BindJS ScrollView
+                    // renders as LazyColumn/LazyRow (or a plain Column when the host
+                    // scrolls). Unregistered types fall back to EmptyComponent, so
+                    // without these an A2UI `List` — ScrollView + LazyVStack — dropped
+                    // its whole child list and rendered nothing.
+                    .registerSubtype(LazyColumnComponent::class.java, "LazyVStack")
+                    .registerSubtype(LazyRowComponent::class.java, "LazyHStack")
                     .registerSubtype(ImageComponent::class.java, "Image")
                     .registerSubtype(ModifiedComponent::class.java, "ModifiedComponent")
                     .registerSubtype(RectangleComponent::class.java, "Rectangle")

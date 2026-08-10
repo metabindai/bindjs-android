@@ -17,6 +17,8 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
   private final Class<?> baseType;
@@ -26,6 +28,12 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
   private final Map<Class<?>, String> subtypeToLabel = new LinkedHashMap<>();
   private final boolean maintainType;
   private boolean recognizeSubtypes;
+  /**
+   * Labels already reported by {@link #warnUnregistered}. A missing registration is a
+   * static fact, so one warning per label is enough — without this every node of every
+   * render pass would log.
+   */
+  private final Set<String> warnedLabels = ConcurrentHashMap.newKeySet();
 
   private RuntimeTypeAdapterFactory(Class<?> baseType, Class<? extends T> defaultSubtype, String typeFieldName, boolean maintainType) {
     if (typeFieldName == null || baseType == null) {
@@ -105,6 +113,30 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
     return registerSubtype(type, type.getSimpleName());
   }
 
+  /**
+   * Reports a {@code type} the JS side emitted that nothing is registered for. Such a
+   * node silently decodes to {@code defaultSubtype} — for components that is an empty
+   * view — so the subtree just vanishes with no error anywhere. That is very hard to
+   * tell apart from a layout bug: an unregistered {@code LazyVStack} made every A2UI
+   * {@code List} render as blank space. Warn instead of failing, so one unknown node
+   * doesn't take down a surface that is otherwise fine.
+   */
+  private void warnUnregistered(String label) {
+    if (warnedLabels.add(label)) {
+      Log.w(
+          "RuntimeTypeAdapterFactory",
+          "No subtype registered for "
+              + typeFieldName
+              + "='"
+              + label
+              + "' on "
+              + baseType.getSimpleName()
+              + "; falling back to "
+              + defaultSubtype.getSimpleName()
+              + " — this subtree will not render. Register it in GsonProvider.");
+    }
+  }
+
   @Override
   public <R> TypeAdapter<R> create(Gson gson, TypeToken<R> type) {
     if (type == null) {
@@ -148,6 +180,7 @@ public final class RuntimeTypeAdapterFactory<T> implements TypeAdapterFactory {
         @SuppressWarnings("unchecked") // registration requires that subtype extends T
         TypeAdapter<R> delegate = (TypeAdapter<R>) labelToDelegate.get(label);
         if (delegate == null) {
+          warnUnregistered(label);
           try {
             return (R)defaultSubtype.newInstance();
           } catch (Exception e) {
