@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -201,12 +202,31 @@ fun ImageView(
         // container (e.g. a 15×12 "see all results" arrow ballooning to fill the
         // whole button). Pin it to the declared dimensions instead.
         val intrinsicSizeDp = if (!isFontRelative) svg.svgIntrinsicSizeDp() else null
+        val pointSize = if (isFontRelative) {
+            modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE
+        } else {
+            null
+        }
         val explicitSize: Modifier? = when {
-            isFontRelative ->
-                Modifier.size((modifiers.getNearestFontPointSize() ?: DEFAULT_ICON_POINT_SIZE).dp)
+            pointSize != null -> Modifier.size(pointSize.dp)
             intrinsicSizeDp != null ->
                 Modifier.size(intrinsicSizeDp.first.dp, intrinsicSizeDp.second.dp)
             else -> null
+        }
+        // Coil keys both request equality and its memory cache off the data object,
+        // and a `ByteArray` compares (and stringifies) by identity. Allocating the
+        // bytes inline meant every recomposition looked like a brand-new image:
+        // Coil cancelled the in-flight decode and started over. On a static screen
+        // that just costs a decode; on a re-rendering surface the decode never got
+        // to finish, so the glyph never painted at all — the A2UI FlightCard's
+        // animating plane was invisible for the whole flight. Hold the bytes and
+        // give the request a stable cache key so it decodes once and stays.
+        val svgBytes = remember(svg) { svg.toByteArray() }
+        val svgCacheKey = remember(svg, pointSize, intrinsicSizeDp) {
+            val size = pointSize?.let { "pt$it" }
+                ?: intrinsicSizeDp?.let { "${it.first}x${it.second}" }
+                ?: "auto"
+            "bindjs-svg:${svg.hashCode()}:$size"
         }
         val svgModifier = if (explicitSize != null) {
             modifiers.buildModifier(
@@ -222,11 +242,14 @@ fun ImageView(
         }
         AsyncImage(
             modifier = svgModifier,
-            model = ImageRequest.Builder(context)
-                .data(svg.toByteArray())
-                .decoderFactory(SvgDecoder.Factory())
-                .crossfade(true)
-                .build(),
+            model = remember(svgBytes, svgCacheKey, context) {
+                ImageRequest.Builder(context)
+                    .data(svgBytes)
+                    .memoryCacheKey(svgCacheKey)
+                    .decoderFactory(SvgDecoder.Factory())
+                    .crossfade(true)
+                    .build()
+            },
             imageLoader = bindJsImageLoader(context),
             contentDescription = contentDescription,
             alignment = Alignment.Center,

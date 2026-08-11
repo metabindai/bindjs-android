@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -204,6 +205,8 @@ class JsRuntimeImpl private constructor(
             val eventHandlerScript =
                 "callEventHandler('$handlerId',${data.joinToString { gson.toJson(it) }});"
             return evalJs(eventHandlerScript)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null
@@ -257,6 +260,8 @@ class JsRuntimeImpl private constructor(
                 return component
             }
             return null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null
@@ -276,6 +281,8 @@ class JsRuntimeImpl private constructor(
             val component: BaseComponent<*> = gson.fromJson(result, typeToken)
             printComponent(component)
             component
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse component from callButtonStyleHandler", e)
             null
@@ -297,6 +304,13 @@ class JsRuntimeImpl private constructor(
             val component: BaseComponent<*> = gson.fromJson(result, typeToken)
             printComponent(component)
             component
+        } catch (e: CancellationException) {
+            // A composition-scoped caller (LaunchedEffect keyed on `version`) is
+            // cancelled on every re-render. Swallowing that into `null` told the
+            // caller "the handler produced nothing", so it wiped content that was
+            // merely being recomputed — an animating GeometryReader lost its child
+            // on every frame. Cancellation is the caller's business; rethrow it.
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse component from callGeometryReaderComponent", e)
             null
@@ -311,6 +325,8 @@ class JsRuntimeImpl private constructor(
         try {
             val eventHandlerScript = "callForEachFunction('$functionId','$element','$index');"
             return evalJs(eventHandlerScript)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             Log.e(TAG, "Error loading component", e)
             return null

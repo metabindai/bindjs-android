@@ -17,5 +17,11 @@ class DisabledModifier(
 }
 
 class DisabledModifierProps(
+    /**
+     * The modifier's argument. JS always sends one — a bare `.disabled()` is filled in
+     * with `true` by `modifierDefaults` — but a missing value is read as `true` so the
+     * modifier can never be present and mean nothing.
+     */
+    val rawValue: Boolean? = null,
     children: List<BaseComponent<*>>?,
 ) : ComponentModifierProps(children)

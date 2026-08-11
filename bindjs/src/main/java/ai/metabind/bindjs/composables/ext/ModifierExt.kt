@@ -464,9 +464,15 @@ fun List<ComponentModifier<*>>.getPickerStyle(): String {
     } ?: "automatic"
 }
 
+/**
+ * SwiftUI's `.disabled(_:)` takes a `Bool`, so `.disabled(false)` leaves the control
+ * live — reading the modifier's mere presence as "disabled" killed every conditionally
+ * disabled control (A2UI's FlightCard `Select` button, which is `.disabled(selected)`,
+ * never fired).
+ */
 fun List<ComponentModifier<*>>.isEnabled(): Boolean {
     return firstOrNull { it is DisabledModifier }?.let { modifier ->
-        false
+        (modifier as DisabledModifier).props.rawValue == false
     } ?: true
 }
 

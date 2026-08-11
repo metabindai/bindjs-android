@@ -1,10 +1,14 @@
 package ai.metabind.bindjs.composables
 
+import android.content.Context
 import android.graphics.Typeface
 import android.os.Build
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.style.ClickableSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -320,7 +324,7 @@ private fun Markdown(
                 )
                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
             factory = { ctx ->
-                AndroidTextView(ctx).apply {
+                MarkdownTextView(ctx).apply {
                     setGravity(gravity)
                     if (maxLines > 0) {
                         this.maxLines = maxLines
@@ -339,6 +343,31 @@ private fun Markdown(
                 textView.applyWeight(effectiveWeight)
             }
         )
+    }
+}
+
+/**
+ * A markdown TextView that lets touches through unless it actually rendered a link.
+ *
+ * `Markwon.setMarkdown` installs a `LinkMovementMethod`, and `setMovementMethod` makes
+ * the view clickable and long-clickable — so `View.onTouchEvent` returned true for every
+ * touch, the `AndroidView` interop consumed the pointer, and the enclosing Compose
+ * gesture was cancelled. Since practically all BindJS text is `Text({ markdown: … })`,
+ * that killed taps anywhere over a label: the A2UI FlightCard's `Select` button fired
+ * only when tapped on the padding *around* its text.
+ *
+ * Declining the touch here rather than clearing `movementMethod`/`isClickable` in the
+ * `update` block: those setters call `checkForRelayout()`, and a `requestLayout()` raised
+ * from inside `update` left the interop view measured at zero until the *next* re-render,
+ * so every re-rendered markdown row went blank.
+ */
+private class MarkdownTextView(context: Context) : AndroidTextView(context) {
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        // Text with a link keeps the platform behaviour — that tap belongs to the link.
+        val spanned = text as? Spanned
+        val hasLink = spanned != null &&
+                spanned.getSpans(0, spanned.length, ClickableSpan::class.java).isNotEmpty()
+        return if (hasLink) super.onTouchEvent(event) else false
     }
 }
 
