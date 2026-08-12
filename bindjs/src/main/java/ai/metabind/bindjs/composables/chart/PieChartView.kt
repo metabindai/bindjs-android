@@ -3,7 +3,9 @@ package ai.metabind.bindjs.composables.chart
 import android.graphics.Color as AndroidColor
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -47,6 +49,7 @@ import ai.metabind.bindjs.model.chart.PieChartComponent
 import ai.metabind.bindjs.model.chart.PieChartModel
 import ai.metabind.bindjs.model.chart.PieSliceMark
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -85,7 +88,6 @@ fun PieChartView(
     val baseModifier = modifiers
         .buildModifier(onUiEvent)
         .then(if (!modifiers.hasFrame()) Modifier.fillMaxWidth().height(240.dp) else Modifier)
-        .then(prepared.selectionModifier(model, onUiEvent))
         .then(
             if (accessibilityDescription != null) {
                 Modifier.semantics {
@@ -107,9 +109,13 @@ fun PieChartView(
 
     Column(modifier = baseModifier) {
         BoxWithConstraints(
+            // Selection hangs off the pie's own box, not the column: `sliceIdAt` takes
+            // the centre from the bounds it is handed, and a legend below the pie would
+            // push that centre down out of the drawn circle.
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .then(prepared.selectionModifier(model, onUiEvent)),
             contentAlignment = Alignment.Center,
         ) {
             val minDimension = if (maxWidth < maxHeight) maxWidth else maxHeight
@@ -224,15 +230,37 @@ private data class PreparedPieChartData(
     val slices: List<PreparedPieSlice>,
     val innerRadius: Float,
 ) {
+    // The slice under the finger reads out while it is down and follows it around the
+    // ring, then the selection ends with the touch — iOS drives pie selection through
+    // `.chartAngleSelection`, whose binding resets to nil when the gesture does, so the
+    // readout falls back to its placeholder on release. Nothing here is consumed, so a
+    // swipe that starts on the pie still scrolls the surface it sits in.
     fun selectionModifier(model: PieChartModel, onUiEvent: (UiEvent) -> Unit): Modifier {
         val selection = model.selection
         if (selection?.onChangeId == null) return Modifier
         return Modifier.pointerInput(slices, selection.onChangeId) {
-            detectTapGestures { offset ->
-                val sliceId = sliceIdAt(offset, size.width.toFloat(), size.height.toFloat()) ?: return@detectTapGestures
-                pieSelectionPayload(selection, sliceId)?.let { payload ->
-                    onUiEvent(UiEvent.OnChartSelection(payload.handlerId, payload.value))
+            awaitEachGesture {
+                var lastSliceId: String? = null
+                fun report(sliceId: String?) {
+                    if (sliceId == lastSliceId) return
+                    lastSliceId = sliceId
+                    pieSelectionPayload(selection, sliceId)?.let { payload ->
+                        onUiEvent(UiEvent.OnChartSelection(payload.handlerId, payload.value))
+                    }
                 }
+
+                fun reportAt(offset: Offset) {
+                    report(sliceIdAt(offset, size.width.toFloat(), size.height.toFloat()) ?: return)
+                }
+
+                reportAt(awaitFirstDown(requireUnconsumed = false).position)
+                var pressed = true
+                while (pressed) {
+                    val event = awaitPointerEvent()
+                    event.changes.forEach { change -> if (change.pressed) reportAt(change.position) }
+                    pressed = event.changes.any { it.pressed }
+                }
+                report(null)
             }
         }
     }

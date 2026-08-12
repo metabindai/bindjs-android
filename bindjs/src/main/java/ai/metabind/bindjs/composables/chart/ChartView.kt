@@ -5,7 +5,8 @@ import android.graphics.Paint
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -129,7 +131,6 @@ fun ChartView(
     val chartModifier = modifiers
         .buildModifier(onUiEvent)
         .then(if (!modifiers.hasFrame()) Modifier.fillMaxWidth().height(240.dp) else Modifier)
-        .then(prepared.selectionModifier(onUiEvent))
         .then(
             if (accessibilityDescription != null) {
                 Modifier.semantics {
@@ -142,9 +143,12 @@ fun ChartView(
 
     val modelProducer = remember { CartesianChartModelProducer() }
     if (rectangleChart != null) {
+        // Rectangle ranges are drawn by our own Canvas rather than a Vico layer, so
+        // there are no marker targets to hit-test against; selection there falls back
+        // to our own touch handling over the plot width.
         RectangleChartView(
             data = rectangleChart,
-            modifier = chartModifier,
+            modifier = chartModifier.then(prepared.selectionModifier(onUiEvent)),
             showLegend = !model.legend.hidden && rectangleChart.legendEntries.isNotEmpty(),
         )
         return
@@ -322,12 +326,37 @@ fun ChartView(
         prepared.points.isNotEmpty() ||
         prepared.xRules.isNotEmpty()
 
+    // Selection rides on Vico's own marker plumbing, which gives the interaction
+    // SwiftUI Charts' `.chartXSelection` gives iOS: press a column and its value reads
+    // out, drag and the readout scrubs across the plot, lift and the selection goes
+    // with the finger. The marker itself draws nothing — the highlight is whatever the
+    // JS component renders off the new selection — and the targets it reports carry the
+    // x value, so hit-testing needs no guess about where the plot area starts inside
+    // the axis labels.
+    val onUiEventState = rememberUpdatedState(onUiEvent)
+    val markerController = remember { SelectionMarkerController() }
+    val selectionListener = remember(prepared) {
+        if (prepared.xSelectionHandlerId == null && prepared.ySelectionHandlerId == null) {
+            null
+        } else {
+            ChartSelectionListener(
+                rows = prepared.selectionRows,
+                xSelectionHandlerId = prepared.xSelectionHandlerId,
+                ySelectionHandlerId = prepared.ySelectionHandlerId,
+            ) { payload ->
+                onUiEventState.value(UiEvent.OnChartSelection(payload.handlerId, payload.value))
+            }
+        }
+    }
+
     val chart = rememberCartesianChart(
         *layers.toTypedArray(),
         startAxis = startAxis,
         bottomAxis = bottomAxis,
         topAxis = topAxis,
         endAxis = endAxis,
+        marker = selectionListener?.let { SelectionOnlyMarker },
+        markerVisibilityListener = selectionListener,
         decorations = ruleDecorations,
         layerPadding = {
             if (needsEdgeInset) {
@@ -336,6 +365,7 @@ fun ChartView(
                 CartesianLayerPadding()
             }
         },
+        markerController = markerController,
     )
 
     val showLegend = !model.legend.hidden && prepared.legendEntries.isNotEmpty()
@@ -427,8 +457,15 @@ private fun ChartSeries.rememberVicoLine(
     // Mark annotations (e.g. `.annotation("Peak")`) render as data labels positioned beside
     // the mark; points without an annotation resolve to an empty (invisible) label.
     val annotationLabel = if (annotationsByY.isNotEmpty()) rememberTextComponent() else null
-    val annotationFormatter = remember(annotationsByY) {
-        CartesianValueFormatter { _, value, _ -> annotationsByY[value].orEmpty() }
+    // One formatter for the life of the line, reading whichever annotations are current.
+    // Vico's `rememberLine` leaves `dataLabelValueFormatter` out of its remember keys, so
+    // handing it a new formatter changes nothing — the cached Line goes on resolving labels
+    // against the map it was built with. That is what left a dragged selection with its
+    // indicator but no number: the annotation had moved to another point, and the stale
+    // formatter had no text for it.
+    val currentAnnotations = rememberUpdatedState(annotationsByY)
+    val annotationFormatter = remember {
+        CartesianValueFormatter { _, value, _ -> currentAnnotations.value[value].orEmpty() }
     }
 
     return LineCartesianLayer.rememberLine(
@@ -894,21 +931,43 @@ private data class PreparedChartData(
     private fun defaultNumberLabel(value: Double): String =
         if (value % 1.0 == 0.0) value.toLong().toString() else value.toString()
 
+    // Selection while the finger is down and gone when it lifts, the same deal the
+    // Vico-backed charts get from [SelectionMarkerController] — except the row has to
+    // be found by hand here, from the touch's position across the plot width.
     fun selectionModifier(onUiEvent: (UiEvent) -> Unit): Modifier {
         if (selectionRows.isEmpty() || (xSelectionHandlerId == null && ySelectionHandlerId == null)) {
             return Modifier
         }
 
         return Modifier.pointerInput(selectionRows, xSelectionHandlerId, ySelectionHandlerId) {
-            detectTapGestures { offset ->
-                val nearest = nearestSelectionRow(offset.x, size.width.toFloat()) ?: return@detectTapGestures
-                chartSelectionPayloads(
-                    xSelectionHandlerId = xSelectionHandlerId,
-                    ySelectionHandlerId = ySelectionHandlerId,
-                    xValue = nearest.xValue,
-                    yValue = nearest.yValue,
-                ).forEach { payload ->
-                    onUiEvent(UiEvent.OnChartSelection(payload.handlerId, payload.value))
+            awaitEachGesture {
+                var lastRow: ChartSelectionRow? = null
+                fun dispatch(payloads: List<ChartSelectionPayload>) =
+                    payloads.forEach { onUiEvent(UiEvent.OnChartSelection(it.handlerId, it.value)) }
+
+                fun reportAt(offsetX: Float) {
+                    val row = nearestSelectionRow(offsetX, size.width.toFloat()) ?: return
+                    if (row == lastRow) return
+                    lastRow = row
+                    dispatch(
+                        chartSelectionPayloads(
+                            xSelectionHandlerId = xSelectionHandlerId,
+                            ySelectionHandlerId = ySelectionHandlerId,
+                            xValue = row.xValue,
+                            yValue = row.yValue,
+                        )
+                    )
+                }
+
+                reportAt(awaitFirstDown(requireUnconsumed = false).position.x)
+                var pressed = true
+                while (pressed) {
+                    val event = awaitPointerEvent()
+                    event.changes.forEach { change -> if (change.pressed) reportAt(change.position.x) }
+                    pressed = event.changes.any { it.pressed }
+                }
+                if (lastRow != null) {
+                    dispatch(chartSelectionClearPayloads(xSelectionHandlerId, ySelectionHandlerId))
                 }
             }
         }
@@ -1329,7 +1388,7 @@ private data class ChartLegendEntry(
     val symbol: ChartSymbolName? = null,
 )
 
-private data class ChartSelectionRow(
+internal data class ChartSelectionRow(
     val x: Double,
     val xValue: ChartValue?,
     val yValue: ChartValue?,

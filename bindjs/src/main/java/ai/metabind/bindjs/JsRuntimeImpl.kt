@@ -73,7 +73,7 @@ class JsRuntimeImpl private constructor(
 
     private class DragEvent(
         val handlerId: String,
-        val data: Array<Any>,
+        val data: Array<Any?>,
         val coalescable: Boolean,
     )
 
@@ -200,7 +200,7 @@ class JsRuntimeImpl private constructor(
         return component
     }
 
-    override suspend fun callEventHandler(handlerId: String, data: Array<Any>): String? {
+    override suspend fun callEventHandler(handlerId: String, data: Array<Any?>): String? {
         try {
             val eventHandlerScript =
                 "callEventHandler('$handlerId',${data.joinToString { gson.toJson(it) }});"

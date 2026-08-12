@@ -43,7 +43,9 @@ interface JsRuntime {
     suspend fun renderComponentPreview(name: String, previewIndex: Int = 0): BaseComponent<*>
     suspend fun callComponentThumbnail(name: String, isContent: Boolean = true): BaseComponent<*>
     suspend fun setEnvironment(environment: Map<String, Any>)
-    suspend fun callEventHandler(handlerId: String, data: Array<Any> = emptyArray()): String?
+    // Arguments are nullable: a chart selection that has been cleared calls its
+    // handler with `null`, the way iOS hands the binding's nil straight through.
+    suspend fun callEventHandler(handlerId: String, data: Array<Any?> = emptyArray()): String?
 
     /**
      * Dispatch a drag-gesture event with backpressure so a fast pointer can't

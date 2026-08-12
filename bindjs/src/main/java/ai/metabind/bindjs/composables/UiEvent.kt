@@ -53,9 +53,14 @@ sealed class UiEvent {
         val tag: String
     ) : UiEvent()
 
+    /**
+     * A chart's new selection, or `null` when the gesture that made it ended and the
+     * selection went with it — SwiftUI's `chartXSelection`/`chartAngleSelection`
+     * bindings reset to nil on release, so the handler has to hear about that too.
+     */
     data class OnChartSelection(
         val handlerId: String,
-        val value: Any,
+        val value: Any?,
     ) : UiEvent()
 
     data class OnChange(

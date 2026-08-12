@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.composables.UiEvent
+import ai.metabind.bindjs.composables.chart.ChartCollector
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.Component
@@ -77,6 +78,15 @@ import kotlin.reflect.KClass
 @Composable
 fun List<ComponentModifier<*>>.modifiersToShareWithChildren(): List<ComponentModifier<*>> {
     return filter { modifier ->
+        // Chart-level modifiers are consumed by the Chart/PieChart leaf, not by the
+        // layer they're attached to, so they have to travel down like the inherited
+        // text styles do. `Chart(...).chartLegend(...).frame(...).chartXSelection(...)`
+        // puts a frame between the selection and the chart, and dropping the modifier
+        // there left the chart with no selection handler at all — a tap on the plot
+        // did nothing. SwiftUI applies its chart modifiers to descendant charts the
+        // same way.
+        if (ChartCollector.isChartLevelModifier(modifier)) return@filter true
+
         return@filter when (modifier) {
             is BoldModifier,
             is FontModifier,
