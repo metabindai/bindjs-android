@@ -3,7 +3,14 @@ android-compile-sdk = "36"
 android-min-sdk = "26"
 android-target-sdk = "36"
 agp = "9.3.1"
-kotlin = "2.4.10"
+# HELD at 2.3.10 (was briefly 2.4.10). Kotlin 2.4 emits metadata version 2.4.0, and Hilt
+# — up to and including 2.60.1 — still bundles kotlin-metadata-jvm 2.3.x, whose ceiling is
+# 2.3.0. Any Hilt consumer of `bindjs-android` then fails annotation processing with
+# "Provided Metadata instance has version 2.4.0, while maximum supported version is 2.3.0"
+# (samples/assistant-demo in metabind-android is one). Raise this once Hilt ships a
+# 2.4-capable metadata library, and keep the buildscript classpath in build.gradle.kts
+# in step.
+kotlin = "2.3.10"
 # core-ktx 1.19.0+ requires consumers to compile against API 37. Raising `compileSdk`
 # here propagates that floor to everything that depends on `ai.metabind:bindjs-android`,
 # so it stays on the last 1.18.x until that bump is made deliberately.

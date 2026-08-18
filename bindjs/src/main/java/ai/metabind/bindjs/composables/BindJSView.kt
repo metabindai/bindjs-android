@@ -1264,6 +1264,7 @@ private fun ComponentInnerView(
         is PickerComponent -> PickerView(
             jsRuntime = jsRuntime,
             component = component,
+            version = version,
             modifiers = addFillIfNoFrame(modifiers),
             onUiEvent = onUiEvent
         )

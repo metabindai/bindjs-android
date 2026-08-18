@@ -52,6 +52,7 @@ import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.BrushComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.TextComponent
+import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FixedSizeModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
@@ -71,6 +72,21 @@ import android.widget.TextView as AndroidTextView
  */
 private fun List<ComponentModifier<*>>.textClipModifier(): Modifier =
     if (any { it is FixedSizeModifier }) Modifier else Modifier.clipToBounds()
+
+/**
+ * Modifiers the inner text node must not re-apply.
+ *
+ * Every branch below builds the modifier chain twice: once for the wrapping [Box] and
+ * once for the text node inside it. A modifier that *paints* therefore lands twice, and
+ * `.background(...)` with a colour resolves to `Modifier.background(...)` — so a badge
+ * written as `Text("+130%").padding(...).background(color)` drew its fill twice: once at
+ * the Box's padded size and once hugging the glyphs, because the inner chain drops
+ * PaddingModifier. With a translucent colour (which is how these pills are built) the
+ * overlap reads as a second, darker pill inside the first, where iOS draws one. The Box
+ * already paints the background at the padded size, so the inner node skips it.
+ */
+private val BACKGROUND_AND_PADDING =
+    listOf(BackgroundModifier::class, PaddingModifier::class, LocalModifier::class)
 
 @Composable
 fun TextView(
@@ -139,7 +155,7 @@ fun TextView(
                             modifier = modifiers
                                 .buildModifier(
                                     onUiEvent,
-                                    exclude = listOf(PaddingModifier::class, LocalModifier::class)
+                                    exclude = BACKGROUND_AND_PADDING
                                 )
                                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
@@ -187,7 +203,7 @@ fun TextView(
                             modifier = modifiers
                                 .buildModifier(
                                     onUiEvent,
-                                    exclude = listOf(PaddingModifier::class, LocalModifier::class)
+                                    exclude = BACKGROUND_AND_PADDING
                                 )
                                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
@@ -233,7 +249,7 @@ fun TextView(
                             modifier = modifiers
                                 .buildModifier(
                                     onUiEvent,
-                                    exclude = listOf(PaddingModifier::class, LocalModifier::class)
+                                    exclude = BACKGROUND_AND_PADDING
                                 )
                                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
                             fontStyle = fontStyle,
@@ -320,7 +336,11 @@ private fun Markdown(
             modifier = modifiers
                 .buildModifier(
                     onUiEvent,
-                    exclude = listOf(LocalModifier::class)
+                    // Same double-paint as above (see BACKGROUND_AND_PADDING) — here the
+                    // two rects coincide because this chain keeps the padding, so a
+                    // translucent fill just came out twice as opaque. Padding stays: the
+                    // interop view sizes itself from it.
+                    exclude = listOf(BackgroundModifier::class, LocalModifier::class)
                 )
                 .then(Modifier.wrapContentSize(modifiers.getAlignment())).then(modifiers.textClipModifier()),
             factory = { ctx ->
