@@ -2,6 +2,7 @@ package ai.metabind.bindjs.composables
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.getPickerStyle
@@ -32,6 +34,7 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.TagModifier
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,8 +72,22 @@ fun PickerView(
 
         selectedIndex = options.keys.indexOf(selection)
 
+        // SwiftUI's `.segmented` picker is greedy horizontally: it takes the width
+        // its container offers and splits it equally between the segments. M3's
+        // SingleChoiceSegmentedButtonRow appends `.width(IntrinsicSize.Min)` to
+        // whatever modifier it's handed, so with wrapContentWidth the row sized
+        // itself off each label's *longest word* — "New & changed" came out narrow
+        // and wrapped onto two lines. Handing it fillMaxWidth() gives that
+        // intrinsic modifier a fixed incoming width to clamp to, matching iOS
+        // (in a horizontally-unbounded parent fillMaxWidth is a no-op, so the row
+        // still falls back to hugging its content). A picker that's a
+        // non-expanding child of an HStack keeps hugging, so it can't starve its
+        // siblings — same rule as ColumnView.
+        val inRowNoWeight = modifiers.any { it is LocalModifier.InRow } &&
+                modifiers.none { it is LocalModifier.Weight }
+
         SingleChoiceSegmentedButtonRow(
-            modifier = Modifier.wrapContentWidth()
+            modifier = if (inRowNoWeight) Modifier.wrapContentWidth() else Modifier.fillMaxWidth()
         ) {
             component.props.children?.forEachIndexed { index, child ->
                 SegmentedButton(
@@ -91,7 +108,13 @@ fun PickerView(
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size)
                 ) {
-                    Text(options.entries.elementAt(index).value)
+                    // iOS truncates a segment label rather than wrapping it, and a
+                    // wrapped label would also grow the whole row's height.
+                    Text(
+                        text = options.entries.elementAt(index).value,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
         }
