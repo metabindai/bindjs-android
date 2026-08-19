@@ -23,7 +23,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +40,9 @@ import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.DesignerComponent
 import ai.metabind.bindjs.JsRuntimeImpl
 import ai.metabind.bindjs.composables.BindJSView
+import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.model.BaseComponent
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,8 +84,7 @@ private fun ChartPreviewApp(initialFixtureName: String?) {
         componentsRegistered = true
     }
 
-    LaunchedEffect(selectedIndex, componentsRegistered) {
-        if (!componentsRegistered) return@LaunchedEffect
+    suspend fun render() {
         try {
             runtime.awaitReady()
             runtime.willRender()
@@ -92,6 +95,21 @@ private fun ChartPreviewApp(initialFixtureName: String?) {
             component = null
             error = throwable.message ?: throwable::class.java.simpleName
         }
+    }
+
+    LaunchedEffect(selectedIndex, componentsRegistered) {
+        if (!componentsRegistered) return@LaunchedEffect
+        render()
+    }
+
+    // Interactive fixtures need the same loop the SDK hosts run: an event reaches its JS
+    // handler, the handler's `setState` asks for a re-render, and the component body runs
+    // again. Without it a fixture like `selection-mark-churn` can never change what it
+    // draws, and the renderer only ever sees one shape of chart.
+    val scope = rememberCoroutineScope()
+    DisposableEffect(runtime, selectedIndex) {
+        runtime.setOnRerenderRequested { scope.launch { render() } }
+        onDispose { runtime.setOnRerenderRequested(null) }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -115,7 +133,17 @@ private fun ChartPreviewApp(initialFixtureName: String?) {
                     jsRuntime = runtime,
                     component = component!!,
                     version = version,
-                    onUiEvent = {},
+                    onUiEvent = { event ->
+                        scope.launch {
+                            when (event) {
+                                is UiEvent.OnChartSelection ->
+                                    runtime.callEventHandler(event.handlerId, arrayOf(event.value))
+                                is UiEvent.OnTap ->
+                                    runtime.callEventHandler(event.handlerId)
+                                else -> Unit
+                            }
+                        }
+                    },
                 )
             }
         }
@@ -316,6 +344,16 @@ private val chartFixtures = listOf(
         name = "x-selection-controlled",
         description = "Tier 2A controlled x-axis selection bridge metadata.",
         source = "Chart({}, [PointMark({ x: { value: 'Jan', label: 'Month' }, y: { value: 12, label: 'Revenue' } }), PointMark({ x: { value: 'Feb', label: 'Month' }, y: { value: 18, label: 'Revenue' } })]).chartXSelection({ value: 'Jan', onChange: value => value })"
+    ),
+    // Selecting a point makes this chart emit marks it did not have before, which is what real
+    // components do to draw a selection highlight. It changes both counts the renderer is
+    // sensitive to: how many Vico *layers* the chart has (a rule and a point layer appear) and
+    // how many *series* a layer holds (a second, red line series appears). Both used to shift
+    // Compose's remembered values out from under each other. Drag across the plot to exercise it.
+    ChartFixture(
+        name = "selection-mark-churn",
+        description = "Selection adds a series, a rule, and a point, changing counts per render.",
+        source = "(() => { const rows = [{ month: 'Jan', value: 12 }, { month: 'Feb', value: 18 }, { month: 'Mar', value: 14 }]; const [selected, setSelected] = useState(null); const marks = [ForEach(rows, row => LineMark({ x: { value: row.month }, y: { value: row.value } }))]; const hit = rows.find(row => row.month === selected); if (hit) { marks.push(ForEach(rows, row => LineMark({ x: { value: row.month }, y: { value: row.value * 0.5 } }).foregroundStyle(Color('red')))); marks.push(RuleMark({ x: { value: hit.month } }).foregroundStyle(Color('red'))); marks.push(PointMark({ x: { value: hit.month }, y: { value: hit.value } }).foregroundStyle(Color('red'))); } return Chart({}, marks).chartXSelection({ value: selected, onChange: value => setSelected(value) }); })()"
     ),
     ChartFixture(
         name = "pie-basic",
