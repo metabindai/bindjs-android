@@ -204,6 +204,42 @@ fun BaseComponent<*>.containsOverflowingMedia(): Boolean {
 }
 
 /**
+ * Whether this subtree is a leaf that fills whatever space its frame offers
+ * instead of measuring an intrinsic height — shapes, colors and gradients, all
+ * of which reach their renderer with a `fillMaxSize` (see `addFillIfNoFrame` in
+ * BindJSView).
+ *
+ * A `frame(width:height:)` measures its content with an *unbounded* height so a
+ * too-tall child overflows the slot the way iOS does (see FrameModifier). Fill
+ * content has no height of its own to overflow with, so an unbounded proposal
+ * collapses it to zero — a segmented bar built from
+ * `Rectangle().frame(width: w, height: 16)` drew nothing at all. Such content
+ * has to keep the bounded max-height. Modifier chains are unwrapped so a
+ * `Rectangle().clipShape(...)` inside the frame is still recognised.
+ */
+fun BaseComponent<*>.fillsFrameHeight(): Boolean {
+    when (this) {
+        is RectangleComponent,
+        is RoundedRectangleComponent,
+        is CapsuleComponent,
+        is EllipseComponent,
+        is CircleComponent,
+        is ColorComponent,
+        is LinearGradientComponent,
+        is RadialGradientComponent,
+        is AngularGradientComponent,
+        is EllipticalGradientComponent,
+            -> return true
+
+        else -> {}
+    }
+    (this as? ModifiedComponent)?.props?.content?.forEach { child ->
+        if (child?.fillsFrameHeight() == true) return true
+    }
+    return false
+}
+
+/**
  * SwiftUI's `ForEach` is a transparent container: once expanded, its rows become
  * direct children of the enclosing stack, inheriting that stack's width and
  * alignment. On Android an expanded `ForEach` arrives as a single

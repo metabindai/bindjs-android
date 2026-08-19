@@ -54,6 +54,31 @@ class ColorComponent(
         private fun argb(r: Int, g: Int, b: Int, a: Float = 1f): Int =
             ((a * 255f).toInt() shl 24) or (r shl 16) or (g shl 8) or b
 
+        // SwiftUI's named hues, light mode. `bindjs-apple` resolves these through
+        // SwiftUI (`Color.red`, `Color.indigo`, …), which are *not* the same as
+        // UIKit's `systemRed`/`systemIndigo` — SwiftUI's are authored in Display P3
+        // and are visibly more vivid than the sRGB values Apple's HIG tables list.
+        // The marked values were sampled from an iOS render and converted P3 → sRGB,
+        // so they reproduce what the device actually draws; the rest fall back to the
+        // HIG sRGB values (close, but not calibrated against a real render).
+        //
+        // The previous palette mixed CSS/Android defaults into this list, which is
+        // what made `indigo` a near-black purple (CSS #4B0082) and `pink` a pastel
+        // (CSS #FFC0CB) instead of the vivid iOS hues.
+        private val SYSTEM_RED = argb(255, 57, 60)      // measured
+        private val SYSTEM_ORANGE = argb(255, 141, 40)  // measured
+        private val SYSTEM_YELLOW = argb(255, 204, 2)   // measured
+        private val SYSTEM_GREEN = argb(53, 199, 89)    // measured
+        private val SYSTEM_MINT = argb(0, 199, 190)     // HIG sRGB
+        private val SYSTEM_TEAL = argb(3, 195, 209)     // measured (thin sample)
+        private val SYSTEM_CYAN = argb(50, 173, 230)    // HIG sRGB
+        private val SYSTEM_BLUE = argb(0, 136, 255)     // measured
+        private val SYSTEM_INDIGO = argb(97, 85, 245)   // measured
+        private val SYSTEM_PURPLE = argb(175, 82, 222)  // HIG sRGB
+        private val SYSTEM_PINK = argb(255, 44, 85)     // measured
+        private val SYSTEM_BROWN = argb(162, 132, 94)   // HIG sRGB
+        private val SYSTEM_GRAY = argb(142, 142, 147)   // HIG sRGB
+
         // UIKit's semantic palette, light-mode values. bindjs-apple resolves these
         // through UIColor so they adapt to dark mode; this renderer draws unstyled
         // text as black regardless of theme, so adaptive fills here would put black
@@ -98,21 +123,21 @@ class ColorComponent(
     private fun colorByName(name: String): Int {
         return when (name) {
             "clear" -> Color.TRANSPARENT
-            "red" -> Color.valueOf(235 / 255.0f, 78 / 255.0f, 62 / 255.0f).toArgb()
-            "orange" -> Color.valueOf(255 / 255.0f, 149 / 255.0f, 0 / 255.0f).toArgb()
-            "yellow" -> Color.YELLOW
-            "green" -> Color.valueOf(101 / 255.0f, 196 / 255.0f, 102 / 255.0f).toArgb()
-            "mint" -> Color.valueOf(.2431f, .7059f, .5373f).toArgb()
-            "teal" -> Color.valueOf(0f, .5f, .5f).toArgb()
-            "cyan" -> Color.CYAN
-            "blue" -> Color.valueOf(50 / 255.0f, 120 / 255.0f, 247 / 255.0f).toArgb()
-            "indigo" -> Color.valueOf(.3f, 0f, .5f).toArgb()
-            "purple" -> Color.valueOf(.62f, .12f, .95f).toArgb()
-            "pink" -> Color.valueOf(1f, .71f, .75f).toArgb()
-            "brown" -> Color.valueOf(.58f, .3f, 0f).toArgb()
+            "red" -> SYSTEM_RED
+            "orange" -> SYSTEM_ORANGE
+            "yellow" -> SYSTEM_YELLOW
+            "green" -> SYSTEM_GREEN
+            "mint" -> SYSTEM_MINT
+            "teal" -> SYSTEM_TEAL
+            "cyan" -> SYSTEM_CYAN
+            "blue" -> SYSTEM_BLUE
+            "indigo" -> SYSTEM_INDIGO
+            "purple" -> SYSTEM_PURPLE
+            "pink" -> SYSTEM_PINK
+            "brown" -> SYSTEM_BROWN
             "black" -> Color.BLACK
             "white" -> Color.WHITE
-            "gray", "systemGray" -> Color.GRAY
+            "gray", "systemGray" -> SYSTEM_GRAY
 
             "accent", "accentColor", "link" -> LocalAccentColor.current.toArgb()
 

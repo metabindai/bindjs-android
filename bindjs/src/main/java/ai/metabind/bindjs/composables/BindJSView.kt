@@ -71,6 +71,7 @@ import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
 import ai.metabind.bindjs.model.EmptyComponent
+import ai.metabind.bindjs.model.fillsFrameHeight
 import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GeometryReaderComponent
 import ai.metabind.bindjs.model.GroupComponent
@@ -919,11 +920,17 @@ private fun FrameModifier(
     // row) gets squeezed and then clipped by the leaf's own clipToBounds,
     // leaving an empty capsule. Measure such content with unbounded height so
     // it overflows the slot instead of being clipped, matching iOS. Height-only
-    // frames (shouldClipToHeight) and media frames are intentionally excluded.
+    // frames (shouldClipToHeight) and media frames are intentionally excluded,
+    // as is fill content (shapes/colors/gradients), which has no intrinsic
+    // height to overflow with and collapses to zero under an unbounded
+    // proposal — see [fillsFrameHeight].
+    val contentFillsFrameHeight =
+        modifierProps.content?.any { it?.fillsFrameHeight() == true } == true
     val allowHeightOverflow = frameModifier?.props?.height != null &&
             frameModifier.props.width != null &&
             !contentHasGeometryReader &&
-            !contentHasOverflowingMedia
+            !contentHasOverflowingMedia &&
+            !contentFillsFrameHeight
     val verticalOverflowAlign = when (frameModifier?.props?.alignment) {
         "top", "topLeading", "topTrailing" -> Alignment.Top
         "bottom", "bottomLeading", "bottomTrailing" -> Alignment.Bottom
