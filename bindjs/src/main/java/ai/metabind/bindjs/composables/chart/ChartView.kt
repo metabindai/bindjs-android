@@ -3,6 +3,7 @@ package ai.metabind.bindjs.composables.chart
 import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import android.util.Log
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -65,7 +67,11 @@ import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.AutoScrollCondition
+import com.patrykandpatrick.vico.compose.cartesian.Scroll
+import com.patrykandpatrick.vico.compose.cartesian.VicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.common.DashedShape
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Position
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
@@ -265,11 +271,15 @@ fun ChartView(
         )
     }
     if (prepared.areas.isNotEmpty()) {
+        // `stacking` defaults to standard, so a lone area series is nominally "stacked" with
+        // nothing. Only a real stack — two or more bands drawn over one another — needs the
+        // opaque fill that keeps the front band from showing the one behind it.
+        val areasOverlap = prepared.areasStacked && prepared.areas.size > 1
         layers.add(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
                     prepared.areas.map {
-                        it.rememberVicoLine(includeArea = true, includePoints = false, solidArea = prepared.areasStacked)
+                        it.rememberVicoLine(includeArea = true, includePoints = false, solidArea = areasOverlap)
                     }
                 ),
                 rangeProvider = yRangeProvider,
@@ -280,7 +290,9 @@ fun ChartView(
         layers.add(
             rememberLineCartesianLayer(
                 lineProvider = LineCartesianLayer.LineProvider.series(
-                    prepared.points.map { it.rememberVicoLine(includeArea = false, includePoints = true, lineVisible = false) }
+                    prepared.points.map {
+                        it.rememberVicoLine(includeArea = false, includePoints = true, lineVisible = false)
+                    }
                 ),
                 rangeProvider = yRangeProvider,
             )
@@ -313,6 +325,10 @@ fun ChartView(
             line = rememberLineComponent(
                 fill = Fill(chartSeriesColor(rule.colorName, rule.autoPaletteIndex)),
                 thickness = rule.width.dp,
+                // A RuleMark's `.lineStyle({ dash })` reaches the mark layers through Vico's
+                // dashed stroke, but a rule is a decoration rather than a layer, so its dashes
+                // have to come from the component's shape instead.
+                shape = rule.dash.toDashedShape(),
             ),
             label = { rule.label },
         )
@@ -320,11 +336,16 @@ fun ChartView(
 
     // Line/area/point layers place their first and last points flush against the plot
     // edges, which pushes the outermost x-axis labels off-canvas. Bars inset themselves,
-    // so only the non-column layers need horizontal breathing room.
-    val needsEdgeInset = prepared.lines.isNotEmpty() ||
-        prepared.areas.isNotEmpty() ||
-        prepared.points.isNotEmpty() ||
-        prepared.xRules.isNotEmpty()
+    // so only the non-column layers need horizontal breathing room — and only when there
+    // are x-axis labels to keep on-canvas. With the axis hidden the inset just left the
+    // series short of the plot's edges, where SwiftUI Charts runs it edge to edge.
+    val hasHorizontalAxis = bottomAxis != null || topAxis != null
+    val needsEdgeInset = hasHorizontalAxis && (
+        prepared.lines.isNotEmpty() ||
+            prepared.areas.isNotEmpty() ||
+            prepared.points.isNotEmpty() ||
+            prepared.xRules.isNotEmpty()
+        )
 
     // Selection rides on Vico's own marker plumbing, which gives the interaction
     // SwiftUI Charts' `.chartXSelection` gives iOS: press a column and its value reads
@@ -349,24 +370,69 @@ fun ChartView(
         }
     }
 
-    val chart = rememberCartesianChart(
-        *layers.toTypedArray(),
-        startAxis = startAxis,
-        bottomAxis = bottomAxis,
-        topAxis = topAxis,
-        endAxis = endAxis,
-        marker = selectionListener?.let { SelectionOnlyMarker },
-        markerVisibilityListener = selectionListener,
-        decorations = ruleDecorations,
-        layerPadding = {
-            if (needsEdgeInset) {
-                CartesianLayerPadding(unscalableStart = 24.dp, unscalableEnd = 24.dp)
-            } else {
-                CartesianLayerPadding()
-            }
-        },
-        markerController = markerController,
-    )
+    // How many layers this chart has depends on which kinds of mark the JS emitted, and that
+    // changes between renders: selecting a point makes a component add a highlight rule and a
+    // point, which is two layers the previous render did not have.
+    //
+    // That matters more than it looks, because `rememberCartesianChart` spreads the layers into
+    // `remember`'s vararg keys, and the vararg `remember` spends one slot per key —
+    // `for (key in keys) invalid = invalid or currentComposer.changed(key)`. A different number
+    // of layers is therefore a different number of slots, and every remembered value after this
+    // call shifts by the difference. `remember` reads its slot positionally, so the reads come
+    // back holding the neighbouring value, of the wrong type. That crashed the first re-render
+    // after a chart selection with a ClassCastException from inside Compose.
+    //
+    // `key` puts the whole call in its own group, so its slot count stays its own business.
+    //
+    // The key is a constant, and has to be. `rememberCartesianChart` keeps the previous chart in
+    // a `ValueWrapper` and `copy`s it when the layers change, specifically so the chart's `id`
+    // survives — `CartesianChartHost` registers with the model producer under that id. Keying on
+    // anything that changes with the layers would discard the wrapper, mint a fresh id, and make
+    // the host re-register. For the moment either side of that swap two receivers are live, and
+    // they share the host's single `MutableCartesianChartRanges`: one calls `reset()` on it while
+    // the other is between filling it in and taking its immutable snapshot, so the snapshot comes
+    // out empty and the first y-range lookup throws `NoSuchElementException`.
+    val chart = key(Unit) {
+        rememberCartesianChart(
+            *layers.toTypedArray(),
+            startAxis = startAxis,
+            bottomAxis = bottomAxis,
+            topAxis = topAxis,
+            endAxis = endAxis,
+            marker = selectionListener?.let { SelectionOnlyMarker },
+            markerVisibilityListener = selectionListener,
+            decorations = ruleDecorations,
+            layerPadding = {
+                if (needsEdgeInset) {
+                    CartesianLayerPadding(unscalableStart = 24.dp, unscalableEnd = 24.dp)
+                } else {
+                    CartesianLayerPadding()
+                }
+            },
+            markerController = markerController,
+        )
+    }
+
+    // SwiftUI Charts always fits its data to the plot area — there is no scrolling unless the
+    // chart opts in, and BindJS exposes no such modifier on either platform. Vico scrolls by
+    // default, sizing the plot from a fixed per-point spacing, so a dense series (a year of
+    // daily points) rendered as a zoomed-in, horizontally scrollable strip instead of the whole
+    // curve. Disabling scroll also switches Vico's default zoom to `Zoom.Content`, which scales
+    // the series down to the available width.
+    //
+    // Built by hand rather than through `rememberVicoScrollState`, which holds the state in a
+    // `rememberSaveable` — several slots, and the one that reads the layer-count shift above
+    // hardest. There is nothing here worth restoring across process death anyway: a
+    // non-scrolling chart is always at offset 0.
+    val scrollState = remember {
+        VicoScrollState(
+            scrollEnabled = false,
+            initialScroll = Scroll.Absolute.Start,
+            autoScroll = Scroll.Absolute.Start,
+            autoScrollCondition = AutoScrollCondition.Never,
+            autoScrollAnimationSpec = spring(),
+        )
+    }
 
     val showLegend = !model.legend.hidden && prepared.legendEntries.isNotEmpty()
     Column(modifier = chartModifier) {
@@ -376,6 +442,7 @@ fun ChartView(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
+            scrollState = scrollState,
         )
         if (showLegend) {
             ChartLegend(prepared.legendEntries)
@@ -442,14 +509,14 @@ private fun ChartSeries.rememberVicoLine(
         fun pointFor(symbol: ChartSymbolName?) = pointBySymbol.getValue(symbol ?: ChartSymbolName.Circle)
 
         val distinctSymbols = symbolByX.values.map { it ?: ChartSymbolName.Circle }.distinct()
-        if (distinctSymbols.size <= 1) {
-            LineCartesianLayer.PointProvider.single(pointFor(distinctSymbols.firstOrNull()))
-        } else {
-            SymbolPointProvider(
-                pointsByX = symbolByX.mapValues { pointFor(it.value) },
-                fallback = pointFor(distinctSymbols.first()),
-            )
-        }
+        SymbolPointProvider(
+            pointsByX = if (distinctSymbols.size <= 1) {
+                emptyMap()
+            } else {
+                symbolByX.mapValues { pointFor(it.value) }
+            },
+            fallback = pointFor(distinctSymbols.firstOrNull()),
+        )
     } else {
         null
     }
@@ -473,8 +540,15 @@ private fun ChartSeries.rememberVicoLine(
         stroke = stroke,
         areaFill = if (includeArea) {
             // Stacked bands must be opaque so each shorter band hides the taller one drawn behind
-            // it; unstacked areas keep a translucent fill so overlaps stay readable.
-            LineCartesianLayer.AreaFill.single(Fill(applyAlpha(color, if (solidArea) 1f else 0.4f)))
+            // it. Otherwise, a colour that already carries its own alpha is drawn as asked —
+            // SwiftUI Charts fills with exactly the colour given — and only a fully opaque one
+            // gets the default translucency that keeps overlapping areas readable.
+            val areaColor = when {
+                solidArea -> applyAlpha(color, 1f)
+                color.alpha < 1f -> color
+                else -> applyAlpha(color, 0.4f)
+            }
+            LineCartesianLayer.AreaFill.single(Fill(areaColor))
         } else {
             null
         },
@@ -527,8 +601,8 @@ private fun ChartAnnotation.Position?.toVerticalPosition(): Position.Vertical =
         else -> Position.Vertical.Top
     }
 
-// Renders a different marker shape per point within one series, selecting by the entry's x
-// value. Used when a series mixes symbols; single-symbol series use PointProvider.single.
+// Renders a marker per point, selecting by the entry's x value so one series can mix symbols.
+// A series with a single symbol passes an empty map and resolves everything to the fallback.
 private class SymbolPointProvider(
     private val pointsByX: Map<Double, LineCartesianLayer.Point>,
     private val fallback: LineCartesianLayer.Point,
@@ -539,7 +613,15 @@ private class SymbolPointProvider(
         extraStore: ExtraStore,
     ): LineCartesianLayer.Point = pointsByX[entry.x] ?: fallback
 
-    override fun getLargestPoint(extraStore: ExtraStore): LineCartesianLayer.Point = fallback
+    // Deliberately no largest point. Vico asks for one to size the plot around the markers:
+    // `updateLayerDimensions` reserves half a marker's width at each end and
+    // `updateLayerMargins` half its height top and bottom. That reserve exists only while the
+    // marks do, so a component that adds a PointMark to highlight the current selection shrank
+    // the whole plot the moment a finger went down and let it spring back on release — the
+    // curve visibly resized under the touch. SwiftUI Charts sizes its plot from the scales and
+    // lets symbols fall where they land, so report nothing and keep the plot still. `getPoint`
+    // above is untouched, so the markers are drawn at their real size either way.
+    override fun getLargestPoint(extraStore: ExtraStore): LineCartesianLayer.Point? = null
 }
 
 private fun ChartInterpolation?.toVicoInterpolator(): LineCartesianLayer.Interpolator =
@@ -645,6 +727,18 @@ private val palette = listOf(
 private fun paletteColor(key: String): Color = palette[kotlin.math.abs(key.hashCode()) % palette.size]
 
 private fun applyAlpha(color: Color, alpha: Float): Color = color.copy(alpha = alpha)
+
+// SwiftUI's dash pattern alternates dash and gap lengths; a single entry means dash and gap
+// are equal. An empty pattern is a solid line.
+private fun List<Double>.toDashedShape(): Shape =
+    if (isEmpty()) {
+        RectangleShape
+    } else {
+        DashedShape(
+            dashLength = first().toFloat().dp,
+            gapLength = (getOrNull(1) ?: first()).toFloat().dp,
+        )
+    }
 
 // Maps a SwiftUI chart symbol to a Compose shape used for point-mark markers and legend
 // swatches. A null symbol falls back to a circle, matching SwiftUI's default PointMark.
@@ -1104,6 +1198,7 @@ private class PreparedChartDataBuilder(
                 colorName = name,
                 autoPaletteIndex = autoPaletteIndex(name),
                 width = (mark.style.lineStyle?.width ?: 1.0).toFloat(),
+                dash = mark.style.lineStyle?.dash.orEmpty(),
                 label = mark.style.annotation?.text.orEmpty(),
             )
         }
@@ -1422,5 +1517,6 @@ private data class ChartRule(
     val colorName: String,
     val autoPaletteIndex: Int?,
     val width: Float,
+    val dash: List<Double>,
     val label: String,
 )

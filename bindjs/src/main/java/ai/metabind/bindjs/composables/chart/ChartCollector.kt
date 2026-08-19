@@ -515,13 +515,30 @@ private fun Any?.asColorString(): String? {
             val type = this["type"] as? String
             if (type == "Color") {
                 val props = this["props"] as? Map<*, *>
-                props?.get("rawValue") as? String ?: props?.get("value") as? String
+                props?.get("rawValue") as? String
+                    ?: props?.get("value") as? String
+                    ?: props?.rgbaHexOrNull()
             } else {
                 this["color"] as? String
             }
         }
         else -> null
     }
+}
+
+// A colour built from components (`Color({ r, g, b, a })`) arrives as those channels rather
+// than a name or a hex string. The chart pipeline keys a series' colour off a *string*, so
+// pack the channels into `#RRGGBBAA` — the form `ChartView.chartColor` already resolves.
+// Without this the mark read as having no `foregroundStyle` at all and fell back to the
+// automatic palette, which painted an explicitly green series the palette's first colour
+// (blue) instead.
+private fun Map<*, *>.rgbaHexOrNull(): String? {
+    val r = (this["r"] as? Number)?.toDouble() ?: return null
+    val g = (this["g"] as? Number)?.toDouble() ?: return null
+    val b = (this["b"] as? Number)?.toDouble() ?: return null
+    val a = (this["a"] as? Number)?.toDouble() ?: 1.0
+    fun channel(value: Double): Int = Math.round(value).toInt().coerceIn(0, 255)
+    return "#%02X%02X%02X%02X".format(channel(r), channel(g), channel(b), channel(a * 255.0))
 }
 
 private fun componentName(component: Any): String =
