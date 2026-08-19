@@ -347,9 +347,10 @@ private val chartFixtures = listOf(
     ),
     // Selecting a point makes this chart emit marks it did not have before, which is what real
     // components do to draw a selection highlight. It changes both counts the renderer is
-    // sensitive to: how many Vico *layers* the chart has (a rule and a point layer appear) and
-    // how many *series* a layer holds (a second, red line series appears). Both used to shift
-    // Compose's remembered values out from under each other. Drag across the plot to exercise it.
+    // sensitive to: how many Vico *layers* the chart has (a point layer appears) and how many
+    // *series* a layer holds (a second, red line series appears). Both used to shift Compose's
+    // remembered values out from under each other. Drag across the plot to exercise it. The rule
+    // is a decoration rather than a layer, so it spans the full plot height and adds no layer.
     ChartFixture(
         name = "selection-mark-churn",
         description = "Selection adds a series, a rule, and a point, changing counts per render.",

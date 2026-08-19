@@ -74,6 +74,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.DashedShape
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.Position
+import com.patrykandpatrick.vico.compose.common.component.LineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
@@ -180,11 +181,6 @@ fun ChartView(
             if (prepared.points.isNotEmpty()) {
                 lineSeries {
                     prepared.points.forEach { series(x = it.xValues, y = it.yValues) }
-                }
-            }
-            if (prepared.xRules.isNotEmpty()) {
-                lineSeries {
-                    prepared.xRules.forEach { series(x = it.xValues, y = it.yValues) }
                 }
             }
             prepared.placeholder?.let { placeholder ->
@@ -298,16 +294,6 @@ fun ChartView(
             )
         )
     }
-    if (prepared.xRules.isNotEmpty()) {
-        layers.add(
-            rememberLineCartesianLayer(
-                lineProvider = LineCartesianLayer.LineProvider.series(
-                    prepared.xRules.map { it.rememberVicoLine(includeArea = false, includePoints = false) }
-                ),
-                rangeProvider = yRangeProvider,
-            )
-        )
-    }
     prepared.placeholder?.let {
         layers.add(
             rememberLineCartesianLayer(
@@ -319,18 +305,19 @@ fun ChartView(
         )
     }
 
+    // Both rule orientations are decorations, which draw against the plot's own bounds rather
+    // than inside a layer's value space — that's what lets a rule span the full width or height
+    // the way SwiftUI Charts' `RuleMark` does. Vico ships only the horizontal one.
     val ruleDecorations = prepared.rules.map { rule ->
         HorizontalLine(
             y = { rule.y },
-            line = rememberLineComponent(
-                fill = Fill(chartSeriesColor(rule.colorName, rule.autoPaletteIndex)),
-                thickness = rule.width.dp,
-                // A RuleMark's `.lineStyle({ dash })` reaches the mark layers through Vico's
-                // dashed stroke, but a rule is a decoration rather than a layer, so its dashes
-                // have to come from the component's shape instead.
-                shape = rule.dash.toDashedShape(),
-            ),
+            line = rememberRuleLineComponent(rule.colorName, rule.autoPaletteIndex, rule.width, rule.dash),
             label = { rule.label },
+        )
+    } + prepared.xRules.map { rule ->
+        VerticalLine(
+            x = rule.x,
+            line = rememberRuleLineComponent(rule.colorName, rule.autoPaletteIndex, rule.width, rule.dash),
         )
     }
 
@@ -339,12 +326,12 @@ fun ChartView(
     // so only the non-column layers need horizontal breathing room — and only when there
     // are x-axis labels to keep on-canvas. With the axis hidden the inset just left the
     // series short of the plot's edges, where SwiftUI Charts runs it edge to edge.
+    // Rules are decorations rather than layers, so they place no points and need no inset.
     val hasHorizontalAxis = bottomAxis != null || topAxis != null
     val needsEdgeInset = hasHorizontalAxis && (
         prepared.lines.isNotEmpty() ||
             prepared.areas.isNotEmpty() ||
-            prepared.points.isNotEmpty() ||
-            prepared.xRules.isNotEmpty()
+            prepared.points.isNotEmpty()
         )
 
     // Selection rides on Vico's own marker plumbing, which gives the interaction
@@ -443,6 +430,13 @@ fun ChartView(
                 .fillMaxWidth()
                 .weight(1f),
             scrollState = scrollState,
+            // Vico interpolates between the old and new model on every transaction, and a series
+            // the previous model did not have interpolates up from zero. Selecting a point makes
+            // the component emit a highlight point the render before did not have, so the dot
+            // appeared on the x axis and slid up to the curve — a marker chasing the finger.
+            // Nothing here should animate: the model is a snapshot of what the JS just rendered,
+            // so it has to draw where it lands.
+            animationSpec = null,
         )
         if (showLegend) {
             ChartLegend(prepared.legendEntries)
@@ -728,6 +722,23 @@ private fun paletteColor(key: String): Color = palette[kotlin.math.abs(key.hashC
 
 private fun applyAlpha(color: Color, alpha: Float): Color = color.copy(alpha = alpha)
 
+@Composable
+private fun rememberRuleLineComponent(
+    colorName: String,
+    autoPaletteIndex: Int?,
+    width: Float,
+    dash: List<Double>,
+): LineComponent =
+    rememberLineComponent(
+        fill = Fill(chartSeriesColor(colorName, autoPaletteIndex)),
+        thickness = width.dp,
+        // A mark's `.lineStyle({ dash })` reaches the mark layers through Vico's dashed stroke,
+        // but a rule is a decoration rather than a layer, so its dashes have to come from the
+        // component's shape instead. `DashedShape` picks its own axis from the outline's aspect
+        // ratio, so the one shape serves both orientations.
+        shape = dash.toDashedShape(),
+    )
+
 // SwiftUI's dash pattern alternates dash and gap lengths; a single entry means dash and gap
 // are equal. An empty pattern is a solid line.
 private fun List<Double>.toDashedShape(): Shape =
@@ -981,7 +992,7 @@ private data class PreparedChartData(
     val lines: List<ChartSeries>,
     val areas: List<ChartSeries>,
     val points: List<ChartSeries>,
-    val xRules: List<ChartSeries>,
+    val xRules: List<ChartVerticalRule>,
     val rules: List<ChartRule>,
     val xLabels: Map<Double, String>,
     val selectionRows: List<ChartSelectionRow>,
@@ -1203,21 +1214,20 @@ private class PreparedChartDataBuilder(
             )
         }
 
-    fun xRules(): List<ChartSeries> {
-        val yRange = yRange()
-        return model.marks.filter { it.kind == ChartMarkKind.Rule }.mapNotNull { mark ->
+    fun xRules(): List<ChartVerticalRule> =
+        model.marks.filter { it.kind == ChartMarkKind.Rule }.mapNotNull { mark ->
             val x = mark.channels.x?.value ?: return@mapNotNull null
             val name = colorName(seriesKey(mark), mark.style)
-            ChartSeries(
-                key = "x-rule-${mark.id}",
+            ChartVerticalRule(
+                // Registers the rule's x label as a side effect, so a category rule lands on the
+                // same synthetic index as the marks sharing its category.
+                x = xNumber(x),
                 colorName = name,
                 autoPaletteIndex = autoPaletteIndex(name),
-                xValues = listOf(xNumber(x), xNumber(x)),
-                yValues = listOf(yRange.first, yRange.second),
-                style = mark.style,
+                width = (mark.style.lineStyle?.width ?: 1.0).toFloat(),
+                dash = mark.style.lineStyle?.dash.orEmpty(),
             )
         }
-    }
 
     fun xLabels(): Map<Double, String> = xLabels
 
@@ -1262,16 +1272,23 @@ private class PreparedChartDataBuilder(
             )
         }
 
+    // Rules are decorations, not layers, so a chart made only of rules has nothing for Vico to
+    // draw and no ranges to draw it against. This invisible series gives it both: the y a
+    // horizontal rule sits at, and — since a vertical rule is positioned off the x range — the x
+    // values the vertical rules ask for.
     fun placeholderSeries(): ChartSeries? {
-        val hasVicoLayer = model.marks.any { it.kind != ChartMarkKind.Rule } || xRules().isNotEmpty()
-        if (hasVicoLayer || rules().isEmpty()) return null
-        val y = rules().firstOrNull()?.y ?: 0.0
+        if (model.marks.any { it.kind != ChartMarkKind.Rule }) return null
+        val yRules = rules()
+        val xRules = xRules()
+        if (yRules.isEmpty() && xRules.isEmpty()) return null
+        val y = yRules.firstOrNull()?.y ?: 0.0
+        val xValues = xRules.map { it.x }.distinct().sorted().ifEmpty { listOf(0.0) }
         return ChartSeries(
             key = "_rules",
             colorName = "clear",
             autoPaletteIndex = null,
-            xValues = listOf(0.0),
-            yValues = listOf(y),
+            xValues = xValues,
+            yValues = List(xValues.size) { y },
             style = ChartMarkStyle(),
         )
     }
@@ -1519,4 +1536,14 @@ private data class ChartRule(
     val width: Float,
     val dash: List<Double>,
     val label: String,
+)
+
+// A `RuleMark({ x })`. No label: Vico's HorizontalLine takes one but is given no label component,
+// so y-rules don't draw theirs either, and SwiftUI's rule annotations aren't modelled yet.
+private data class ChartVerticalRule(
+    val x: Double,
+    val colorName: String,
+    val autoPaletteIndex: Int?,
+    val width: Float,
+    val dash: List<Double>,
 )
