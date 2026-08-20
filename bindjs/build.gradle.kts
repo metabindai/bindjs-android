@@ -56,7 +56,7 @@ publishing {
                     }
                 }
             }
-            version = "0.0.24"
+            version = "0.0.25"
 
             afterEvaluate {
                 from(components["default"])
