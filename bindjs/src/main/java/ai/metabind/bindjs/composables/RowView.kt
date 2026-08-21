@@ -104,7 +104,49 @@ fun RowView(
                     nonSpacerChildren.size > 1 &&
                     childrenWithoutExplicitWidth > 1
 
-            children?.forEach { child ->
+            // SwiftUI sizes an HStack's children by *flexibility*, not by index:
+            // `.fixedSize()` says "never compress me", so the stack hands that child
+            // its ideal width first and the flexible siblings absorb the shortfall.
+            // Compose measures unweighted children in index order instead, so a
+            // leading flexible child swallows everything a trailing `.fixedSize()`
+            // sibling needed — and since FixedSizeModifier renders as
+            // `wrapContentSize(unbounded = true)`, that child then spills out past the
+            // Row. A transaction row (`[avatar, VStack{merchant, subtitle}, Spacer,
+            // Text(amount).fixedSize()]`) drew its amount outside the card and left
+            // the VStack's `.lineLimit(1)` subtitle untruncated, where iOS ellipsizes.
+            //
+            // Weighting the flexible children before the Spacer moves them into
+            // Compose's second measure pass, after the rigid ones have taken their
+            // intrinsic width. The Spacer then drops its own weight: its slack lives
+            // inside the weighted slot instead, and since the flexible child is
+            // leading-aligned in that slot, short content still reads as
+            // spacer-separated while long content truncates.
+            //
+            // Deliberately narrow — one Spacer, an explicit `.fixedSize()` sibling, at
+            // least one flexible child ahead of the Spacer — so no other Row shape
+            // changes. Children *after* the Spacer stay unweighted, which is what
+            // keeps the trailing child pinned to the Row's trailing edge.
+            val singleSpacer = children?.count { it is SpacerComponent } == 1
+            val flexibleBeforeSpacer =
+                if (!singleSpacer || !hasChildWithFixedSize ||
+                    hasGreedyChild || inHorizontalScroll
+                ) {
+                    emptySet()
+                } else {
+                    val spacerIndex = children.orEmpty().indexOfFirst { it is SpacerComponent }
+                    children.orEmpty().take(spacerIndex)
+                        .withIndex()
+                        .filter { (_, child) ->
+                            child != null &&
+                                    child.calculateMaxWidth() == null &&
+                                    !child.hasFixedSizeModifier()
+                        }
+                        .map { it.index }
+                        .toSet()
+                }
+            val spacerYieldsToFlexibleChild = flexibleBeforeSpacer.isNotEmpty()
+
+            children?.forEachIndexed { index, child ->
                 if (child is SpacerComponent) {
                     // Alongside a `maxWidth: .infinity` sibling the Spacer does NOT
                     // get an equal share: SwiftUI lets the greedy child take the
@@ -115,6 +157,9 @@ fun RowView(
                     val spacerWidth = when {
                         child.props.minLength != null -> Modifier.width(child.props.minLength.dp)
                         hasGreedyChild -> Modifier
+                        // A weighted flexible sibling already claims the leftover; a
+                        // weighted Spacer would halve it. See the comment above.
+                        spacerYieldsToFlexibleChild -> Modifier
                         else -> Modifier.weight(1.0f)
                     }
                     Spacer(modifier = spacerWidth)
@@ -135,6 +180,15 @@ fun RowView(
                             Modifier.weight(
                                 child.props.modifier.props.rawValue.toFloat()
                             )
+                        )
+                    } else if (index in flexibleBeforeSpacer) {
+                        // Second measure pass, so the rigid `.fixedSize()` sibling
+                        // takes its intrinsic width first. FillMaxWidth for the same
+                        // reason as the `maxWidth == .infinity` branch below.
+                        modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
+                            Modifier.weight(1.0f)
+                        ) + LocalModifier.FillMaxWidth(
+                            Modifier.fillMaxWidth()
                         )
                     } else if (!hasSpacer && hasChildWithFixedSize && childHasFixedSize) {
                         modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(

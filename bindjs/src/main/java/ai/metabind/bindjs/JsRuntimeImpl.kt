@@ -9,8 +9,11 @@ import androidx.javascriptengine.JavaScriptSandbox
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import ai.metabind.bindjs.model.BaseComponent
+import ai.metabind.bindjs.model.ButtonComponent
 import ai.metabind.bindjs.model.Component
+import ai.metabind.bindjs.model.MenuComponent
 import ai.metabind.bindjs.model.ModifiedComponent
+import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.ColorSchemeModifier
@@ -456,6 +459,13 @@ class JsRuntimeImpl private constructor(
         Log.d(TAG, sb.toString())
     }
 
+    private fun labelOf(component: BaseComponent<*>): BaseComponent<*>? = when (component) {
+        is ButtonComponent -> component.props.label
+        is MenuComponent -> component.props.label
+        is NavigationLinkComponent -> component.props.label
+        else -> null
+    }
+
     private fun printComponentRecursive(
         component: BaseComponent<*>?,
         sb: StringBuilder,
@@ -502,6 +512,15 @@ class JsRuntimeImpl private constructor(
                     componentName = "$componentName (val: ${component.props.rawValue} markdown: ${component.props.markdown})"
                 }
                 sb.appendLine("$indentStr$componentName$modifiersStr")
+
+                // A Button/Menu/NavigationLink keeps its visible content in `label`, not
+                // in `children` (which holds the menu items / destination). Skipping it
+                // hid whole subtrees — e.g. every transaction row of a list built as
+                // `Menu { … } label: { HStack … }` printed as a bare `MenuComponent`.
+                labelOf(component)?.let { label ->
+                    sb.appendLine("${"  ".repeat(indent + 1)}label:")
+                    printComponentRecursive(label, sb, indent + 2, emptyList())
+                }
 
                 component.props.children?.forEach { child ->
                     printComponentRecursive(child, sb, indent + 1, emptyList())
