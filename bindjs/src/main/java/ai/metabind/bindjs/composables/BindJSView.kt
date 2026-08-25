@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -14,7 +16,10 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -84,6 +89,7 @@ import ai.metabind.bindjs.model.Model3DComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.NavigationLinkComponent
+import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
@@ -97,7 +103,10 @@ import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
+import ai.metabind.bindjs.model.ToolbarItemComponent
+import ai.metabind.bindjs.model.ToolbarItemGroupComponent
 import ai.metabind.bindjs.model.VideoComponent
+import ai.metabind.bindjs.model.unwrap
 import ai.metabind.bindjs.model.chart.AreaMarkComponent
 import ai.metabind.bindjs.model.chart.BarMarkComponent
 import ai.metabind.bindjs.model.chart.ChartComponent
@@ -122,6 +131,8 @@ import ai.metabind.bindjs.model.modifier.OnChangeModifier
 import ai.metabind.bindjs.model.modifier.OnDisappearModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
+import ai.metabind.bindjs.model.modifier.PresentationDetentsModifier
+import ai.metabind.bindjs.model.modifier.SheetModifier
 import ai.metabind.bindjs.model.modifier.ZIndexModifier
 import ai.metabind.bindjs.model.modifier.asColorComponent
 
@@ -348,6 +359,17 @@ private fun ModifiedComponent(
             isBackground = isBackground
         )
 
+        is SheetModifier -> SheetModifier(
+            jsRuntime = jsRuntime,
+            version = version,
+            onUiEvent = onUiEvent,
+            modifier = modifier,
+            modifierProps = modifierProps,
+            modifiers = updateModifiers,
+            isBackground = isBackground,
+            hasFrame = hasFrame
+        )
+
         // Fire effect modifiers at the layer they're attached to, before
         // descending. Special modifier composables below us (FrameModifier,
         // MaskModifier, ContextMenuModifier, ...) call InnerComponents with
@@ -560,6 +582,134 @@ private fun MaskModifier(
                     LocalModifier.FillMaxSize(Modifier.fillMaxSize())
                 )
             )
+        }
+    }
+}
+
+/**
+ * Presents `.sheet(...)`'s body over the modified content.
+ *
+ * Three things make this different from the other content-carrying modifiers:
+ *
+ * 1. **The body is materialized, not deserialized.** JS keeps it as a function and
+ *    sends only `contentHandlerId`, so it is fetched here — and re-fetched after
+ *    every render, because the handler ids inside the subtree belong to the render
+ *    that produced them. A subtree kept across a render taps into a handler table
+ *    that no longer holds its ids, and every button in the sheet goes dead.
+ * 2. **JS decides when the sheet opens; Compose decides when it is still up.** A
+ *    dismissal the user drives — swipe, scrim, back — takes the window down here
+ *    and *then* reports itself to JS, rather than waiting for JS to agree. It has
+ *    to: the sheet is a transparent full-screen dialog, so one that stays composed
+ *    after being swiped away silently swallows every touch in the app. And the
+ *    report may well go nowhere — see below.
+ * 3. **The `isPresented` binding is one-way in practice.** bindjs-runtime's
+ *    `processProps` rewrites any prop named `set…`/`on…` into a stored-handler id
+ *    (`setIsPresented` → `setIsPresentedId`) and deletes the original *before*
+ *    `SheetModifier` reads it, so the modifier stores its own no-op fallback under
+ *    `setIsPresentedHandlerId` and reports no `dismissHandlerId` at all. Calling
+ *    them is therefore best-effort: correct once the runtime is fixed, harmless
+ *    until then. bindjs-apple has the same hole — hence "a swipe-down dismiss
+ *    doesn't reliably drive the isPresented binding back through the bridge" in
+ *    the finance demo's own component source. A component that closes its sheet
+ *    from a Done button (the SwiftUI idiom for exactly this reason) is unaffected.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetModifier(
+    jsRuntime: JsRuntime,
+    version: Int,
+    onUiEvent: (UiEvent) -> Unit,
+    modifier: SheetModifier,
+    modifierProps: ModifierProps,
+    modifiers: List<ComponentModifier<*>> = listOf(),
+    isBackground: Boolean = false,
+    hasFrame: Boolean = false,
+) {
+    // The sheet is its own window, so the anchored content renders exactly as it
+    // would with no modifier at all — same path as the `else` branch above.
+    InnerComponents(
+        jsRuntime = jsRuntime,
+        version = version,
+        onUiEvent = onUiEvent,
+        modifiers = modifiers,
+        components = modifierProps.content,
+        isBackground = isBackground,
+        hasFrame = hasFrame
+    )
+
+    val contentHandlerId = modifier.props.contentHandlerId
+    var dismissed by remember(contentHandlerId) { mutableStateOf(false) }
+    // Re-arm on the way down, so the next time the component asks for the sheet it
+    // opens instead of being swallowed by the last dismissal.
+    LaunchedEffect(modifier.props.isPresented) {
+        if (!modifier.props.isPresented) dismissed = false
+    }
+    val isPresented = modifier.props.isPresented && !dismissed
+
+    var sheetContent by remember { mutableStateOf<BaseComponent<*>?>(null) }
+    LaunchedEffect(isPresented, contentHandlerId, version) {
+        val materialized = if (isPresented && contentHandlerId != null) {
+            jsRuntime.callForResultComponent(contentHandlerId)
+        } else {
+            null
+        }
+        if (isPresented && materialized == null) {
+            Log.w(TAG, "Sheet content handler $contentHandlerId produced nothing")
+        }
+        sheetContent = materialized
+    }
+
+    val content = sheetContent
+    // Wait for the body before presenting: the detents are read off it, and
+    // `rememberModalBottomSheetState` is keyed on them, so presenting first would
+    // open an empty sheet and then re-create its state underneath it.
+    if (!isPresented || content == null) return
+
+    // Compose has one partially-expanded state where SwiftUI has a set of stops, so
+    // any short detent maps onto it and a large-only sheet (or one whose detents
+    // didn't survive the runtime, see PresentationDetentsModifier) skips it.
+    val unwrapped = content.unwrap()
+    val canRestPartial = unwrapped.modifiers
+        .filterIsInstance<PresentationDetentsModifier>()
+        .firstOrNull()
+        ?.props?.detents
+        .orEmpty()
+        .any { it.isPartial }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = !canRestPartial)
+    // A navigation stack is a whole screen by construction, and a sheet that can
+    // rest partially expanded needs height to expand into — Compose drops that
+    // state for short content. Anything else keeps its own height, so a small
+    // confirmation sheet isn't stretched to full screen.
+    val fillsSheet = canRestPartial || unwrapped.root is NavigationStackComponent
+
+    ModalBottomSheet(
+        onDismissRequest = {
+            dismissed = true
+            // `OnSwitch` is the event that carries a boolean to a handler, which is
+            // exactly the shape of `setIsPresented(false)` — reusing it keeps every
+            // existing embedder working without a new UiEvent type to handle.
+            modifier.props.setIsPresentedHandlerId?.let { onUiEvent(UiEvent.OnSwitch(it, false)) }
+            modifier.props.dismissHandlerId?.let { onUiEvent(UiEvent.OnTap(it)) }
+        },
+        sheetState = sheetState
+    ) {
+        // The sheet is its own window, so an embedder that scrolls its own content
+        // vertically (a chat list, the answer sheet of a custom surface) says nothing
+        // about what is inside this one. Leaving the flag set degrades every
+        // `ScrollView` in the sheet to a plain Column, and a full-page sheet then
+        // overflows its own height instead of scrolling.
+        CompositionLocalProvider(LocalHostScrollsVertically provides false) {
+            Column(
+                modifier = if (fillsSheet) Modifier.fillMaxHeight() else Modifier
+            ) {
+                BindJSView(
+                    jsRuntime = jsRuntime,
+                    component = content,
+                    version = version,
+                    onUiEvent = onUiEvent,
+                    modifiers = emptyList()
+                )
+            }
         }
     }
 }
@@ -1317,6 +1467,19 @@ private fun ComponentInnerView(
             modifiers = addFillIfNoFrame(modifiers),
             onUiEvent = onUiEvent
         )
+
+        is NavigationStackComponent -> NavigationStackView(
+            jsRuntime = jsRuntime,
+            component = component,
+            version = version,
+            modifiers = modifiers,
+            onUiEvent = onUiEvent,
+            hasFrame = hasFrame
+        )
+
+        // Only meaningful inside a `.toolbar(...)`, where NavigationStackView
+        // renders it. Loose in the tree it draws nothing, as on iOS.
+        is ToolbarItemComponent, is ToolbarItemGroupComponent -> {}
 
         is NavigationLinkComponent -> NavigationLinkView(
             jsRuntime = jsRuntime,

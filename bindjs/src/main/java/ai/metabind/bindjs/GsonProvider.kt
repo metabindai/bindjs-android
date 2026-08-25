@@ -36,6 +36,7 @@ import ai.metabind.bindjs.model.OnChangeComponent
 import ai.metabind.bindjs.model.Model3DComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.NavigationLinkComponent
+import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
@@ -50,6 +51,8 @@ import ai.metabind.bindjs.model.SecureFieldComponent
 import ai.metabind.bindjs.model.TextEditorComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
+import ai.metabind.bindjs.model.ToolbarItemComponent
+import ai.metabind.bindjs.model.ToolbarItemGroupComponent
 import ai.metabind.bindjs.model.VideoComponent
 import ai.metabind.bindjs.model.chart.AreaMarkComponent
 import ai.metabind.bindjs.model.chart.BarMarkComponent
@@ -103,6 +106,8 @@ import ai.metabind.bindjs.model.modifier.LineLimitModifier
 import ai.metabind.bindjs.model.modifier.LineSpacingModifier
 import ai.metabind.bindjs.model.modifier.MaskModifier
 import ai.metabind.bindjs.model.modifier.MonospacedModifier
+import ai.metabind.bindjs.model.modifier.NavigationBarTitleDisplayModeModifier
+import ai.metabind.bindjs.model.modifier.NavigationTitleModifier
 import ai.metabind.bindjs.model.modifier.MultilineTextAlignmentModifier
 import ai.metabind.bindjs.model.modifier.OffsetModifier
 import ai.metabind.bindjs.model.modifier.OnAppearModifier
@@ -115,6 +120,7 @@ import ai.metabind.bindjs.model.modifier.OpacityModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
 import ai.metabind.bindjs.model.modifier.PickerStyleModifier
+import ai.metabind.bindjs.model.modifier.PresentationDetentsModifier
 import ai.metabind.bindjs.model.modifier.ResizableModifier
 import ai.metabind.bindjs.model.modifier.RotationEffectModifier
 import ai.metabind.bindjs.model.modifier.SaturationModifier
@@ -122,11 +128,13 @@ import ai.metabind.bindjs.model.modifier.ScaleEffectModifier
 import ai.metabind.bindjs.model.modifier.ScaledToFillModifier
 import ai.metabind.bindjs.model.modifier.ScaledToFitModifier
 import ai.metabind.bindjs.model.modifier.ShadowModifier
+import ai.metabind.bindjs.model.modifier.SheetModifier
 import ai.metabind.bindjs.model.modifier.StrikethroughModifier
 import ai.metabind.bindjs.model.modifier.TagModifier
 import ai.metabind.bindjs.model.modifier.TextCaseModifier
 import ai.metabind.bindjs.model.modifier.TextSelectionModifier
 import ai.metabind.bindjs.model.modifier.TintModifier
+import ai.metabind.bindjs.model.modifier.ToolbarModifier
 import ai.metabind.bindjs.model.modifier.TrackingModifier
 import ai.metabind.bindjs.model.modifier.TransformEffectModifier
 import ai.metabind.bindjs.model.modifier.UnderlineModifier
@@ -238,6 +246,17 @@ class GsonProvider {
                     .registerSubtype(CoordinateSpaceModifier::class.java, "coordinateSpace")
                     .registerSubtype(VisualEffectModifier::class.java, "visualEffect")
                     .registerSubtype(ContextMenuModifier::class.java, "contextMenu")
+                    .registerSubtype(SheetModifier::class.java, "sheet")
+                    .registerSubtype(ToolbarModifier::class.java, "toolbar")
+                    .registerSubtype(NavigationTitleModifier::class.java, "navigationTitle")
+                    .registerSubtype(
+                        NavigationBarTitleDisplayModeModifier::class.java,
+                        "navigationBarTitleDisplayMode"
+                    )
+                    .registerSubtype(
+                        PresentationDetentsModifier::class.java,
+                        "presentationDetents"
+                    )
                     .registerSubtype(ChartXAxisModifier::class.java, "chartXAxis")
                     .registerSubtype(ChartYAxisModifier::class.java, "chartYAxis")
                     .registerSubtype(ChartXScaleModifier::class.java, "chartXScale")
@@ -307,6 +326,9 @@ class GsonProvider {
                     .registerSubtype(CapsuleComponent::class.java, "Capsule")
                     .registerSubtype(GeometryReaderComponent::class.java, "GeometryReader")
                     .registerSubtype(NavigationLinkComponent::class.java, "NavigationLink")
+                    .registerSubtype(NavigationStackComponent::class.java, "NavigationStack")
+                    .registerSubtype(ToolbarItemComponent::class.java, "ToolbarItem")
+                    .registerSubtype(ToolbarItemGroupComponent::class.java, "ToolbarItemGroup")
                     .registerSubtype(EllipseComponent::class.java, "Ellipse")
                     .registerSubtype(PickerComponent::class.java, "Picker")
                     .registerSubtype(Model3DComponent::class.java, "Model3D")

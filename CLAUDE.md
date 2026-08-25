@@ -157,6 +157,46 @@ is OnDisappearModifier -> {
 4. **Decide propagation**: if the modifier needs to fire something at the layer it's attached to (rather than just contributing to the leaf's Compose `Modifier`), add a case in `ModifiedComponent`'s `when (modifier)`. Otherwise it'll be stripped behind any special-cased ancestor — see the OnAppear note above.
 5. **JS-side**: list it in the `OnHandler` / `Padding` / etc registration in `script.js`, or in `#registerBuiltInModifier` for new categories.
 
+## Sheets and navigation chrome
+
+`.sheet(...)` presents its body in a Compose `ModalBottomSheet` (`SheetModifier` in
+`BindJSView.kt`), mirroring `Sheet.swift` in bindjs-apple. Three things about it are
+not like the other content-carrying modifiers:
+
+- **The body is materialized, not deserialized.** JS sends `contentHandlerId`, not a
+  subtree; the renderer calls `callForResultComponent` while the sheet is up and
+  again after every render. Handler ids belong to the render that produced them, so
+  a subtree held across a render has dead buttons.
+- **JS opens the sheet; Compose closes it.** A user-driven dismissal (swipe, scrim,
+  back) drops the sheet locally *first* and reports itself to JS afterwards. It has
+  to: the sheet is a transparent full-screen dialog, and one left composed after
+  being swiped away swallows every touch in the app.
+- **`LocalHostScrollsVertically` is reset to false inside the sheet.** The sheet is
+  its own window, so an embedder that scrolls its own content says nothing about
+  this one. Left set, every `ScrollView` in the sheet degrades to a Column and a
+  full-page sheet overflows instead of scrolling.
+
+`NavigationStack` renders its content plus a bar it builds itself, reading
+`navigationTitle` / `navigationBarTitleDisplayMode` / `toolbar` off the modifier
+chain wrapping its child (`BaseComponent.unwrap()`) — SwiftUI hands those to the
+container, not to the view they are written on. `ToolbarItem` placement maps
+`cancellationAction` / `navigationBarLeading` / `topBarLeading` / `principal` to the
+leading end and everything else to the trailing end.
+
+**Two known bindjs-runtime bugs show up here** (both in `script.js`, both present in
+bindjs-apple too — fix upstream in bindjs-runtime, then re-sync):
+
+- `processProps` rewrites props named `set…`/`on…` into stored-handler ids
+  (`setIsPresented` → `setIsPresentedId`) and deletes the original *before*
+  `SheetModifier` reads it. The modifier therefore stores its own no-op fallback as
+  `setIsPresentedHandlerId` and reports `dismissHandlerId: null`, so a dismissal
+  never reaches the component and its `sheetMode` state goes stale. Fix:
+  `SheetModifier` should prefer `props.setIsPresentedId` / `props.onDismissId`.
+- `Detent` is registered with `#registerHelperComponent`, which binds the name to a
+  *function*, so `Detent.medium` in component code evaluates to `undefined` and
+  `.presentationDetents([Detent.medium, Detent.large])` arrives as `[null, null]`.
+  Both renderers fall back to a full-height sheet. Fix: register it as a value.
+
 ## `JsRuntimeImpl` lifecycle notes
 
 - **Singleton via `getInstance(context)`** — there is exactly one isolate per process. Embeddings that show multiple BindJS views in the same Compose tree share state. Hook storage is keyed by `(rendererId, path)`, so distinct trees use distinct rendererIds — but the singleton's `mcpHost`, `onRerenderRequested`, and `environment` are global. The last `setMcpHost(...)` / `setOnRerenderRequested(...)` wins.

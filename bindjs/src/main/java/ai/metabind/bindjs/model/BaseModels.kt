@@ -3,6 +3,7 @@ package ai.metabind.bindjs.model
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import ai.metabind.bindjs.model.modifier.BackgroundModifier
+import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
 import java.io.Serializable
@@ -271,6 +272,40 @@ fun List<BaseComponent<*>?>?.layoutChildren(): List<BaseComponent<*>?>? {
     if (this == null) return null
     if (none { it is EmptyComponent }) return this
     return filter { it !is EmptyComponent }
+}
+
+/**
+ * The tree seen from the outside: the modifiers wrapping a node, outermost first,
+ * and the node they finally wrap.
+ *
+ * SwiftUI hands `navigationTitle`, `toolbar` and `presentationDetents` to the
+ * *container* — a navigation stack, a sheet — rather than to the view they are
+ * written on, so the container has to read them back off the chain around its
+ * content. Walks through `ComponentCall` slots too (a custom component's body is
+ * where such a modifier usually sits), and stops at a nested `NavigationStack`,
+ * whose chrome belongs to that stack.
+ */
+class WrappedComponent(
+    val modifiers: List<ComponentModifier<*>>,
+    val root: BaseComponent<*>?,
+)
+
+fun BaseComponent<*>.unwrap(): WrappedComponent {
+    val modifiers = mutableListOf<ComponentModifier<*>>()
+    var node: BaseComponent<*>? = this
+    while (true) {
+        val next = when (node) {
+            is ModifiedComponent -> {
+                node.props.modifier?.let { modifiers.add(it) }
+                node.props.content?.firstOrNull()
+            }
+
+            is Component -> node.props.children?.firstOrNull()
+            else -> return WrappedComponent(modifiers, node)
+        }
+        if (next is NavigationStackComponent) return WrappedComponent(modifiers, next)
+        node = next
+    }
 }
 
 interface BrushComponent {
