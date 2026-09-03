@@ -41,6 +41,41 @@ interface JsRuntime {
 
     /** Atomic [willRender] + [callComponentPreview]; see [renderComponent]. */
     suspend fun renderComponentPreview(name: String, previewIndex: Int = 0): BaseComponent<*>
+
+    /**
+     * Evaluate [script] in this runtime's isolate and return its completion value.
+     *
+     * The seam a renderer that is not a BindJS component uses to reach the runtime —
+     * an A2UI interpreter, say, which arrives as its own bundle, installs a global, and
+     * has to register its catalog on *this* instance. It cannot bring its own: a
+     * `handlerId` in the AST only resolves back to a closure inside the instance that
+     * stored it, and hook state is keyed by component path within that instance, so a
+     * second runtime draws a correct-looking tree that does nothing when tapped.
+     *
+     * Serialized against every other JS entry point, like the rest of this interface.
+     * Note that `script.js` declares `runtime` as a `const`, so it lives in the global
+     * lexical environment: evaluated source can name it, and it is the [BindJSRuntime]
+     * itself rather than the facade of globals wrapped around it.
+     *
+     * Use [renderExternal] for anything that builds a tree — this does not reset hook
+     * state, and must not be used to call a component.
+     */
+    suspend fun evaluate(script: String): String
+
+    /**
+     * Atomic `willRender()` + [evaluate], for a renderer that builds its own AST.
+     *
+     * The [renderComponent] counterpart for trees that do not come from a registered
+     * component, and it exists for the same reason: `willRender()` resets the
+     * component-path counters hook state is keyed by, so a tree built before it — or two
+     * trees built between one reset and one decode — binds this pass's hooks to the last
+     * pass's paths. Holding the lock across both is what makes that ordering
+     * unstateable-wrong rather than a rule in a doc comment.
+     *
+     * [script] must evaluate to the AST as a JSON string, which is what this runtime's
+     * own `callComponent` returns and what Gson decodes here.
+     */
+    suspend fun renderExternal(script: String): BaseComponent<*>
     suspend fun callComponentThumbnail(name: String, isContent: Boolean = true): BaseComponent<*>
     suspend fun setEnvironment(environment: Map<String, Any>)
     // Arguments are nullable: a chart selection that has been cleared calls its

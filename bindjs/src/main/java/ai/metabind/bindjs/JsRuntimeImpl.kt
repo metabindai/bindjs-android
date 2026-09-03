@@ -436,6 +436,13 @@ class JsRuntimeImpl private constructor(
         parseComponent(evalLocked("callComponentPreview(['$name', $previewIndex]);"))
     }
 
+    override suspend fun evaluate(script: String): String = evalJs(script)
+
+    override suspend fun renderExternal(script: String): BaseComponent<*> = jsLock.withLock {
+        willRenderLocked()
+        parseComponent(evalLocked(script))
+    }
+
     override suspend fun callComponentThumbnail(name: String, isContent: Boolean): BaseComponent<*> {
         val thumbnailType = if (isContent) "content" else "component"
         Log.d(TAG, "Calling component thumbnail: $name (type: $thumbnailType)")
