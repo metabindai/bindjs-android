@@ -84,7 +84,7 @@ Published as `ai.metabind:bindjs-android` to GitHub Packages.
 
 ### Publish to GitHub Packages
 
-Authentication requires a GitHub personal access token with `write:packages` scope.
+Authentication requires a GitHub personal access token (classic) with `write:packages` scope and write access to this repository.
 
 **Option 1 — environment variables:**
 
@@ -107,18 +107,30 @@ gpr.user=<your-github-username>
 gpr.key=<your-github-token>
 ```
 
-Artifacts are published to `https://maven.pkg.github.com/metabindai/bindjs-android-binary`.
+The `0.0.31` candidate is configured to publish through the public source
+repository at `https://maven.pkg.github.com/metabindai/bindjs-android`.
+**The registry migration is not complete.** GitHub rejected the upload because
+the existing Maven package is associated with the legacy repository. See the
+[proposed package cutover](docs/PACKAGE_MIGRATION.md) before publishing or
+updating consumers.
+
+The Maven coordinates remain `ai.metabind:bindjs-android`. GitHub Packages
+still requires authentication for public downloads.
 
 ### Consuming the artifact
 
-GitHub Packages requires authentication even for reading packages. You need a personal access token with `read:packages` scope.
+GitHub Packages requires authentication even for reading public packages. Use a
+personal access token (classic) with `read:packages` scope, or a GitHub Actions
+`GITHUB_TOKEN` with package read access. A token that only has `repo` scope is
+not sufficient. Keep tokens in environment variables or user-level Gradle
+properties, never in this repository.
 
 Add the repository to your project's `settings.gradle.kts` (or root `build.gradle.kts`):
 
 ```kotlin
 repositories {
     maven {
-        url = uri("https://maven.pkg.github.com/metabindai/bindjs-android-binary")
+        url = uri("https://maven.pkg.github.com/metabindai/bindjs-android")
         credentials {
             username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
             password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
@@ -131,7 +143,7 @@ Then add the dependency:
 
 ```kotlin
 dependencies {
-    implementation("ai.metabind:bindjs-android:0.0.20")
+    implementation("ai.metabind:bindjs-android:0.0.31")
 }
 ```
 
@@ -151,7 +163,7 @@ repositories {
 }
 
 dependencies {
-    implementation("ai.metabind:bindjs-android:0.0.20")
+    implementation("ai.metabind:bindjs-android:0.0.31")
 }
 ```
 
