@@ -49,6 +49,13 @@ publishing {
             artifactId = "bindjs-android"
 
             pom {
+                name.set("BindJS Android")
+                description.set("Open source native Jetpack Compose renderer for BindJS.")
+                url.set("https://github.com/metabindai/bindjs-android")
+                scm {
+                    url.set("https://github.com/metabindai/bindjs-android")
+                    connection.set("scm:git:https://github.com/metabindai/bindjs-android.git")
+                }
                 licenses {
                     license {
                         name.set("The Apache License, Version 2.0")
@@ -56,7 +63,7 @@ publishing {
                     }
                 }
             }
-            version = "0.0.30"
+            version = "0.0.31"
 
             afterEvaluate {
                 from(components["default"])
@@ -66,7 +73,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/metabindai/bindjs-android-binary")
+            url = uri("https://maven.pkg.github.com/metabindai/bindjs-android")
             credentials {
                 username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
                 password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
