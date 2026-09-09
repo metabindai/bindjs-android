@@ -212,7 +212,7 @@ bindjs-apple too — fix upstream in bindjs-runtime, then re-sync):
 ./gradlew :bindjs:publish            # publish to GitHub Packages (requires gpr.user/gpr.key)
 ```
 
-Publishing target: `https://maven.pkg.github.com/metabindai/bindjs-android`. Auth via `gpr.user`/`gpr.key` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR`/`GITHUB_TOKEN` env vars with `write:packages` scope.
+Publishing target: `https://maven.pkg.github.com/metabindai/bindjs-android-binary`. Auth via `gpr.user`/`gpr.key` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR`/`GITHUB_TOKEN` env vars with `write:packages` scope.
 
 For coordinated releases (`bindjs-android` → `metabind-android`), publish here first, then bump the `bindjs` pin in `metabind-android/gradle/libs.versions.toml` — the samples (including `samples/assistant-demo`) build from the same Gradle project, so there is no separate demo-app re-pin. Don't publish for local verification — `metabind-android` can substitute a local checkout via the commented-out `includeBuild("../bindjs-android")` block in its `settings.gradle.kts`.
 
