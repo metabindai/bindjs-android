@@ -616,6 +616,12 @@ function ForEach({ args }) {
             }
             return result
         });
+
+        // A row whose callback returned a plain AST rather than a component never
+        // reached #makeComponent, so nothing consumed the id. Drop it here so it
+        // cannot leak into whatever is built after this loop.
+        this.setForEachElementId(null);
+
         ast = AST.ForEach(null, null, count, null, children);
     } else {
         const id = this.currentPathId('ForEach');    
@@ -3294,8 +3300,15 @@ exports.default = defineComponent({
             var id = null;
             if (modifierId) {
                 id = modifierId + componentName + '_' + childIndex;
-            } else if (forEachElementId) {
+            } else if (forEachElementId != null) {
+                // A ForEach row's own root, and only it. Compared against null rather
+                // than for truthiness because index 0 is a valid element id, and cleared
+                // as soon as it is consumed: left set, every component nested under the
+                // row would take the row index as its path segment too, collapsing the
+                // whole subtree onto one segment per depth and making siblings share a
+                // hook array. Clearing here is also what lets ForEach nest.
                 id = forEachElementId;
+                this.hookState.forEachElementId = null;
             } else {
                 id = componentName + '_' + childIndex;
             }
