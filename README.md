@@ -107,12 +107,13 @@ gpr.user=<your-github-username>
 gpr.key=<your-github-token>
 ```
 
-The `0.0.31` candidate is configured to publish through the public source
-repository at `https://maven.pkg.github.com/metabindai/bindjs-android`.
-**The registry migration is not complete.** GitHub rejected the upload because
-the existing Maven package is associated with the legacy repository. See the
-[proposed package cutover](docs/PACKAGE_MIGRATION.md) before publishing or
-updating consumers.
+Publishing goes to the legacy binary repository at
+`https://maven.pkg.github.com/metabindai/bindjs-android-binary`, which is also
+where consumers resolve from. Pointing it at the public source repository was
+tried and reverted: GitHub rejected the upload because the existing Maven
+package is associated with the legacy repository. See the
+[proposed package cutover](docs/PACKAGE_MIGRATION.md) for what has to happen
+before the target can move.
 
 The Maven coordinates remain `ai.metabind:bindjs-android`. GitHub Packages
 still requires authentication for public downloads.
