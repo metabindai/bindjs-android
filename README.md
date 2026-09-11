@@ -1,11 +1,11 @@
 # BindJS Android
 
-A JavaScript-driven UI rendering engine for Android using Jetpack Compose. BindJS deserializes JSON component trees into native Android views with 30+ composables, 73 modifiers, gradient support, and a JavaScript runtime for event handlers and dynamic logic.
+The Jetpack Compose rendering engine for BindJS. BindJS is the open component language for agent UI: write a component once, with its logic, and it renders as native SwiftUI, Jetpack Compose, and React. This engine turns the runtime's JSON view tree into native Android views, with 38 composables, 87 modifiers, gradient support, and a JavaScript runtime for event handlers and dynamic logic.
 
 It's used by [metabind-android](https://github.com/metabindai/metabind-android), the Metabind Android SDK, to render Interactive Tool results, but works standalone against any BindJS bundle.
 
 > [!TIP]
-> BindJS powers [Metabind](https://metabind.ai) — the hosted platform for MCP Apps. Turn your app's UI and APIs into a governed agent that runs in your own app and across Claude, ChatGPT, and every MCP host. **[🚀 Start free at metabind.ai](https://metabind.ai)** · **[📖 Read the docs](https://docs.metabind.ai)**
+> BindJS powers [Metabind](https://metabind.ai) — the hosted platform for [MCP Apps](https://github.com/modelcontextprotocol/ext-apps). Turn your app's UI and APIs into a governed agent that runs in your own app and across Claude, ChatGPT, and every MCP host. **[Start free at metabind.ai](https://www.metabind.ai/signup)** · **[Read the docs](https://docs.metabind.ai)**
 
 ## Documentation
 
