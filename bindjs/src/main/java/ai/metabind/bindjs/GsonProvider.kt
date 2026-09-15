@@ -37,6 +37,7 @@ import ai.metabind.bindjs.model.Model3DComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
+import ai.metabind.bindjs.model.PathComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
@@ -330,6 +331,7 @@ class GsonProvider {
                     .registerSubtype(ToolbarItemComponent::class.java, "ToolbarItem")
                     .registerSubtype(ToolbarItemGroupComponent::class.java, "ToolbarItemGroup")
                     .registerSubtype(EllipseComponent::class.java, "Ellipse")
+                    .registerSubtype(PathComponent::class.java, "Path")
                     .registerSubtype(PickerComponent::class.java, "Picker")
                     .registerSubtype(Model3DComponent::class.java, "Model3D")
                     .registerSubtype(VideoComponent::class.java, "Video")
