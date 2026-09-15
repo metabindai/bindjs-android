@@ -3,6 +3,8 @@ package ai.metabind.bindjs.composables.ext
 import android.content.Context
 import android.graphics.Typeface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -19,16 +21,30 @@ import ai.metabind.bindjs.model.modifier.FontModifier
  * equivalents are a font resource the host app ships in `res/font`, and a family the
  * device already has installed, so both are tried in that order.
  *
- * `bindjs-apple` also accepts a remote `url` and registers the downloaded face before
- * use. That half is not implemented here yet; such a font resolves to null and the text
- * falls back to the system face, which is what SwiftUI does while a download is still
- * in flight.
+ * A `url` names a face to download and register before use; [RemoteFontCache] does that
+ * once per URL for the whole process. Until it lands the text renders in the system
+ * face, and `family` is deliberately not consulted as a stand-in — bindjs-apple resolves
+ * a remote font the same way, and preferring a local face of the same name here would
+ * make the two platforms disagree and would swap the typeface under the reader when the
+ * download completed.
  */
 @Composable
 internal fun List<ComponentModifier<*>>.getCustomTypeface(): Typeface? {
-    val family = customFontProps()?.family
+    val custom = customFontProps() ?: return null
     val context = LocalContext.current
-    return remember(family, context) { context.resolveFontFamily(family) }
+    val url = custom.url
+
+    if (url.isNullOrBlank()) {
+        val family = custom.family
+        return remember(family, context) { context.resolveFontFamily(family) }
+    }
+
+    // Seeded from the cache so a font already fetched earlier in the session paints on
+    // the first frame instead of flashing the system face.
+    val remote by produceState(RemoteFontCache.cached(url), url, context) {
+        value = RemoteFontCache.typeface(context, url)
+    }
+    return remote
 }
 
 /**
