@@ -164,7 +164,23 @@ fun List<ComponentModifier<*>>.buildModifierFromSubset(
 }
 
 fun List<ComponentModifier<*>>.getFontSize(): Number? {
-    return (firstOrNull { it is FontModifier } as? FontModifier)?.props?.rawValue as? Number
+    // Innermost `.font(...)` wins, as in SwiftUI, and a font that carries no explicit
+    // size is transparent to this lookup. Taking the outermost modifier instead meant a
+    // `VStack(...).font('caption')` shadowed the `.font(CustomFont({ size: 30 }))` on
+    // its own child: the caption is not a numeric size, so the whole lookup returned
+    // null and the child rendered at the inherited size. [getNearestFontPointSize]
+    // already scanned this way.
+    for (modifier in asReversed()) {
+        if (modifier !is FontModifier) continue
+        // A custom font carries its size in its own props; `rawValue` there is the
+        // whole CustomFont directive, not a number. Without this branch the size
+        // reached only the markdown path and a verbatim Text rendered at the inherited
+        // size — and, because every size here is applied in `sp`, it also stopped
+        // tracking the system font-scale setting the way SwiftUI's `relativeTo:`
+        // tracks Dynamic Type.
+        (modifier.props.rawValue as? Number ?: modifier.props.custom?.size)?.let { return it }
+    }
+    return null
 }
 
 /**
@@ -197,11 +213,14 @@ fun String.namedFontPointSize(): Float? = when (this) {
 fun List<ComponentModifier<*>>.getNearestFontPointSize(): Float? {
     for (modifier in asReversed()) {
         if (modifier is FontModifier) {
+            modifier.props.custom?.size?.let { return it }
             when (val raw = modifier.props.rawValue) {
                 is Number -> return raw.toFloat()
                 is String -> raw.namedFontPointSize()?.let { return it }
                 is Map<*, *> -> {
-                    // Custom font: { type: "CustomFont", props: { size: N, ... } }
+                    // Custom font: { type: "CustomFont", props: { size: N, ... } }.
+                    // Superseded by the typed `custom` props above; kept for a font
+                    // directive that arrives without them.
                     val size = (raw["props"] as? Map<*, *>)?.get("size") as? Number
                     if (size != null) return size.toFloat()
                 }
@@ -255,7 +274,11 @@ fun List<ComponentModifier<*>>.getFontStyle(): FontStyle {
     } ?: FontStyle.Normal
 }
 
+@Composable
 fun List<ComponentModifier<*>>.getFontFamily(): FontFamily? {
+    // An explicit `.font(CustomFont(...))` names a face outright, so it outranks the
+    // `.fontDesign(...)` / `.monospaced()` hints, which only pick among system faces.
+    getCustomTypeface()?.let { return it.toComposeFontFamily() }
     return firstOrNull { it is FontDesignModifier }?.let { modifier ->
         (modifier as FontDesignModifier).props.rawValue.toFontFamily()
     } ?: firstOrNull { it is MonospacedModifier }?.let { modifier ->
