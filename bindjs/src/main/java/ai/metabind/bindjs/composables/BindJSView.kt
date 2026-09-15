@@ -90,6 +90,7 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
+import ai.metabind.bindjs.model.PathComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
@@ -1405,6 +1406,13 @@ private fun ComponentInnerView(
         )
 
         is EllipseComponent -> EllipseView(
+            jsRuntime = jsRuntime,
+            component = component,
+            modifiers = addFillIfNoFrame(modifiers),
+            onUiEvent = onUiEvent
+        )
+
+        is PathComponent -> PathView(
             jsRuntime = jsRuntime,
             component = component,
             modifiers = addFillIfNoFrame(modifiers),
