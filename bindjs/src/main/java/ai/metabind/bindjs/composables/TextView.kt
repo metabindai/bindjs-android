@@ -33,6 +33,7 @@ import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.applyTextCase
 import ai.metabind.bindjs.composables.ext.buildModifier
 import ai.metabind.bindjs.composables.ext.getAlignment
+import ai.metabind.bindjs.composables.ext.getCustomTypeface
 import ai.metabind.bindjs.composables.ext.getFontFamily
 import ai.metabind.bindjs.composables.ext.getFontSize
 import ai.metabind.bindjs.composables.ext.getFontStyle
@@ -302,6 +303,12 @@ private fun Markdown(
     val context = LocalContext.current
     val markwon = remember { Markwon.create(context) }
 
+    // This branch draws into a platform TextView rather than a Compose Text, so it
+    // never passes through `getFontFamily()` — a `.font(CustomFont(...))` has to be
+    // resolved to a Typeface and applied here, or the font would land on verbatim text
+    // and silently miss the markdown that nearly all BindJS text actually is.
+    val customTypeface = modifiers.getCustomTypeface()
+
     // Most BindJS text arrives as `Text({ markdown: ... })` — it is the only spelling
     // that renders on both the Compose and SwiftUI backends — so this branch, not the
     // Compose one, is where named font styles have to be honoured. `fontSize` here comes
@@ -360,7 +367,7 @@ private fun Markdown(
                 if (effectiveSizeSp != null) {
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, effectiveSizeSp)
                 }
-                textView.applyWeight(effectiveWeight)
+                textView.applyWeight(effectiveWeight, customTypeface)
             }
         )
     }
@@ -392,15 +399,16 @@ private class MarkdownTextView(context: Context) : AndroidTextView(context) {
 }
 
 /**
- * Apply a numeric font weight to a platform TextView.
+ * Apply a numeric font weight to a platform TextView, over [family] when a
+ * `.font(CustomFont(...))` resolved one and the default face otherwise.
  *
  * API 28+ can set an arbitrary weight, so semibold (600) renders as semibold rather than
  * being rounded to bold. Below that, Typeface only offers normal/bold, so anything at or
  * above semibold becomes bold — closer than dropping it, which is what the previous
  * `>= 700` check did to every A2UI heading.
  */
-private fun AndroidTextView.applyWeight(weight: Int?) {
-    val base = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+private fun AndroidTextView.applyWeight(weight: Int?, family: Typeface? = null) {
+    val base = Typeface.create(family ?: Typeface.DEFAULT, Typeface.NORMAL)
     if (weight == null) {
         typeface = base
         return
