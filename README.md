@@ -78,6 +78,73 @@ Every method has a no-op default except `toolCall`, which throws `NotImplemented
 ./gradlew clean :bindjs:build
 ```
 
+## Preview app and screenshot tests
+
+`:preview` is a small app for eyeballing components and charts on a device or emulator.
+Its drawer has two sections, Components and Charts; each lists fixtures, and tapping one
+renders it through the real runtime. Fixtures are plain BindJS source in
+`preview/src/main/java/ai/metabind/bindjs/preview/ComponentFixtures.kt` and
+`ChartFixtures.kt`.
+
+```sh
+./gradlew :preview:installDebug
+adb shell am start -n com.yapstudios.bindjs.preview/ai.metabind.bindjs.preview.MainActivity
+# or straight into one fixture:
+adb shell am start -n com.yapstudios.bindjs.preview/ai.metabind.bindjs.preview.MainActivity --es fixture Slider
+```
+
+Every component fixture also has a screenshot test. The JS isolate only runs inside
+Android's WebView sandbox, so the tests split the work in two: node renders each fixture
+to its component tree once, and the tree is committed under
+`preview/src/test/resources/trees`; Robolectric then paints that tree with the real
+Compose renderer on the JVM and Roborazzi compares the result with the golden image in
+`preview/src/test/screenshots`. No emulator is involved and a full run takes a few seconds.
+
+Chart fixtures are not screenshot-tested. Vico builds a chart's model in a coroutine
+after Compose has reported idle, so a chart may or may not have drawn when the image is
+captured; they are for eyeballing in the app only.
+
+### Running the screenshot tests
+
+```sh
+./gradlew :preview:verifyRoborazziDebug     # compare every component fixture against its golden
+./gradlew :preview:recordRoborazziDebug     # (re)write the goldens after an intended change
+./gradlew :preview:compareRoborazziDebug    # like verify, but report instead of fail
+```
+
+Gradle treats the test task as up to date when nothing it reads has changed, so to force
+a re-run add `--rerun-tasks`, or run `./gradlew :preview:cleanTestDebugUnitTest` first.
+
+A failed verify writes `<fixture>_compare.png` to `preview/build/outputs/roborazzi/` with
+the golden, the new rendering and a diff side by side. Goldens are recorded on a fixed
+device profile (Pixel 6a, SDK 35, set in `FixtureScreenshotTest`), so record them with
+Gradle rather than pasting in emulator screenshots.
+
+### Adding or changing a fixture
+
+1. Add or edit the entry in `ComponentFixtures.kt` (or `ChartFixtures.kt` for a chart,
+   which then only needs step 5). Plain names such as `Slider` are fine: the app prefixes
+   the name it registers with the runtime so a fixture cannot shadow the component it
+   shows.
+2. Re-render its tree. This needs `node` on the PATH:
+
+   ```sh
+   ./gradlew :preview:testDebugUnitTest -PupdateTrees --tests '*FixtureTreesTest*'
+   ```
+
+   Without the flag the same test fails when a committed tree is stale, and is skipped
+   when node is not installed. Re-run it after re-syncing `script.js` too, since a runtime
+   change can alter the trees.
+3. Record its golden and check the image: `./gradlew :preview:recordRoborazziDebug`.
+4. Commit the source, the tree JSON and the PNG together.
+5. Install the app and look at it on a device too; a chart fixture has only this step.
+
+A fixture that fetches a font by URL needs that font seeded for the test, since the JVM
+run has no network; see `RemoteFonts` in `FixtureScreenshotTest.kt`. The seed files live in
+`preview/src/test/resources/remote-fonts`, which must keep that name: a test-resources
+directory called `fonts` would shadow the `fonts/` resource Robolectric loads Android's
+system fonts from.
+
 ## Publishing
 
 Published as `ai.metabind:bindjs-android` to GitHub Packages.

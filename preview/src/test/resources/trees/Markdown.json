@@ -1,0 +1,136 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Markdown",
+    "props": {},
+    "children": [
+      {
+        "type": "ScrollView",
+        "props": {
+          "children": [
+            {
+              "type": "VStack",
+              "props": {
+                "alignment": "leading",
+                "spacing": 16,
+                "children": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "# Heading 1\n## Heading 2\n### Heading 3",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "A paragraph with **bold**, _italic_, ~~strikethrough~~, `inline code` and a [link](https://metabind.ai).",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "- First item\n- Second item\n  - Nested item\n\n1. Step one\n2. Step two",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "> A block quote\n> spanning two lines.",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "```\nconst answer = 42;\nconsole.log(answer);\n```",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "blue",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "title2",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "markdown": "Markdown styled with `.font(title2)` and a blue `.foregroundStyle`",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "frame",
+                        "props": {
+                          "maxWidth": "Infinity",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "multilineTextAlignment",
+                              "props": {
+                                "rawValue": "center",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "markdown": "Centered **markdown** in a full-width frame",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

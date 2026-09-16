@@ -20,3 +20,5 @@ build
 .cxx
 local.properties
 device-*
+# JVM crash logs Robolectric leaves next to the module on a native crash
+hs_err_pid*.log
