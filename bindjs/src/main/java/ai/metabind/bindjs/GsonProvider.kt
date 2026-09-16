@@ -39,6 +39,7 @@ import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.PathComponent
 import ai.metabind.bindjs.model.PickerComponent
+import ai.metabind.bindjs.model.PlaceholderComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
 import ai.metabind.bindjs.model.RectangleComponent
@@ -344,6 +345,7 @@ class GsonProvider {
                     .registerSubtype(MenuComponent::class.java, "Menu")
                     .registerSubtype(OnChangeComponent::class.java, "onChange")
                     .registerSubtype(ContentUnavailableViewComponent::class.java, "ContentUnavailableView")
+                    .registerSubtype(PlaceholderComponent::class.java, "Placeholder")
             )
             .registerTypeAdapter(
                 object : TypeToken<Float?>() {}.type,

@@ -1,0 +1,130 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Placeholder",
+    "props": {},
+    "children": [
+      {
+        "type": "VStack",
+        "props": {
+          "alignment": "leading",
+          "spacing": 16,
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Placeholder resolved by the host",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ComponentCall",
+              "props": {
+                "name": "Fixture_Placeholder",
+                "props": {
+                  "label": "Native",
+                  "count": 3
+                },
+                "children": [
+                  {
+                    "type": "HStack",
+                    "props": {
+                      "spacing": 8,
+                      "children": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "caption",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Badge:",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Placeholder",
+                          "props": {
+                            "name": "PreviewBadge",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Placeholder with no registered component",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "frame",
+                  "props": {
+                    "width": 200,
+                    "height": 60,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Placeholder",
+                    "props": {
+                      "name": "NotRegistered",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -271,14 +271,16 @@ private fun FixtureScreen(
                     contentAlignment = Alignment.Center
                 ) { CircularProgressIndicator() }
 
-                else -> BindJSView(
-                    jsRuntime = runtime,
-                    component = component!!,
-                    version = version,
-                    onUiEvent = { event ->
-                        scope.launch { runtime.routeUiEvent(event) }
-                    },
-                )
+                else -> WithPreviewComponents {
+                    BindJSView(
+                        jsRuntime = runtime,
+                        component = component!!,
+                        version = version,
+                        onUiEvent = { event ->
+                            scope.launch { runtime.routeUiEvent(event) }
+                        },
+                    )
+                }
             }
         }
         Text(
