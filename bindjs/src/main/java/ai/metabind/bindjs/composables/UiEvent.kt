@@ -19,6 +19,16 @@ sealed class UiEvent {
     ) : UiEvent()
 
     /**
+     * A slider's new position, for the JS `setValue` closure. Already snapped to the
+     * slider's step and clamped to its range, so the handler receives a value the
+     * component could have set itself.
+     */
+    data class OnSliderChange(
+        val handlerId: String,
+        val value: Double,
+    ) : UiEvent()
+
+    /**
      * A text input's new contents, for the JS `setText` closure.
      *
      * Text entry used to dispatch a bare [OnTap], which calls the handler with no

@@ -50,6 +50,7 @@ import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.SecureFieldComponent
 import ai.metabind.bindjs.model.TextEditorComponent
+import ai.metabind.bindjs.model.SliderComponent
 import ai.metabind.bindjs.model.TextFieldComponent
 import ai.metabind.bindjs.model.ToggleComponent
 import ai.metabind.bindjs.model.ToolbarItemComponent
@@ -316,6 +317,7 @@ class GsonProvider {
                     .registerSubtype(SectionComponent::class.java, "Section")
                     .registerSubtype(SpacerComponent::class.java, "Spacer")
                     .registerSubtype(TextComponent::class.java, "Text")
+                    .registerSubtype(SliderComponent::class.java, "Slider")
                     .registerSubtype(ToggleComponent::class.java, "Toggle")
                     .registerSubtype(ColumnComponent::class.java, "VStack")
                     .registerSubtype(BoxComponent::class.java, "ZStack")

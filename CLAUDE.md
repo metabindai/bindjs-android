@@ -23,7 +23,7 @@ When the Apple/Android pair diverges in semantics, treat `bindjs-apple` as the r
 
 ## Module layout
 
-**Two Gradle modules**: `:bindjs` (the library) and `:chart-preview` (a standalone chart-rendering preview app). The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
+**Two Gradle modules**: `:bindjs` (the library) and `:preview` (a standalone preview app with a navigation drawer of component and chart fixtures — add a component fixture in `preview/.../ComponentFixtures.kt`). The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
 
 ```
 bindjs/src/main/

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.yapstudios.bindjs.chartpreview"
+    namespace = "com.yapstudios.bindjs.preview"
     compileSdk {
         version = release(libs.versions.android.compile.sdk.get().toInt()) {
             minorApiLevel = 1
@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.yapstudios.bindjs.chartpreview"
+        applicationId = "com.yapstudios.bindjs.preview"
         minSdk = libs.versions.android.min.sdk.get().toInt()
         targetSdk = libs.versions.android.target.sdk.get().toInt()
         versionCode = 1
@@ -33,5 +33,6 @@ dependencies {
     implementation(project(":bindjs"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.android.compose.material)
+    implementation(libs.android.compose.material.icons)
     implementation(libs.android.compose.ui)
 }
