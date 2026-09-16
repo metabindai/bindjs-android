@@ -1,0 +1,362 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Path",
+    "props": {},
+    "children": [
+      {
+        "type": "ScrollView",
+        "props": {
+          "children": [
+            {
+              "type": "VStack",
+              "props": {
+                "alignment": "leading",
+                "spacing": 20,
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Lines, closed and filled",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "frame",
+                        "props": {
+                          "width": 120,
+                          "height": 120,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Path",
+                          "props": {
+                            "elements": [
+                              {
+                                "op": "move",
+                                "x": 60,
+                                "y": 0
+                              },
+                              {
+                                "op": "line",
+                                "x": 75,
+                                "y": 40
+                              },
+                              {
+                                "op": "line",
+                                "x": 120,
+                                "y": 45
+                              },
+                              {
+                                "op": "line",
+                                "x": 88,
+                                "y": 75
+                              },
+                              {
+                                "op": "line",
+                                "x": 97,
+                                "y": 120
+                              },
+                              {
+                                "op": "line",
+                                "x": 60,
+                                "y": 98
+                              },
+                              {
+                                "op": "line",
+                                "x": 23,
+                                "y": 120
+                              },
+                              {
+                                "op": "line",
+                                "x": 32,
+                                "y": 75
+                              },
+                              {
+                                "op": "line",
+                                "x": 0,
+                                "y": 45
+                              },
+                              {
+                                "op": "line",
+                                "x": 45,
+                                "y": 40
+                              },
+                              {
+                                "op": "close"
+                              }
+                            ],
+                            "children": [],
+                            "fill": {
+                              "style": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "orange",
+                                  "children": []
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Cubic curve and arc, stroked",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "frame",
+                        "props": {
+                          "width": 240,
+                          "height": 160,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Path",
+                          "props": {
+                            "elements": [
+                              {
+                                "op": "move",
+                                "x": 0,
+                                "y": 80
+                              },
+                              {
+                                "op": "curve",
+                                "x": 240,
+                                "y": 80,
+                                "control1X": 60,
+                                "control1Y": -40,
+                                "control2X": 180,
+                                "control2Y": 200
+                              },
+                              {
+                                "op": "arc",
+                                "centerX": 120,
+                                "centerY": 80,
+                                "radius": 40,
+                                "startAngle": 0,
+                                "endAngle": 270,
+                                "clockwise": true
+                              }
+                            ],
+                            "children": [],
+                            "stroke": {
+                              "style": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "blue",
+                                  "children": []
+                                }
+                              },
+                              "lineWidth": 4
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Rect, rounded rect and ellipse",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "frame",
+                        "props": {
+                          "width": 240,
+                          "height": 60,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Path",
+                          "props": {
+                            "elements": [
+                              {
+                                "op": "rect",
+                                "x": 0,
+                                "y": 0,
+                                "width": 60,
+                                "height": 60
+                              },
+                              {
+                                "op": "roundedRect",
+                                "x": 80,
+                                "y": 0,
+                                "width": 60,
+                                "height": 60,
+                                "cornerWidth": 16,
+                                "cornerHeight": 16
+                              },
+                              {
+                                "op": "ellipse",
+                                "x": 160,
+                                "y": 0,
+                                "width": 80,
+                                "height": 60
+                              }
+                            ],
+                            "children": [],
+                            "fill": {
+                              "style": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "green",
+                                  "children": []
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Quad curve, stroked and filled",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "frame",
+                        "props": {
+                          "width": 200,
+                          "height": 60,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Path",
+                          "props": {
+                            "elements": [
+                              {
+                                "op": "move",
+                                "x": 0,
+                                "y": 60
+                              },
+                              {
+                                "op": "quadCurve",
+                                "x": 200,
+                                "y": 60,
+                                "controlX": 100,
+                                "controlY": -60
+                              },
+                              {
+                                "op": "close"
+                              }
+                            ],
+                            "children": [],
+                            "fill": {
+                              "style": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "purple",
+                                  "children": []
+                                }
+                              }
+                            },
+                            "stroke": {
+                              "style": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "black",
+                                  "children": []
+                                }
+                              },
+                              "lineWidth": 2
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

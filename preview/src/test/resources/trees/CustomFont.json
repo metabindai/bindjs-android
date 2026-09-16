@@ -1,0 +1,208 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_CustomFont",
+    "props": {},
+    "children": [
+      {
+        "type": "VStack",
+        "props": {
+          "alignment": "leading",
+          "spacing": 16,
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": 20,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "System font at size 20",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "custom": {
+                      "family": "serif",
+                      "size": 24,
+                      "children": []
+                    },
+                    "rawValue": {
+                      "type": "CustomFont",
+                      "props": {
+                        "family": "serif",
+                        "size": 24,
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Installed family: serif, 24",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "custom": {
+                      "family": "monospace",
+                      "size": 18,
+                      "children": []
+                    },
+                    "rawValue": {
+                      "type": "CustomFont",
+                      "props": {
+                        "family": "monospace",
+                        "size": 18,
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Installed family: monospace, 18",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "custom": {
+                      "family": "Pacifico",
+                      "size": 28,
+                      "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+                      "children": []
+                    },
+                    "rawValue": {
+                      "type": "CustomFont",
+                      "props": {
+                        "family": "Pacifico",
+                        "size": 28,
+                        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Remote: Pacifico from a URL, 28",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "custom": {
+                      "family": "Pacifico",
+                      "size": 22,
+                      "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+                      "children": []
+                    },
+                    "rawValue": {
+                      "type": "CustomFont",
+                      "props": {
+                        "family": "Pacifico",
+                        "size": 22,
+                        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "Remote font on **markdown** text, 22",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "custom": {
+                      "family": "No Such Font",
+                      "size": 20,
+                      "children": []
+                    },
+                    "rawValue": {
+                      "type": "CustomFont",
+                      "props": {
+                        "family": "No Such Font",
+                        "size": 20,
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Unknown family falls back to system, 20",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

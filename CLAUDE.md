@@ -23,7 +23,7 @@ When the Apple/Android pair diverges in semantics, treat `bindjs-apple` as the r
 
 ## Module layout
 
-**Two Gradle modules**: `:bindjs` (the library) and `:preview` (a standalone preview app with a navigation drawer of component and chart fixtures — add a component fixture in `preview/.../ComponentFixtures.kt`). The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
+**Two Gradle modules**: `:bindjs` (the library) and `:preview` (a standalone preview app: a drawer with Components and Charts sections, each listing fixtures — add a component fixture in `preview/.../ComponentFixtures.kt`). Every component fixture (not charts — Vico draws asynchronously) has a Roborazzi screenshot test that paints its committed component tree (`preview/src/test/resources/trees`, rendered by node from `script.js`) on Robolectric; `./gradlew :preview:verifyRoborazziDebug` checks, `recordRoborazziDebug` re-records, and `:preview:testDebugUnitTest -PupdateTrees` re-renders the trees. See README.md → "Preview app and screenshot tests". The legacy `metabind` GraphQL layer and `app` sample were split into separate repos.
 
 ```
 bindjs/src/main/
