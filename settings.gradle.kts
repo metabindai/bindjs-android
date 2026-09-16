@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "BindJS"
 include(":bindjs")
-include(":chart-preview")
+include(":preview")

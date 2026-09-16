@@ -30,6 +30,7 @@ suspend fun JsRuntime.routeUiEvent(event: UiEvent, onRendered: suspend () -> Uni
         is UiEvent.OnLongPress -> callEventHandler(event.handlerId)
         is UiEvent.OnNavigationTap -> callEventHandler(event.handlerId)
         is UiEvent.OnSwitch -> callEventHandler(event.handlerId, arrayOf(event.checked))
+        is UiEvent.OnSliderChange -> callEventHandler(event.handlerId, arrayOf(event.value))
         is UiEvent.OnTextChange -> callEventHandler(event.handlerId, arrayOf(event.text))
         is UiEvent.OnChartSelection -> callEventHandler(event.handlerId, arrayOf(event.value))
         is UiEvent.OnChange -> callEventHandler(

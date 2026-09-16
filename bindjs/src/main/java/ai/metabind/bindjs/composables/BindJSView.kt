@@ -99,6 +99,7 @@ import ai.metabind.bindjs.model.RoundedRectangleComponent
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.ScrollComponent
 import ai.metabind.bindjs.model.SectionComponent
+import ai.metabind.bindjs.model.SliderComponent
 import ai.metabind.bindjs.model.SecureFieldComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.TextEditorComponent
@@ -1499,6 +1500,14 @@ private fun ComponentInnerView(
 
         is ToggleComponent -> ToggleView(
             component = component,
+            modifiers = modifiers,
+            onUiEvent = onUiEvent
+        )
+
+        is SliderComponent -> SliderView(
+            jsRuntime = jsRuntime,
+            component = component,
+            version = version,
             modifiers = modifiers,
             onUiEvent = onUiEvent
         )
