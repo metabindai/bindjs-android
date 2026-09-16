@@ -59,6 +59,7 @@ import ai.metabind.bindjs.model.modifier.FixedSizeModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
 import io.noties.markwon.Markwon
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import android.widget.TextView as AndroidTextView
 
 /**
@@ -301,7 +302,12 @@ private fun Markdown(
 ) {
     val text = modifiers.applyTextCase(markdownContent)
     val context = LocalContext.current
-    val markwon = remember { Markwon.create(context) }
+    // Core Markwon has no `~~strikethrough~~`; the markers came out as literal tildes.
+    val markwon = remember {
+        Markwon.builder(context)
+            .usePlugin(StrikethroughPlugin.create())
+            .build()
+    }
 
     // This branch draws into a platform TextView rather than a Compose Text, so it
     // never passes through `getFontFamily()` — a `.font(CustomFont(...))` has to be

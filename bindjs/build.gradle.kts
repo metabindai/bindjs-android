@@ -94,6 +94,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
     implementation(libs.markwon.core)
+    implementation(libs.markwon.ext.strikethrough)
     implementation(libs.sceneview)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.dash)
