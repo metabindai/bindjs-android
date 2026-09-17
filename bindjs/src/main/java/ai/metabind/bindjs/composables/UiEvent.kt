@@ -57,6 +57,17 @@ sealed class UiEvent {
         val handlerId: String,
     ) : UiEvent()
 
+    /**
+     * A tap on a `List` row that carries a `.tag(...)`, for the JS `setSelection` closure.
+     * [selection] is the tapped row's tag. [environmentId] is restored before the call
+     * when the list stored one; it is blank or null otherwise.
+     */
+    data class OnListSelection(
+        val handlerId: String,
+        val selection: String,
+        val environmentId: String?,
+    ) : UiEvent()
+
     data class OnPickerTap(
         val environmentId: String,
         val setterId: String,

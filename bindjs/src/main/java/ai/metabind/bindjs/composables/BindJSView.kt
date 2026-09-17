@@ -92,6 +92,7 @@ import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.PathComponent
 import ai.metabind.bindjs.model.PickerComponent
+import ai.metabind.bindjs.model.ListComponent
 import ai.metabind.bindjs.model.PlaceholderComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
@@ -1365,6 +1366,16 @@ private fun ComponentInnerView(
             component = component,
             version = version,
             modifiers = addWrapIfNoFrame(modifiers),
+            onUiEvent = onUiEvent
+        )
+
+        // Fills the width it is given itself, so no wrap: a wrapped list would hug its
+        // widest row and its grouped backdrop would stop short of the edges.
+        is ListComponent -> ListView(
+            jsRuntime = jsRuntime,
+            component = component,
+            version = version,
+            modifiers = modifiers,
             onUiEvent = onUiEvent
         )
 

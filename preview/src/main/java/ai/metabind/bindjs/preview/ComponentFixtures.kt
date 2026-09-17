@@ -39,6 +39,50 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "List",
+        description = "A grouped list with a selection: a section whose tagged rows select on tap and report the choice in the footer, and a section showing a row background and a hidden separator.",
+        source = """
+        (() => {
+          const [selected, setSelected] = useState('tokyo');
+          const cities = [['paris', 'Paris'], ['tokyo', 'Tokyo'], ['lima', 'Lima']];
+          return List({ selection: selected, setSelection: setSelected }, [
+            Section({
+              header: Text('Destinations'),
+              footer: Text('Tap a row to select it. Selected: ' + selected),
+            }, cities.map(([id, name]) => HStack([
+              Text(name),
+              Spacer(),
+              Text(id === selected ? 'Selected' : '').font('caption').foregroundStyle('blue'),
+            ]).tag(id))),
+            Section({ header: Text('Row styling') }, [
+              Text('Custom row background').listRowBackground(Color('yellow')),
+              Text('No separator around this row').listRowSeparator('hidden'),
+              Text('A plain row').font('headline'),
+            ]),
+          ]);
+        })()
+        """.trimIndent()
+    ),
+    component(
+        name = "ListPlain",
+        description = "The same list machinery in the plain style: no backdrop or cards, rows from a ForEach with separators, a section header, and a hidden scroll content background.",
+        source = """
+        (() => {
+          const fruit = ['Apple', 'Banana', 'Cherry', 'Date'];
+          return List([
+            Section({ header: Text('Fruit') }, [
+              ForEach(fruit, (name) => HStack({ spacing: 12 }, [
+                Circle().fill(Color('green')).frame({ width: 10, height: 10 }),
+                Text(name),
+              ])),
+            ]),
+            Text('A row outside any section'),
+            Text('And another'),
+          ]).listStyle('plain').scrollContentBackground('hidden');
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "Placeholder",
         description = "Placeholder slots: one resolved to a composable the app registers under the same name, which receives the props of the component the slot sits in, and one with no registered composable, drawn as a grey box.",
         source = """
