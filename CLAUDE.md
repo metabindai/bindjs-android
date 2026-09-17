@@ -157,6 +157,29 @@ is OnDisappearModifier -> {
 4. **Decide propagation**: if the modifier needs to fire something at the layer it's attached to (rather than just contributing to the leaf's Compose `Modifier`), add a case in `ModifiedComponent`'s `when (modifier)`. Otherwise it'll be stripped behind any special-cased ancestor — see the OnAppear note above.
 5. **JS-side**: list it in the `OnHandler` / `Padding` / etc registration in `script.js`, or in `#registerBuiltInModifier` for new categories.
 
+## Native component slots (`ComponentRegistry`, `Placeholder`)
+
+`composables/ComponentRegistry.kt` holds `ComponentRepresentable` (a composable keyed by
+component name), `ComponentRegistry`, the `LocalComponentRegistry` composition local and
+the public `WithComponent(name, component) { … }` wrapper. Two render paths consult it:
+
+- `ComponentInnerView`'s `is Component` branch (a `ComponentCall`): a registered name
+  replaces the body with the native composable; otherwise the body renders under
+  `LocalComponentCall provides component`.
+- `PlaceholderView` (`Placeholder({ name }, children)`): needs both an enclosing
+  `LocalComponentCall` and a registered `name`; it then renders the native composable
+  with the *enclosing call's* props and children, not its own. Otherwise it renders its
+  own children as the fallback, or a grey rounded rectangle when it has none. (The
+  children fallback is Android-only for now; bindjs-apple draws the rectangle regardless.)
+  `LocalResolvingPlaceholders` holds the names being resolved: the call's children *are*
+  the body containing the placeholder, so a native composable that renders
+  `context.Content()` would otherwise re-enter the same placeholder forever.
+
+`ComponentCallProps.props` keeps the call's props as raw `JsonElement` (a non-object
+would otherwise break the whole tree parse) and exposes `propsMap` for the composable.
+The preview app registers `PreviewBadge` (`preview/.../PreviewComponents.kt`) and the
+`Placeholder` fixture exercises both the resolved and the fallback paths.
+
 ## Sheets and navigation chrome
 
 `.sheet(...)` presents its body in a Compose `ModalBottomSheet` (`SheetModifier` in

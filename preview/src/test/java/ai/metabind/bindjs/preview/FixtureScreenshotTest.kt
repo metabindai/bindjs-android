@@ -78,12 +78,14 @@ class FixtureScreenshotTest(private val fixtureName: String) {
                             .background(Color.White, RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.TopStart,
                     ) {
-                        BindJSView(
-                            jsRuntime = FakeJsRuntime(),
-                            component = tree,
-                            version = 1,
-                            onUiEvent = {},
-                        )
+                        WithPreviewComponents {
+                            BindJSView(
+                                jsRuntime = FakeJsRuntime(),
+                                component = tree,
+                                version = 1,
+                                onUiEvent = {},
+                            )
+                        }
                     }
                 }
             }

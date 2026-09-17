@@ -39,6 +39,33 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Placeholder",
+        description = "Placeholder slots: one resolved to a composable the app registers under the same name, which receives the props of the component the slot sits in; one with no registered composable, showing its own children instead; and one with neither, drawn as a grey box.",
+        source = """
+        (() => {
+          const Badge = defineComponent({
+            body: (props) => HStack({ spacing: 8 }, [
+              Text('Badge:').font('caption'),
+              Placeholder({ name: 'PreviewBadge' }),
+            ]),
+          });
+          return VStack({ alignment: 'leading', spacing: 16 }, [
+            Text('Placeholder resolved by the host').font('headline'),
+            Badge({ label: 'Native', count: 3 }),
+            Text('Unregistered, with fallback children').font('headline'),
+            Placeholder({ name: 'NotRegistered' }, [
+              HStack({ spacing: 8 }, [
+                Image({ systemName: 'exclamationmark.triangle' }),
+                Text('Fallback content shown instead').font('subheadline'),
+              ]),
+            ]),
+            Text('Unregistered, no children').font('headline'),
+            Placeholder({ name: 'NotRegistered' }).frame({ width: 200, height: 60 }),
+          ]);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "Path",
         description = "Every path element: lines closed into a filled star, a stroked cubic curve and arc, and rect, rounded rect and ellipse in one path.",
         source = """

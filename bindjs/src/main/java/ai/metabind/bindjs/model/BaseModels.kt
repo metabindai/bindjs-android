@@ -6,6 +6,10 @@ import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.OverlayModifier
+import com.google.gson.Gson
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import java.io.Serializable
 
 abstract class BaseComponent<T : Props>(open val props: T) : Serializable {
@@ -233,6 +237,7 @@ fun BaseComponent<*>.fillsFrameHeight(): Boolean {
         is RadialGradientComponent,
         is AngularGradientComponent,
         is EllipticalGradientComponent,
+        is PlaceholderComponent,
             -> return true
 
         else -> {}
@@ -316,13 +321,33 @@ interface BrushComponent {
     fun createBrush(): Brush
 }
 
+/**
+ * A `ComponentCall`: the slot the runtime wraps around a user-defined component's
+ * body, carrying the component's name and the props it was called with. Renders its
+ * single child, unless the embedding app has registered a native composable under the
+ * same name in the [ai.metabind.bindjs.composables.ComponentRegistry], in which case
+ * that composable renders instead.
+ */
 class Component(
     val type: String,
-    props: Props,
-) : BaseComponent<Props>(props) {
+    props: ComponentCallProps,
+) : BaseComponent<ComponentCallProps>(props) {
     override fun toString(): String {
         return "Component(type=$type)"
     }
+}
+
+class ComponentCallProps(
+    name: String?,
+    /** The props the component was called with, as sent by the runtime. */
+    val props: JsonElement?,
+    children: List<BaseComponent<*>?>?,
+) : Props(name = name, children = children) {
+    /** [props] as a map; empty when the call carried no object props. */
+    val propsMap: Map<String, Any?>
+        get() = (props as? JsonObject)?.let {
+            Gson().fromJson<Map<String, Any?>>(it, object : TypeToken<Map<String, Any?>>() {}.type)
+        } ?: emptyMap()
 }
 
 open class Props(

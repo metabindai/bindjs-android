@@ -92,6 +92,7 @@ import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.PathComponent
 import ai.metabind.bindjs.model.PickerComponent
+import ai.metabind.bindjs.model.PlaceholderComponent
 import ai.metabind.bindjs.model.ProgressViewComponent
 import ai.metabind.bindjs.model.RadialGradientComponent
 import ai.metabind.bindjs.model.RectangleComponent
@@ -1282,15 +1283,40 @@ private fun ComponentInnerView(
         )
 
         is Component -> {
-            InnerComponents(
-                jsRuntime = jsRuntime,
-                version = version,
-                onUiEvent = onUiEvent,
-                modifiers = modifiers,
-                components = component.props.children,
-                hasFrame = hasFrame
-            )
+            // A registered native composable takes the place of the component's body.
+            // Otherwise the body renders, and is told which call it belongs to so a
+            // Placeholder inside it can reach the call's props and children.
+            val native = LocalComponentRegistry.current[component.props.name]
+            if (native != null) {
+                NativeComponentView(
+                    jsRuntime = jsRuntime,
+                    component = native,
+                    call = component,
+                    version = version,
+                    modifiers = modifiers,
+                    onUiEvent = onUiEvent,
+                )
+            } else {
+                CompositionLocalProvider(LocalComponentCall provides component) {
+                    InnerComponents(
+                        jsRuntime = jsRuntime,
+                        version = version,
+                        onUiEvent = onUiEvent,
+                        modifiers = modifiers,
+                        components = component.props.children,
+                        hasFrame = hasFrame
+                    )
+                }
+            }
         }
+
+        is PlaceholderComponent -> PlaceholderView(
+            jsRuntime = jsRuntime,
+            component = component,
+            version = version,
+            modifiers = modifiers,
+            onUiEvent = onUiEvent
+        )
 
         is CircleComponent -> CircleView(
             jsRuntime,
