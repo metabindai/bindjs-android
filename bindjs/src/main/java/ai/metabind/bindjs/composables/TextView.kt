@@ -58,7 +58,9 @@ import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FixedSizeModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
+import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
+import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import android.widget.TextView as AndroidTextView
 
@@ -303,9 +305,17 @@ private fun Markdown(
     val text = modifiers.applyTextCase(markdownContent)
     val context = LocalContext.current
     // Core Markwon has no `~~strikethrough~~`; the markers came out as literal tildes.
+    // `headingBreakHeight(0)` drops the 1dp rule Markwon draws under h1/h2 by default
+    // (`HeadingSpan.drawLeadingMargin`) — an imitation of browser `<h1>`/`<h2>` chrome
+    // that is in neither the markdown spec nor SwiftUI's renderer on the Apple side.
     val markwon = remember {
         Markwon.builder(context)
             .usePlugin(StrikethroughPlugin.create())
+            .usePlugin(object : AbstractMarkwonPlugin() {
+                override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder.headingBreakHeight(0)
+                }
+            })
             .build()
     }
 
