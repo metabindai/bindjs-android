@@ -39,6 +39,10 @@ suspend fun JsRuntime.routeUiEvent(event: UiEvent, onRendered: suspend () -> Uni
         )
 
         is UiEvent.OnPickerTap -> callPickerSetter(event.setterId, event.tag)
+        is UiEvent.OnListSelection -> {
+            event.environmentId?.takeIf { it.isNotBlank() }?.let { restoreEnvironment(it) }
+            callEventHandler(event.handlerId, arrayOf(event.selection))
+        }
 
         // Coalesced and serialized inside bindjs (latest-wins on the `changed` phase),
         // and it drives its own re-render through the rerender listener. No handler call

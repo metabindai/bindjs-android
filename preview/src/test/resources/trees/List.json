@@ -1,0 +1,329 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_List",
+    "props": {},
+    "children": [
+      {
+        "type": "List",
+        "props": {
+          "selection": "tokyo",
+          "setSelectionId": "0,Fixture_List_0,List_0,setSelection,0",
+          "children": [
+            {
+              "type": "Section",
+              "props": {
+                "header": {
+                  "type": "Text",
+                  "props": {
+                    "rawValue": "Destinations",
+                    "children": []
+                  }
+                },
+                "footer": {
+                  "type": "Text",
+                  "props": {
+                    "rawValue": "Tap a row to select it. Selected: tokyo",
+                    "children": []
+                  }
+                },
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "tag",
+                        "props": {
+                          "rawValue": "paris",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "HStack",
+                          "props": {
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Paris",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "Spacer",
+                                "props": {
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "foregroundStyle",
+                                    "props": {
+                                      "rawValue": "blue",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "font",
+                                          "props": {
+                                            "rawValue": "caption",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "tag",
+                        "props": {
+                          "rawValue": "tokyo",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "HStack",
+                          "props": {
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Tokyo",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "Spacer",
+                                "props": {
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "foregroundStyle",
+                                    "props": {
+                                      "rawValue": "blue",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "font",
+                                          "props": {
+                                            "rawValue": "caption",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Selected",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "tag",
+                        "props": {
+                          "rawValue": "lima",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "HStack",
+                          "props": {
+                            "children": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Lima",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "Spacer",
+                                "props": {
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "foregroundStyle",
+                                    "props": {
+                                      "rawValue": "blue",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "font",
+                                          "props": {
+                                            "rawValue": "caption",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Section",
+              "props": {
+                "header": {
+                  "type": "Text",
+                  "props": {
+                    "rawValue": "Row styling",
+                    "children": []
+                  }
+                },
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "listRowBackground",
+                        "props": {
+                          "content": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "yellow",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Custom row background",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "listRowSeparator",
+                        "props": {
+                          "rawValue": "hidden",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "No separator around this row",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "A plain row",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

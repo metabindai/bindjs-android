@@ -1,0 +1,263 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_ListPlain",
+    "props": {},
+    "children": [
+      {
+        "type": "ModifiedComponent",
+        "props": {
+          "modifier": {
+            "type": "scrollContentBackground",
+            "props": {
+              "rawValue": "hidden",
+              "children": []
+            }
+          },
+          "content": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "listStyle",
+                  "props": {
+                    "rawValue": "plain",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "List",
+                    "props": {
+                      "children": [
+                        {
+                          "type": "Section",
+                          "props": {
+                            "header": {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Fruit",
+                                "children": []
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "ForEach",
+                                "props": {
+                                  "dataId": null,
+                                  "functionId": null,
+                                  "count": 4,
+                                  "environmentId": null,
+                                  "children": [
+                                    {
+                                      "type": "HStack",
+                                      "props": {
+                                        "spacing": 12,
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "frame",
+                                                "props": {
+                                                  "width": 10,
+                                                  "height": 10,
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Circle",
+                                                  "props": {
+                                                    "children": [],
+                                                    "fill": {
+                                                      "style": {
+                                                        "type": "Color",
+                                                        "props": {
+                                                          "rawValue": "green",
+                                                          "children": []
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Apple",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "HStack",
+                                      "props": {
+                                        "spacing": 12,
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "frame",
+                                                "props": {
+                                                  "width": 10,
+                                                  "height": 10,
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Circle",
+                                                  "props": {
+                                                    "children": [],
+                                                    "fill": {
+                                                      "style": {
+                                                        "type": "Color",
+                                                        "props": {
+                                                          "rawValue": "green",
+                                                          "children": []
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Banana",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "HStack",
+                                      "props": {
+                                        "spacing": 12,
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "frame",
+                                                "props": {
+                                                  "width": 10,
+                                                  "height": 10,
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Circle",
+                                                  "props": {
+                                                    "children": [],
+                                                    "fill": {
+                                                      "style": {
+                                                        "type": "Color",
+                                                        "props": {
+                                                          "rawValue": "green",
+                                                          "children": []
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Cherry",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "HStack",
+                                      "props": {
+                                        "spacing": 12,
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "frame",
+                                                "props": {
+                                                  "width": 10,
+                                                  "height": 10,
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Circle",
+                                                  "props": {
+                                                    "children": [],
+                                                    "fill": {
+                                                      "style": {
+                                                        "type": "Color",
+                                                        "props": {
+                                                          "rawValue": "green",
+                                                          "children": []
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Date",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "A row outside any section",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "And another",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

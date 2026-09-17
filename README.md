@@ -27,7 +27,7 @@ One BindJS definition renders natively on all three surfaces. All three repos ar
 
 ## Features
 
-- **30+ composable views** — Box, Row, Column, Button, Text, Image, Video, Model3D, and more
+- **30+ composable views** — Box, Row, Column, List, Button, Text, Image, Video, Model3D, and more
 - **73 modifiers** — layout, appearance, text styling, visual effects, interaction, transforms, accessibility
 - **Gradient support** — linear, radial, and sweep gradients via `BrushComponent`
 - **JavaScript runtime** — event handlers and dynamic logic via `androidx.javascriptengine`

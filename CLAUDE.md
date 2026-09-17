@@ -219,6 +219,32 @@ bindjs-apple too — fix upstream in bindjs-runtime, then re-sync):
   `.presentationDetents([Detent.medium, Detent.large])` arrives as `[null, null]`.
   Both renderers fall back to a full-height sheet. Fix: register it as a value.
 
+## Lists
+
+`List(...)` renders in `ListView` as a `LazyColumn` (a `Column` when
+`LocalHostScrollsVertically` is set, like `ScrollView`). The list owns all the chrome:
+row padding, separators, section headers/footers, the grouped backdrop and cards. Rows
+are rendered with no inherited modifiers, only a fill-width hint.
+
+- **Rows** are the children after `expandingForEach()`; a `Section` child contributes
+  header, rows and footer, and runs of bare rows form a headerless section.
+- **Selection** needs a `setSelection` handler on the list (`processProps` turns it into
+  `setSelectionId`) and a `.tag(...)` on the row. A tap emits `UiEvent.OnListSelection`,
+  which the router forwards as `callEventHandler(setSelectionId, [tag])`. The row whose
+  tag equals `selection` is highlighted. Untagged rows are plain content.
+- **Modifiers are read by the container, not applied.** `listStyle` and
+  `scrollContentBackground` are read off the chain wrapping the list, and are in
+  `modifiersToShareWithChildren()` so a `.frame(...)` between them and the list does not
+  drop them. `listRowSeparator` and `listRowBackground` are read off each row's chain by
+  walking its `ModifiedComponent` wrappers (like `PickerView` finds `.tag`). All four
+  `buildModifier` to `Modifier`, so they are harmless wherever else they land.
+- **Styles**: `automatic` / `insetGrouped` (default; grey backdrop, inset rounded white
+  cards, uppercase footnote headers), `grouped` (edge-to-edge cards), and `plain` /
+  `inset` / `sidebar` (rows and separators only).
+
+The `List` and `ListPlain` preview fixtures cover both looks, selection, a custom row
+background and a hidden separator.
+
 ## `JsRuntimeImpl` lifecycle notes
 
 - **Singleton via `getInstance(context)`** — there is exactly one isolate per process. Embeddings that show multiple BindJS views in the same Compose tree share state. Hook storage is keyed by `(rendererId, path)`, so distinct trees use distinct rendererIds — but the singleton's `mcpHost`, `onRerenderRequested`, and `environment` are global. The last `setMcpHost(...)` / `setOnRerenderRequested(...)` wins.

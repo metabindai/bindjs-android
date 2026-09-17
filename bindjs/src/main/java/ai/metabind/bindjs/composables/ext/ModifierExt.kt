@@ -71,6 +71,8 @@ import ai.metabind.bindjs.model.modifier.StrikethroughModifier
 import ai.metabind.bindjs.model.modifier.TextCaseModifier
 import ai.metabind.bindjs.model.modifier.TextSelectionModifier
 import ai.metabind.bindjs.model.modifier.TrackingModifier
+import ai.metabind.bindjs.model.modifier.ListStyleModifier
+import ai.metabind.bindjs.model.modifier.ScrollContentBackgroundModifier
 import ai.metabind.bindjs.model.modifier.UnderlineModifier
 import ai.metabind.bindjs.model.modifier.asColorComponent
 import kotlin.reflect.KClass
@@ -96,6 +98,11 @@ fun List<ComponentModifier<*>>.modifiersToShareWithChildren(): List<ComponentMod
             is ForegroundStyleModifier,
             is AllowsHitTestingModifier,
             is MultilineTextAlignmentModifier,
+                // List styling is read by the List the chain leads to, not by the layer it
+                // is written on, so `List(...).listStyle('plain').frame(...)` has to carry
+                // it through the frame the same way the text styles travel.
+            is ListStyleModifier,
+            is ScrollContentBackgroundModifier,
                 -> true
 
             else -> false
@@ -489,6 +496,18 @@ fun List<ComponentModifier<*>>.getFontWeight(): FontWeight? {
     } ?: firstOrNull { it is BoldModifier }?.let { modifier ->
         FontWeight.Bold
     }
+}
+
+/** The `.listStyle(...)` written on a List, `automatic` when there is none. */
+fun List<ComponentModifier<*>>.getListStyle(): String {
+    return firstOrNull { it is ListStyleModifier }?.let { modifier ->
+        (modifier as ListStyleModifier).props.rawValue
+    } ?: "automatic"
+}
+
+/** Whether `.scrollContentBackground('hidden')` is written on a List. */
+fun List<ComponentModifier<*>>.isScrollContentBackgroundHidden(): Boolean {
+    return any { it is ScrollContentBackgroundModifier && it.isHidden }
 }
 
 fun List<ComponentModifier<*>>.getPickerStyle(): String {

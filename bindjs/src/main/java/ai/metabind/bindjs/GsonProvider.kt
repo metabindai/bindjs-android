@@ -24,6 +24,7 @@ import ai.metabind.bindjs.model.EllipticalGradientComponent
 import ai.metabind.bindjs.model.EmptyComponent
 import ai.metabind.bindjs.model.LazyColumnComponent
 import ai.metabind.bindjs.model.LazyRowComponent
+import ai.metabind.bindjs.model.ListComponent
 import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GeometryReaderComponent
 import ai.metabind.bindjs.model.GroupComponent
@@ -134,6 +135,10 @@ import ai.metabind.bindjs.model.modifier.ShadowModifier
 import ai.metabind.bindjs.model.modifier.SheetModifier
 import ai.metabind.bindjs.model.modifier.StrikethroughModifier
 import ai.metabind.bindjs.model.modifier.TagModifier
+import ai.metabind.bindjs.model.modifier.ListStyleModifier
+import ai.metabind.bindjs.model.modifier.ListRowSeparatorModifier
+import ai.metabind.bindjs.model.modifier.ListRowBackgroundModifier
+import ai.metabind.bindjs.model.modifier.ScrollContentBackgroundModifier
 import ai.metabind.bindjs.model.modifier.TextCaseModifier
 import ai.metabind.bindjs.model.modifier.TextSelectionModifier
 import ai.metabind.bindjs.model.modifier.TintModifier
@@ -191,6 +196,10 @@ class GsonProvider {
                     .registerSubtype(PaddingModifier::class.java, "padding")
                     .registerSubtype(ShadowModifier::class.java, "shadow")
                     .registerSubtype(TagModifier::class.java, "tag")
+                    .registerSubtype(ListStyleModifier::class.java, "listStyle")
+                    .registerSubtype(ListRowSeparatorModifier::class.java, "listRowSeparator")
+                    .registerSubtype(ListRowBackgroundModifier::class.java, "listRowBackground")
+                    .registerSubtype(ScrollContentBackgroundModifier::class.java, "scrollContentBackground")
                     .registerSubtype(PickerStyleModifier::class.java, "pickerStyle")
                     .registerSubtype(BorderModifier::class.java, "border")
                     .registerSubtype(ClippedModifier::class.java, "clipped")
@@ -311,6 +320,7 @@ class GsonProvider {
                     // its whole child list and rendered nothing.
                     .registerSubtype(LazyColumnComponent::class.java, "LazyVStack")
                     .registerSubtype(LazyRowComponent::class.java, "LazyHStack")
+                    .registerSubtype(ListComponent::class.java, "List")
                     .registerSubtype(ImageComponent::class.java, "Image")
                     .registerSubtype(ModifiedComponent::class.java, "ModifiedComponent")
                     .registerSubtype(RectangleComponent::class.java, "Rectangle")
