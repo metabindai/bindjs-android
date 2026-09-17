@@ -17,13 +17,13 @@ import ai.metabind.bindjs.model.PlaceholderComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 
 /**
- * `Placeholder({ name }, children)`: a slot for a native view.
+ * `Placeholder({ name })`: a slot for a native view.
  *
  * When the enclosing component call exists and [LocalComponentRegistry] has a composable
  * under `name`, that composable renders with the call's props and children. Otherwise,
- * and inside its own native composable (see [LocalResolvingPlaceholders]), the slot
- * falls back to the placeholder's own children; with none, it shows as a translucent
- * grey rounded rectangle, sized by its modifiers like any other shape.
+ * and inside its own native composable (see [LocalResolvingPlaceholders]), the slot shows
+ * as a translucent grey rounded rectangle, sized by its modifiers like any other shape.
+ * Children written on the placeholder are not rendered.
  */
 @Composable
 fun PlaceholderView(
@@ -52,18 +52,6 @@ fun PlaceholderView(
                 modifiers = modifiers,
                 onUiEvent = onUiEvent,
             )
-        }
-    } else if (!component.props.children.isNullOrEmpty()) {
-        component.props.children.forEach { child ->
-            if (child != null) {
-                BindJSView(
-                    jsRuntime = jsRuntime,
-                    component = child,
-                    version = version,
-                    onUiEvent = onUiEvent,
-                    modifiers = modifiers,
-                )
-            }
         }
     } else {
         // Like the other shapes: fill the space offered unless a frame on the slot
