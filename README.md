@@ -95,30 +95,28 @@ A registered name is resolved in two places in the component tree:
 
 - **A component call.** When a component of that name is called, the composable renders
   in place of the component's body, with the call's props and children.
-- **A `Placeholder` slot.** Inside a component's body, `Placeholder({ name }, children)`
-  renders the composable registered under `name`, again with the props and children of
-  the component the placeholder sits in. This lets a component mark the spot where a
-  native view should go and say what to show when the host has none:
+- **A `Placeholder` slot.** Inside a component's body, `Placeholder({ name })` renders the
+  composable registered under `name`, again with the props and children of the component
+  the placeholder sits in. This lets a component keep a body for the platforms and hosts
+  that have no native view for it, and mark the spot where one should go:
 
   ```js
   const MapCard = defineComponent({
     body: (props, children) => VStack([
       Text(props.title).font('headline'),
-      Placeholder({ name: 'MapView' }, [
-        Text('Map not available'),      // shown when no MapView is registered
-      ]).frame({ height: 200 }),
+      Placeholder({ name: 'MapView' }).frame({ height: 200 }),
     ]),
   });
   ```
 
 A `Placeholder` whose name is not registered, or which is not inside a component call,
-renders its own children in its place. With no children it draws as a translucent grey
-rounded rectangle, sized by its modifiers like any other shape.
+draws as a translucent grey rounded rectangle, sized by its modifiers like any other
+shape. Children written on a placeholder are not rendered.
 
 Props reach the composable as a `Map<String, Any?>` with numbers as `Double`. `children`
 is the body the component rendered, and `context.Content()` draws it, which suits a
 composable that frames a component's own content. A composable reached through a
-`Placeholder` sees the same body, with the placeholder itself rendering its fallback
+`Placeholder` sees the same body, with the placeholder itself drawn as the grey fallback
 inside it, so rendering `Content()` there does not recurse.
 
 ## Build
