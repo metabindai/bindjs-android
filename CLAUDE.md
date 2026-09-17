@@ -166,9 +166,11 @@ the public `WithComponent(name, component) { … }` wrapper. Two render paths co
 - `ComponentInnerView`'s `is Component` branch (a `ComponentCall`): a registered name
   replaces the body with the native composable; otherwise the body renders under
   `LocalComponentCall provides component`.
-- `PlaceholderView` (`Placeholder({ name })`): needs both an enclosing `LocalComponentCall`
-  and a registered `name`; it then renders the native composable with the *enclosing
-  call's* props and children, not its own. Anything else draws a grey rounded rectangle.
+- `PlaceholderView` (`Placeholder({ name }, children)`): needs both an enclosing
+  `LocalComponentCall` and a registered `name`; it then renders the native composable
+  with the *enclosing call's* props and children, not its own. Otherwise it renders its
+  own children as the fallback, or a grey rounded rectangle when it has none. (The
+  children fallback is Android-only for now; bindjs-apple draws the rectangle regardless.)
   `LocalResolvingPlaceholders` holds the names being resolved: the call's children *are*
   the body containing the placeholder, so a native composable that renders
   `context.Content()` would otherwise re-enter the same placeholder forever.

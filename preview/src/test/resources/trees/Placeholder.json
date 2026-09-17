@@ -93,7 +93,72 @@
                   {
                     "type": "Text",
                     "props": {
-                      "rawValue": "Placeholder with no registered component",
+                      "rawValue": "Unregistered, with fallback children",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Placeholder",
+              "props": {
+                "name": "NotRegistered",
+                "children": [
+                  {
+                    "type": "HStack",
+                    "props": {
+                      "spacing": 8,
+                      "children": [
+                        {
+                          "type": "Image",
+                          "props": {
+                            "systemName": "exclamationmark.triangle",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "subheadline",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Fallback content shown instead",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Unregistered, no children",
                       "children": []
                     }
                   }

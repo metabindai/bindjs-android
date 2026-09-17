@@ -40,8 +40,8 @@ class ComponentRepresentableContext internal constructor(
 ) {
     /**
      * Renders [children] through the regular renderer. From a `Placeholder`, this is the
-     * body of the component the placeholder sits in, with the placeholder itself drawn
-     * as its fallback.
+     * body of the component the placeholder sits in, with the placeholder itself
+     * rendering its fallback.
      */
     @Composable
     fun Content() {
@@ -82,7 +82,7 @@ internal val LocalComponentCall = compositionLocalOf<Component?> { null }
  * placeholder's context carries the body of the component it sits in, and that body
  * contains the placeholder itself; without this a native composable that renders
  * [ComponentRepresentableContext.Content] would resolve the same placeholder again
- * without end. Inside its own composable the placeholder draws its fallback instead.
+ * without end. Inside its own composable the placeholder renders its fallback instead.
  */
 internal val LocalResolvingPlaceholders = compositionLocalOf<Set<String>> { emptySet() }
 
