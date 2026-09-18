@@ -1358,7 +1358,8 @@ private fun ComponentInnerView(
             component = component,
             version = version,
             modifiers = addWrapIfNoFrame(modifiers),
-            onUiEvent = onUiEvent
+            onUiEvent = onUiEvent,
+            hasFrame = hasFrame
         )
 
         is ScrollComponent -> ScrollView(
