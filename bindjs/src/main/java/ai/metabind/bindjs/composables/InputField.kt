@@ -6,7 +6,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -93,10 +92,16 @@ internal fun PlainTextField(
                     // `singleLine` governs the input text, not this composable — an
                     // unconstrained placeholder still wraps, which is how an empty
                     // DateTimeInput grew back to three lines the moment its value cleared.
+                    // SwiftUI draws a placeholder in `.placeholderText`, the tertiary
+                    // label: the label colour at 30% opacity. Material's
+                    // `onSurfaceVariant` is a dark, fully opaque grey that reads like a
+                    // value already entered; a DateTimeInput's `YYYY-MM-DDTHH:MM` hint
+                    // looked filled in. Deriving from the content colour keeps the
+                    // 30% relationship in dark mode and under a `.foregroundStyle(...)`.
                     Text(
                         text = placeholder,
                         style = textStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = LocalContentColor.current.copy(alpha = 0.3f),
                         maxLines = if (singleLine) 1 else Int.MAX_VALUE,
                         overflow = TextOverflow.Ellipsis,
                     )
