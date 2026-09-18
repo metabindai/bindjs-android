@@ -1,9 +1,11 @@
 package ai.metabind.bindjs.composables
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -24,6 +26,7 @@ import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.RowComponent
 import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.expandingForEach
+import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.layoutChildren
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LayoutPriorityModifier
@@ -40,6 +43,7 @@ fun RowView(
     version: Int,
     modifiers: List<ComponentModifier<*>>,
     onUiEvent: (UiEvent) -> Unit,
+    hasFrame: Boolean = false,
 ) {
     // A Row inside a horizontal LazyRow is measured with unbounded width.
     // Modifier.weight against an infinite max collapses to 0, so any branch
@@ -62,10 +66,24 @@ fun RowView(
     val hasGreedyChild = !inHorizontalScroll &&
             (children?.any { it?.calculateMaxWidth() == Float.POSITIVE_INFINITY } ?: false)
     val baselineAlignment = component.props.baselineAlignment()
+    // SwiftUI's HStack proposes its own height to every child, so a vertically greedy
+    // child — `Rectangle().frame(width: 1, maxHeight: .infinity)`, the vertical rule the
+    // A2UI catalog draws, or a `Divider()` — ends up exactly as tall as the tallest
+    // sibling. Compose's Row hands children the *incoming* max height instead, and in
+    // the usual unbounded case (a Column in a vertical scroll) `fillMaxHeight` is a
+    // no-op against an infinite max: an empty Box then measures 0dp tall and the rule
+    // disappears. Sizing the Row to its minimum intrinsic height reproduces the SwiftUI
+    // rule — the greedy child reports 0 intrinsic height, so the tallest real child sets
+    // the Row's height and the fill child stretches to it. The vertical twin of
+    // ColumnView's `width(IntrinsicSize.Max)`. Skipped under a bounded-height frame,
+    // where the greedy child is meant to fill the frame, not the siblings.
+    val wrapsToIntrinsicHeight = !hasFrame &&
+            (children?.any { it?.isVerticallyGreedy() == true } ?: false)
     Row(
         modifier = modifiers
             .buildModifier(onUiEvent, listOf(ShadowModifier::class))
-            .then(if (hasGreedyChild) Modifier.fillMaxWidth() else Modifier),
+            .then(if (hasGreedyChild) Modifier.fillMaxWidth() else Modifier)
+            .then(if (wrapsToIntrinsicHeight) Modifier.height(IntrinsicSize.Min) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
         // A baseline alignment is per child, not a property of the Row (see
         // `baselineAlignment`). Top is what Compose falls back to for a child that has no

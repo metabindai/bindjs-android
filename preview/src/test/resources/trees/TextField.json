@@ -1,0 +1,435 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_TextField",
+    "props": {},
+    "children": [
+      {
+        "type": "VStack",
+        "props": {
+          "alignment": "leading",
+          "spacing": 12,
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "foregroundStyle",
+                  "props": {
+                    "rawValue": {
+                      "type": "Color",
+                      "props": {
+                        "rawValue": "secondary",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "caption",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Event",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "cornerRadius",
+                  "props": {
+                    "rawValue": 8,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "background",
+                        "props": {
+                          "content": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "quaternary",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 10,
+                                "leading": 10,
+                                "bottom": 10,
+                                "trailing": 10,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "placeholder": "YYYY-MM-DDTHH:MM",
+                                  "text": "",
+                                  "setTextId": "0,Fixture_TextField_0,VStack_0,TextField_1,setText,1",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "foregroundStyle",
+                  "props": {
+                    "rawValue": {
+                      "type": "Color",
+                      "props": {
+                        "rawValue": "secondary",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "caption",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Full name",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "cornerRadius",
+                  "props": {
+                    "rawValue": 8,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "background",
+                        "props": {
+                          "content": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "quaternary",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 10,
+                                "leading": 10,
+                                "bottom": 10,
+                                "trailing": 10,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "placeholder": "Jane Doe",
+                                  "text": "Jane Doe",
+                                  "setTextId": "0,Fixture_TextField_0,VStack_0,TextField_3,setText,3",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "foregroundStyle",
+                  "props": {
+                    "rawValue": {
+                      "type": "Color",
+                      "props": {
+                        "rawValue": "secondary",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "caption",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Password",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "cornerRadius",
+                  "props": {
+                    "rawValue": 8,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "background",
+                        "props": {
+                          "content": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "quaternary",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 10,
+                                "leading": 10,
+                                "bottom": 10,
+                                "trailing": 10,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "SecureField",
+                                "props": {
+                                  "placeholder": "Required",
+                                  "text": "",
+                                  "setTextId": "0,Fixture_TextField_0,VStack_0,SecureField_5,setText,5",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "foregroundStyle",
+                  "props": {
+                    "rawValue": {
+                      "type": "Color",
+                      "props": {
+                        "rawValue": "secondary",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "caption",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Disabled",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "cornerRadius",
+                  "props": {
+                    "rawValue": 8,
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "background",
+                        "props": {
+                          "content": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "quaternary",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 10,
+                                "leading": 10,
+                                "bottom": 10,
+                                "trailing": 10,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "disabled",
+                                    "props": {
+                                      "rawValue": true,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "TextField",
+                                      "props": {
+                                        "placeholder": "Not editable",
+                                        "text": "",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

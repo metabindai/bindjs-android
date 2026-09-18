@@ -164,6 +164,48 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "TextField",
+        description = "Text inputs on a quaternary fill, as the A2UI catalog draws them: an empty field showing its placeholder, a filled one, a secure field, and a disabled one.",
+        source = """
+        (() => {
+          const [name, setName] = useState('Jane Doe');
+          const [when, setWhen] = useState('');
+          const [secret, setSecret] = useState('');
+          const field = (input) => input.padding(10).background(Color('quaternary')).cornerRadius(8);
+          return VStack({ alignment: 'leading', spacing: 12 }, [
+            Text('Event').font('caption').foregroundStyle(Color('secondary')),
+            field(TextField({ placeholder: 'YYYY-MM-DDTHH:MM', text: when, setText: setWhen })),
+            Text('Full name').font('caption').foregroundStyle(Color('secondary')),
+            field(TextField({ placeholder: 'Jane Doe', text: name, setText: setName })),
+            Text('Password').font('caption').foregroundStyle(Color('secondary')),
+            field(SecureField({ placeholder: 'Required', text: secret, setText: setSecret })),
+            Text('Disabled').font('caption').foregroundStyle(Color('secondary')),
+            field(TextField({ placeholder: 'Not editable', text: '' }).disabled(true)),
+          ]);
+        })()
+        """.trimIndent()
+    ),
+    component(
+        name = "VerticalDivider",
+        description = "Vertical rules inside rows: a 1pt Rectangle filling the row height next to one-line and two-line text, and the same row given an explicit height, where the rule fills the frame instead.",
+        source = """
+        (() => {
+          const rule = () => Rectangle().foregroundStyle(Color('gray')).frame({ width: 1, maxHeight: Infinity });
+          return VStack({ alignment: 'leading', spacing: 16 }, [
+            Text('As tall as the tallest sibling').font('caption'),
+            HStack({ spacing: 16 }, [Text('Left'), rule(), Text('Right')]),
+            HStack({ spacing: 16 }, [
+              Text('One line'),
+              rule(),
+              VStack({ alignment: 'leading' }, [Text('Two lines'), Text('on this side').font('caption')]),
+            ]),
+            Text('Inside a 64pt frame').font('caption'),
+            HStack({ spacing: 16 }, [Text('Left'), rule(), Text('Right')]).frame({ height: 64 }),
+          ]);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """
