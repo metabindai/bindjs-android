@@ -93,8 +93,14 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
-    implementation(libs.markwon.core)
-    implementation(libs.markwon.ext.strikethrough)
+    // Markwon's own commonmark is the pre-0.14 `com.atlassian.commonmark` coordinates,
+    // which collide class-for-class with the `org.commonmark` ones any modern markdown
+    // library brings. Dropping the old group here and pinning the new one means an app
+    // embedding bindjs no longer has to exclude anything of its own.
+    implementation(libs.markwon.core) { exclude(group = "com.atlassian.commonmark") }
+    implementation(libs.markwon.ext.strikethrough) { exclude(group = "com.atlassian.commonmark") }
+    implementation(libs.commonmark)
+    implementation(libs.commonmark.ext.gfm.strikethrough)
     implementation(libs.sceneview)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.dash)

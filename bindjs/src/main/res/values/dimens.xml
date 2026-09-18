@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
-    <dimen name="default_spacing">20dp</dimen>
+    <!--
+      The gap a stack leaves between its children when the component gives no `spacing`.
+      8dp is SwiftUI's default stack spacing, which is what a BindJS component is written
+      against: bindjs-apple passes `spacing` straight through, so a `VStack` with no
+      spacing is laid out by SwiftUI at 8pt. It was 20dp here, which stretched every
+      unspaced stack well past the iOS layout.
+    -->
+    <dimen name="default_spacing">8dp</dimen>
 </resources>

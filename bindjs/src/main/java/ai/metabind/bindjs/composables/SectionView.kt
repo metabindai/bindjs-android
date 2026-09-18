@@ -14,6 +14,13 @@ import ai.metabind.bindjs.model.SpacerComponent
 import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 
+/**
+ * The gap a section leaves between its header, its rows and its footer. Also used by the
+ * pinned-header path in [ScrollView], which lifts the header out into its own lazy item and
+ * has to re-create the gap the arrangement here would have left.
+ */
+internal val SectionContentSpacing = 10.dp
+
 @Composable
 fun SectionView(
     jsRuntime: JsRuntime,
@@ -24,7 +31,7 @@ fun SectionView(
 ) {
     Column(
         modifier = modifiers.buildModifier(onUiEvent),
-        verticalArrangement = Arrangement.spacedBy(space = 10.dp)
+        verticalArrangement = Arrangement.spacedBy(space = SectionContentSpacing)
     ) {
         component.props.header?.let { child ->
             BindJSView(
