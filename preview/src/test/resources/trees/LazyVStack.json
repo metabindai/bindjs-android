@@ -1,0 +1,160 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_LazyVStack",
+    "props": {},
+    "children": [
+      {
+        "type": "ScrollView",
+        "props": {
+          "children": [
+            {
+              "type": "LazyVStack",
+              "props": {
+                "alignment": "leading",
+                "spacing": 12,
+                "pinnedViews": "sectionHeaders",
+                "children": [
+                  {
+                    "type": "Section",
+                    "props": {
+                      "header": {
+                        "type": "ModifiedComponent",
+                        "props": {
+                          "modifier": {
+                            "type": "font",
+                            "props": {
+                              "rawValue": "headline",
+                              "children": []
+                            }
+                          },
+                          "content": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Section A",
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Leading aligned, 12pt spacing",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Row A2",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Row A3",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Section",
+                    "props": {
+                      "header": {
+                        "type": "ModifiedComponent",
+                        "props": {
+                          "modifier": {
+                            "type": "font",
+                            "props": {
+                              "rawValue": "headline",
+                              "children": []
+                            }
+                          },
+                          "content": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Section B",
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Row B1",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Row B2",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "LazyVStack",
+              "props": {
+                "alignment": "trailing",
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "font",
+                        "props": {
+                          "rawValue": "headline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Text",
+                          "props": {
+                            "rawValue": "Trailing aligned",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "On the default spacing",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Which matches SwiftUI",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

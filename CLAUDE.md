@@ -245,6 +245,55 @@ are rendered with no inherited modifiers, only a fill-width hint.
 The `List` and `ListPlain` preview fixtures cover both looks, selection, a custom row
 background and a hidden separator.
 
+## Stacks and lazy stacks
+
+`VStack` / `HStack` are `ColumnView` / `RowView`; `LazyVStack` / `LazyHStack` are
+`LazyColumnComponent` / `LazyRowComponent`, subclasses that lay out identically so every
+`is ColumnComponent` dispatch picks them up. They exist as classes only because
+`RuntimeTypeAdapterFactory` maps one label to one class and an unregistered label decodes
+to `EmptyComponent`. **Neither is actually lazy**: a lazy stack inside a `ScrollView` is a
+single `item` of that `LazyColumn`, so its rows all compose up front. iOS composes only
+what is visible. Nothing renders wrongly; a long list just pays for itself up front.
+
+- **Default spacing is 8dp** (`R.dimen.default_spacing`, shared with `GroupView`) —
+  SwiftUI's default stack spacing, which is what a component that omits `spacing` is
+  written against. It was 20dp, which stretched every unspaced stack past the iOS layout.
+- **Baseline alignment.** `firstTextBaseline` / `lastTextBaseline` are not
+  `Alignment.Vertical` values in Compose — a Row expresses them per child. `RowView` reads
+  `baselineAlignment()`, sets the Row itself to `Alignment.Top` and hands each child a
+  `LocalModifier.AlignByBaseline` carrying `alignBy(FirstBaseline / LastBaseline)`. A child
+  with no baseline (a shape, an image) keeps Compose's fallback of Top, where SwiftUI would
+  use its bottom edge.
+- `verticalAlignment()` also accepts `leading` / `trailing`, which SwiftUI drops back to
+  `center`. Kept because Android content predates the comparison; dropping them would
+  re-lay-out that content without making any iOS render better.
+- **`pinnedViews`** is honoured by `ScrollView.pinnedSectionHeaders`, which is the only
+  place it can be: a header has to be an item of the scrolling list to be a
+  `stickyHeader`, and a lazy stack is otherwise nested inside one item. A stack that sets
+  it is flattened into the enclosing `LazyColumn` — each piece rendered by `ColumnView` on
+  a one-child copy of the stack, so rows keep the stack's alignment, and the arrangement's
+  spacing re-applied as top padding. Only a stack that asks for pinning takes that path.
+
+Four things about `pinnedViews` are not iOS:
+
+- `sectionFooters` parses but does not pin. Compose's lazy lists have no sticky footer.
+- Only the vertical stack pins. A `LazyHStack` in a horizontal `ScrollView` is rendered by
+  `RowView` and ignores the prop; `LazyRow` has the same `stickyHeader` gap.
+- Compose keeps a sticky header up until the *next* sticky header displaces it, so a
+  pinned header followed by non-section content stays at the top where SwiftUI would let
+  it scroll away at the end of its section.
+- Only the string forms (`'sectionHeaders'`, `'sectionFooters'`, `'all'`) count. The
+  SwiftUI-shaped `pinnedViews: ['sectionHeaders']` is inert **on both platforms**:
+  bindjs-apple reads the prop through `PinnedScrollableViews(rawValue: String(describing:
+  value))`, so an array stringifies to `["sectionHeaders"]` and matches nothing. Honouring
+  the array here would pin on Android and not on iOS, so `LayoutProps` reads the string
+  form only — and keeps the raw prop as a `JsonElement`, since an array arriving at a
+  `String` field fails the whole tree parse. Fix upstream, then relax both sides.
+
+The `LazyVStack` and `LazyHStack` preview fixtures cover the alignments, both spacings and
+the pinned headers; `PinnedSectionHeaderTest` scrolls a pinned stack, which a screenshot at
+rest cannot show.
+
 ## `JsRuntimeImpl` lifecycle notes
 
 - **Singleton via `getInstance(context)`** — there is exactly one isolate per process. Embeddings that show multiple BindJS views in the same Compose tree share state. Hook storage is keyed by `(rendererId, path)`, so distinct trees use distinct rendererIds — but the singleton's `mcpHost`, `onRerenderRequested`, and `environment` are global. The last `setMcpHost(...)` / `setOnRerenderRequested(...)` wins.

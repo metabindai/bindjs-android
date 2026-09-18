@@ -163,4 +163,61 @@ val componentFixtures = listOf(
         ])
         """.trimIndent()
     ),
+    component(
+        name = "LazyVStack",
+        description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
+        source = """
+        ScrollView([
+          LazyVStack({ alignment: 'leading', spacing: 12, pinnedViews: 'sectionHeaders' }, [
+            Section({ header: Text('Section A').font('headline') }, [
+              Text('Leading aligned, 12pt spacing'),
+              Text('Row A2'),
+              Text('Row A3'),
+            ]),
+            Section({ header: Text('Section B').font('headline') }, [
+              Text('Row B1'),
+              Text('Row B2'),
+            ]),
+          ]),
+          LazyVStack({ alignment: 'trailing' }, [
+            Text('Trailing aligned').font('headline'),
+            Text('On the default spacing'),
+            Text('Which matches SwiftUI'),
+          ]),
+        ])
+        """.trimIndent()
+    ),
+    component(
+        name = "LazyHStack",
+        description = "A lazy horizontal stack at every vertical alignment — top, center, bottom and the two text baselines — plus the default spacing and one inside a horizontal ScrollView.",
+        source = """
+        (() => {
+          const mixed = () => [
+            Text('Big').font(34),
+            Text('small').font('caption'),
+            Color('blue').frame({ width: 24, height: 44 }),
+            Text('Medium').font('title3'),
+          ];
+          const row = (alignment) => VStack({ alignment: 'leading', spacing: 4 }, [
+            Text(alignment).font('caption').foregroundStyle(Color('gray')),
+            LazyHStack({ alignment, spacing: 8 }, mixed()),
+          ]);
+          return VStack({ alignment: 'leading', spacing: 16 }, [
+            row('top'),
+            row('center'),
+            row('bottom'),
+            row('firstTextBaseline'),
+            row('lastTextBaseline'),
+            Text('default spacing').font('caption').foregroundStyle(Color('gray')),
+            LazyHStack([Text('one'), Text('two'), Text('three')]),
+            Text('in a horizontal ScrollView').font('caption').foregroundStyle(Color('gray')),
+            ScrollView({ axis: 'horizontal' }, [
+              LazyHStack({ spacing: 8 }, ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'].map(
+                (name) => Text(name).padding(8).background(Color('yellow')).cornerRadius(8)
+              )),
+            ]),
+          ]);
+        })()
+        """.trimIndent()
+    ),
 )

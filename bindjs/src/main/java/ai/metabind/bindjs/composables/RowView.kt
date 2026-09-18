@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LastBaseline
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
@@ -27,6 +29,8 @@ import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LayoutPriorityModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.ShadowModifier
+import ai.metabind.bindjs.model.props.BaselineAlignment
+import ai.metabind.bindjs.model.props.baselineAlignment
 import ai.metabind.bindjs.model.props.verticalAlignment
 
 @Composable
@@ -57,12 +61,20 @@ fun RowView(
     // Skip inside a horizontal scroll, where width is intentionally unbounded.
     val hasGreedyChild = !inHorizontalScroll &&
             (children?.any { it?.calculateMaxWidth() == Float.POSITIVE_INFINITY } ?: false)
+    val baselineAlignment = component.props.baselineAlignment()
     Row(
         modifier = modifiers
             .buildModifier(onUiEvent, listOf(ShadowModifier::class))
             .then(if (hasGreedyChild) Modifier.fillMaxWidth() else Modifier),
         horizontalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
-        verticalAlignment = component.props.verticalAlignment()
+        // A baseline alignment is per child, not a property of the Row (see
+        // `baselineAlignment`). Top is what Compose falls back to for a child that has no
+        // baseline at all, so it is the honest resting position for the Row itself.
+        verticalAlignment = if (baselineAlignment != null) {
+            Alignment.Top
+        } else {
+            component.props.verticalAlignment()
+        }
     ) {
         @Composable
         fun doLayout() {
@@ -218,6 +230,18 @@ fun RowView(
                         modifiers.modifiersToShareWithChildren() +
                                 LocalModifier.InRow(Modifier)
                     }
+                    // SwiftUI's `firstTextBaseline` / `lastTextBaseline` line the
+                    // children up on their text baselines, which Compose expresses on
+                    // each child rather than on the Row. A child with no baseline of its
+                    // own (a shape, an image) keeps Compose's fallback — the Row's Top —
+                    // where SwiftUI would use its bottom edge.
+                    val modifiersWithBaseline = when (baselineAlignment) {
+                        BaselineAlignment.FIRST ->
+                            modifiersFinal + LocalModifier.AlignByBaseline(Modifier.alignByBaseline())
+                        BaselineAlignment.LAST ->
+                            modifiersFinal + LocalModifier.AlignByBaseline(Modifier.alignBy(LastBaseline))
+                        null -> modifiersFinal
+                    }
                     child?.let {
                         // The Row itself bounds its children's widths, so
                         // descendants don't need the horizontal-scroll
@@ -228,7 +252,7 @@ fun RowView(
                                 component = child,
                                 version = version,
                                 onUiEvent = onUiEvent,
-                                modifiers = modifiersFinal
+                                modifiers = modifiersWithBaseline
                             )
                         }
                     }
