@@ -468,7 +468,7 @@ class JsRuntimeImpl private constructor(
 
     private fun labelOf(component: BaseComponent<*>): BaseComponent<*>? = when (component) {
         is ButtonComponent -> component.props.label
-        is MenuComponent -> component.props.label
+        is MenuComponent -> component.props.displayLabel
         is NavigationLinkComponent -> component.props.label
         else -> null
     }

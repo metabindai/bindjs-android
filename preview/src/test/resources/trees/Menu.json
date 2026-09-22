@@ -1,0 +1,152 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Menu",
+    "props": {},
+    "children": [
+      {
+        "type": "ModifiedComponent",
+        "props": {
+          "modifier": {
+            "type": "padding",
+            "props": {
+              "top": 16,
+              "leading": 16,
+              "bottom": 16,
+              "trailing": 16,
+              "children": []
+            }
+          },
+          "content": [
+            {
+              "type": "VStack",
+              "props": {
+                "alignment": "leading",
+                "spacing": 16,
+                "children": [
+                  {
+                    "type": "Menu",
+                    "props": {
+                      "rawValue": "Actions",
+                      "children": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "handlerId": "0,Fixture_Menu_0,VStack_0,Menu_0,Button_0,,0",
+                            "label": {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Copy",
+                                "children": []
+                              }
+                            },
+                            "environmentId": "0,Fixture_Menu_0,VStack_0,Menu_0,Button_0,,0",
+                            "children": []
+                          }
+                        },
+                        {
+                          "type": "Menu",
+                          "props": {
+                            "rawValue": "More",
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "handlerId": "0,Fixture_Menu_0,VStack_0,Menu_0,Menu_1,Button_0,,0",
+                                  "label": {
+                                    "type": "Text",
+                                    "props": {
+                                      "rawValue": "Archive",
+                                      "children": []
+                                    }
+                                  },
+                                  "environmentId": "0,Fixture_Menu_0,VStack_0,Menu_0,Menu_1,Button_0,,0",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Menu",
+                    "props": {
+                      "label": {
+                        "type": "ModifiedComponent",
+                        "props": {
+                          "modifier": {
+                            "type": "foregroundStyle",
+                            "props": {
+                              "rawValue": {
+                                "type": "Color",
+                                "props": {
+                                  "rawValue": "blue",
+                                  "children": []
+                                }
+                              },
+                              "children": []
+                            }
+                          },
+                          "content": [
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Styled label",
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "handlerId": "0,Fixture_Menu_0,VStack_0,Menu_1,Button_0,,0",
+                            "label": {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Share",
+                                "children": []
+                              }
+                            },
+                            "environmentId": "0,Fixture_Menu_0,VStack_0,Menu_1,Button_0,,0",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Menu",
+                    "props": {
+                      "children": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "handlerId": "0,Fixture_Menu_0,VStack_0,Menu_2,Button_0,,0",
+                            "label": {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Untitled item",
+                                "children": []
+                              }
+                            },
+                            "environmentId": "0,Fixture_Menu_0,VStack_0,Menu_2,Button_0,,0",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
