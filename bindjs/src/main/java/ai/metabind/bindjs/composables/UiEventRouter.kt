@@ -38,7 +38,11 @@ suspend fun JsRuntime.routeUiEvent(event: UiEvent, onRendered: suspend () -> Uni
             arrayOf(event.oldValue ?: "", event.newValue ?: ""),
         )
 
-        is UiEvent.OnPickerTap -> callPickerSetter(event.setterId, event.tag)
+        is UiEvent.OnPickerTap -> {
+            // bindjs-apple restores the picker's environment before calling its setter.
+            event.environmentId.takeIf { it.isNotBlank() }?.let { restoreEnvironment(it) }
+            callPickerSetter(event.setterId, event.tag)
+        }
         is UiEvent.OnListSelection -> {
             event.environmentId?.takeIf { it.isNotBlank() }?.let { restoreEnvironment(it) }
             callEventHandler(event.handlerId, arrayOf(event.selection))

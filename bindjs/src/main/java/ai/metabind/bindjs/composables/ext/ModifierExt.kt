@@ -103,6 +103,10 @@ fun List<ComponentModifier<*>>.modifiersToShareWithChildren(): List<ComponentMod
                 // it through the frame the same way the text styles travel.
             is ListStyleModifier,
             is ScrollContentBackgroundModifier,
+                // SwiftUI's pickerStyle is an environment value: written on a stack it
+                // styles every picker inside, and a frame between it and the picker
+                // does not stop it.
+            is PickerStyleModifier,
                 -> true
 
             else -> false
@@ -510,8 +514,12 @@ fun List<ComponentModifier<*>>.isScrollContentBackgroundHidden(): Boolean {
     return any { it is ScrollContentBackgroundModifier && it.isHidden }
 }
 
+/**
+ * The innermost `.pickerStyle(...)`, as in SwiftUI: a picker's own style beats one it
+ * inherits from a stack. Modifiers accumulate outermost first, so that is the last one.
+ */
 fun List<ComponentModifier<*>>.getPickerStyle(): String {
-    return firstOrNull { it is PickerStyleModifier }?.let { modifier ->
+    return lastOrNull { it is PickerStyleModifier }?.let { modifier ->
         (modifier as PickerStyleModifier).props.rawValue
     } ?: "automatic"
 }
