@@ -239,6 +239,22 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Menu",
+        description = "Menus titled three ways: a string title with a string-titled submenu, a label component, and no label at all, which reads 'Menu' as on iOS.",
+        source = """
+        VStack({ alignment: 'leading', spacing: 16 }, [
+          Menu('Actions', [
+            Button('Copy', () => {}),
+            Menu('More', [Button('Archive', () => {})]),
+          ]),
+          Menu({ label: Text('Styled label').foregroundStyle(Color('blue')) }, [
+            Button('Share', () => {}),
+          ]),
+          Menu([Button('Untitled item', () => {})]),
+        ]).padding(16)
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """

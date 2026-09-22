@@ -875,14 +875,12 @@ private fun ContextMenuItems(
                         androidx.compose.foundation.layout.Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            component.props.label?.let { label ->
-                                BindJSView(
-                                    jsRuntime = jsRuntime,
-                                    component = label,
-                                    version = version,
-                                    onUiEvent = onUiEvent
-                                )
-                            }
+                            BindJSView(
+                                jsRuntime = jsRuntime,
+                                component = component.props.displayLabel,
+                                version = version,
+                                onUiEvent = onUiEvent
+                            )
                             Text(text = " \u25B6")
                         }
                     },
@@ -970,15 +968,13 @@ private fun MenuView(
         contentAlignment = Alignment.Center
     ) {
         // Render the label as the visible content
-        component.props.label?.let { label ->
-            BindJSView(
-                jsRuntime = jsRuntime,
-                component = label,
-                version = version,
-                onUiEvent = onUiEvent,
-                modifiers = modifiers.modifiersToShareWithChildren()
-            )
-        }
+        BindJSView(
+            jsRuntime = jsRuntime,
+            component = component.props.displayLabel,
+            version = version,
+            onUiEvent = onUiEvent,
+            modifiers = modifiers.modifiersToShareWithChildren()
+        )
 
         // Render children as a centered popup menu on click
         component.props.children?.let { children ->
