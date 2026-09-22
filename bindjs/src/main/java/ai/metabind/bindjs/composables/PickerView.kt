@@ -30,12 +30,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.getPickerStyle
+import ai.metabind.bindjs.composables.ext.isEnabled
 import ai.metabind.bindjs.composables.ext.modifiersToShareWithChildren
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.expandingForEach
+import ai.metabind.bindjs.model.layoutChildren
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LineLimitModifier
 import ai.metabind.bindjs.model.modifier.LineLimitProps
@@ -45,13 +47,16 @@ import ai.metabind.bindjs.model.modifier.TagModifier
 /**
  * One `Text("All").tag("all")` item of a Picker.
  *
+ * [tag] is null for an item written without `.tag(...)`. SwiftUI still draws such an
+ * item but choosing it cannot change the selection, so it is shown and inert here too.
+ *
  * [label] is the item as authored, kept whole so it can be rendered through the
  * renderer (and keep its own `.font(...)` / `.foregroundStyle(...)`); [text] is the
  * flattened string, which the drop-down's read-only TextField needs because it can
  * only take a `String`.
  */
 private class PickerOption(
-    val tag: String,
+    val tag: String?,
     val label: BaseComponent<*>,
     val text: String,
     val hasLineLimit: Boolean,
@@ -66,7 +71,7 @@ private class PickerOption(
  * drives the row, the whole segment disappeared with it. So walk the chain: the tag is
  * whichever `TagModifier` it carries, the text is the string at the leaf.
  */
-private fun BaseComponent<*>.asPickerOption(): PickerOption? {
+private fun BaseComponent<*>.asPickerOption(): PickerOption {
     var node: BaseComponent<*>? = this
     var tag: String? = null
     var hasLineLimit = false
@@ -76,10 +81,9 @@ private fun BaseComponent<*>.asPickerOption(): PickerOption? {
         if (modifier is LineLimitModifier) hasLineLimit = true
         node = node.props.content?.firstOrNull()
     }
-    val resolvedTag = tag ?: return null
     val textProps = (node as? TextComponent)?.props
     return PickerOption(
-        tag = resolvedTag,
+        tag = tag,
         label = this,
         text = textProps?.rawValue ?: textProps?.markdown ?: "",
         hasLineLimit = hasLineLimit,
@@ -97,14 +101,31 @@ fun PickerView(
 ) {
     // Options are usually written as `ForEach(values, v => Text(v).tag(v))`, which
     // arrives as one ForEach child holding the tagged rows; SwiftUI reads through it.
-    val options = component.props.children.expandingForEach()
+    val options = component.props.children.expandingForEach().layoutChildren()
         ?.mapNotNull { child -> child?.asPickerOption() }
         ?: emptyList()
 
     val label = component.props.label
     val selection = component.props.selection.first()
+    val isSelected = { option: PickerOption -> option.tag != null && option.tag == selection }
+    val isEnabled = modifiers.isEnabled()
 
-    val selectedItem = options.firstOrNull { it.tag == selection }?.text ?: label
+    val selectedItem = options.firstOrNull(isSelected)?.text ?: label
+
+    // An untagged item has nothing to set the selection to.
+    val choose = { option: PickerOption ->
+        val tag = option.tag
+        val setterId = component.props.setterId
+        if (tag != null && setterId != null) {
+            onUiEvent(
+                UiEvent.OnPickerTap(
+                    environmentId = component.props.environmentId,
+                    setterId = setterId,
+                    tag = tag
+                )
+            )
+        }
+    }
 
     val pickerStyle = modifiers.getPickerStyle()
     if (pickerStyle == "segmented") {
@@ -112,7 +133,7 @@ fun PickerView(
             mutableIntStateOf(0)
         }
 
-        selectedIndex = options.indexOfFirst { it.tag == selection }
+        selectedIndex = options.indexOfFirst(isSelected)
 
         // SwiftUI's `.segmented` picker is greedy horizontally: it takes the width
         // its container offers and splits it equally between the segments. M3's
@@ -135,18 +156,10 @@ fun PickerView(
                 SegmentedButton(
                     icon = {},
                     selected = index == selectedIndex,
+                    enabled = isEnabled,
                     onClick = {
-                        selectedIndex = index
-
-                        component.props.setterId?.let {
-                            onUiEvent(
-                                UiEvent.OnPickerTap(
-                                    environmentId = component.props.environmentId,
-                                    setterId = it,
-                                    tag = option.tag
-                                )
-                            )
-                        }
+                        if (option.tag != null) selectedIndex = index
+                        choose(option)
                     },
                     shape = SegmentedButtonDefaults.itemShape(index, options.size)
                 ) {
@@ -172,7 +185,7 @@ fun PickerView(
                 .wrapContentWidth(),
             expanded = expanded,
             onExpandedChange = {
-                expanded = !expanded
+                if (isEnabled) expanded = !expanded
             }
         ) {
             Row(
@@ -184,6 +197,7 @@ fun PickerView(
                     value = selectedItem,
                     onValueChange = { },
                     readOnly = true,
+                    enabled = isEnabled,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -223,16 +237,7 @@ fun PickerView(
                         },
                         onClick = {
                             expanded = false
-
-                            component.props.setterId?.let {
-                                onUiEvent(
-                                    UiEvent.OnPickerTap(
-                                        environmentId = component.props.environmentId,
-                                        setterId = it,
-                                        tag = option.tag
-                                    )
-                                )
-                            }
+                            choose(option)
                         },
                         contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                     )

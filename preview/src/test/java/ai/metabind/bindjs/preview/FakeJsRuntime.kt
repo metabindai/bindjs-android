@@ -14,9 +14,13 @@ import ai.metabind.bindjs.model.EmptyComponent
  * body, a sheet or menu body, and a custom button style. None of the committed fixture
  * trees use them, so every callback answers with nothing. A fixture that starts to
  * depend on one will render its slot empty, which the screenshot then shows.
+ *
+ * Calls that carry a picked value back into JavaScript are recorded in [calls], in
+ * order, so a test can check what an event was routed to.
  */
 class FakeJsRuntime : JsRuntime {
     private val empty = EmptyComponent()
+    val calls = mutableListOf<String>()
 
     override suspend fun setComponents(component: DesignerComponent) {}
     override suspend fun willRender() {}
@@ -34,10 +38,13 @@ class FakeJsRuntime : JsRuntime {
     override fun dispatchDragEvent(handlerId: String, state: Map<String, Any>) {}
     override suspend fun callForResultComponent(handlerId: String): Component? = null
     override suspend fun restoreForEachData(dataId: String): String = "[]"
-    override suspend fun restoreEnvironment(id: String) {}
+    override suspend fun restoreEnvironment(id: String) { calls += "restoreEnvironment($id)" }
     override suspend fun restoreEnvironmentOnly(id: String) {}
     override suspend fun restorePickerValue(currentValueId: String): String = ""
-    override suspend fun callPickerSetter(setterId: String, value: String): String = ""
+    override suspend fun callPickerSetter(setterId: String, value: String): String {
+        calls += "callPickerSetter($setterId, $value)"
+        return ""
+    }
     override suspend fun callForEachFunction(functionId: String, element: String, index: String): String? = null
     override suspend fun callGeometryReaderComponent(
         handlerId: String,

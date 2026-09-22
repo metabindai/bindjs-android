@@ -255,6 +255,38 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Picker",
+        description = "Pickers styled the SwiftUI way: a segmented style written on the enclosing stack and one behind a frame, a picker's own menu style beating the stack's, an untagged option that shows but cannot be chosen, a disabled picker, and a tag with an apostrophe.",
+        source = """
+        (() => {
+          const [size, setSize] = useState('m');
+          const [speed, setSpeed] = useState('fast');
+          const [dept, setDept] = useState("Men's");
+          const [tagged, setTagged] = useState('tagged');
+          const [locked, setLocked] = useState('on');
+          const sizes = () => [Text('Small').tag('s'), Text('Medium').tag('m'), Text('Large').tag('l')];
+          const caption = (text) => Text(text).font('caption').foregroundStyle(Color('gray'));
+          return VStack({ alignment: 'leading', spacing: 12 }, [
+            caption('Segmented, set on the stack'),
+            Picker('Size', [size, setSize], sizes()),
+            caption('Segmented, behind a frame'),
+            Picker('Speed', [speed, setSpeed], [Text('Slow').tag('slow'), Text('Fast').tag('fast')])
+              .frame({ maxWidth: Infinity })
+              .pickerStyle('segmented'),
+            caption('Untagged option'),
+            Picker('Tagging', [tagged, setTagged], [Text('Tagged').tag('tagged'), Text('Untagged')]).pickerStyle('segmented'),
+            caption('Disabled'),
+            Picker('Locked', [locked, setLocked], [Text('Off').tag('off'), Text('On').tag('on')])
+              .pickerStyle('segmented')
+              .disabled(true),
+            caption("Own menu style, tag with an apostrophe"),
+            Picker('Department', [dept, setDept], [Text("Men's").tag("Men's"), Text("Women's").tag("Women's")])
+              .pickerStyle('menu'),
+          ]).pickerStyle('segmented').padding(16);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """

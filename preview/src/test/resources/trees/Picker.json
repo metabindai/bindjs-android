@@ -1,0 +1,630 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Picker",
+    "props": {},
+    "children": [
+      {
+        "type": "ModifiedComponent",
+        "props": {
+          "modifier": {
+            "type": "padding",
+            "props": {
+              "top": 16,
+              "leading": 16,
+              "bottom": 16,
+              "trailing": 16,
+              "children": []
+            }
+          },
+          "content": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "pickerStyle",
+                  "props": {
+                    "rawValue": "segmented",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "VStack",
+                    "props": {
+                      "alignment": "leading",
+                      "spacing": 12,
+                      "children": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "foregroundStyle",
+                              "props": {
+                                "rawValue": {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "gray",
+                                    "children": []
+                                  }
+                                },
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "font",
+                                    "props": {
+                                      "rawValue": "caption",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Segmented, set on the stack",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "Picker",
+                          "props": {
+                            "label": "Size",
+                            "selection": [
+                              "m",
+                              null
+                            ],
+                            "currentValueId": "0,Fixture_Picker_0,VStack_0,Picker_1,Picker,1",
+                            "setterId": "0,Fixture_Picker_0,VStack_0,Picker_1,Picker,1",
+                            "environmentId": "0,Fixture_Picker_0,VStack_0,Picker_1,Picker,1",
+                            "children": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "tag",
+                                    "props": {
+                                      "rawValue": "s",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Small",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "tag",
+                                    "props": {
+                                      "rawValue": "m",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Medium",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "tag",
+                                    "props": {
+                                      "rawValue": "l",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Large",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "foregroundStyle",
+                              "props": {
+                                "rawValue": {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "gray",
+                                    "children": []
+                                  }
+                                },
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "font",
+                                    "props": {
+                                      "rawValue": "caption",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Segmented, behind a frame",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "pickerStyle",
+                              "props": {
+                                "rawValue": "segmented",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "maxWidth": "Infinity",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Picker",
+                                      "props": {
+                                        "label": "Speed",
+                                        "selection": [
+                                          "fast",
+                                          null
+                                        ],
+                                        "currentValueId": "0,Fixture_Picker_0,VStack_0,Picker_3,Picker,3",
+                                        "setterId": "0,Fixture_Picker_0,VStack_0,Picker_3,Picker,3",
+                                        "environmentId": "0,Fixture_Picker_0,VStack_0,Picker_3,Picker,3",
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "slow",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Slow",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "fast",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Fast",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "foregroundStyle",
+                              "props": {
+                                "rawValue": {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "gray",
+                                    "children": []
+                                  }
+                                },
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "font",
+                                    "props": {
+                                      "rawValue": "caption",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Untagged option",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "pickerStyle",
+                              "props": {
+                                "rawValue": "segmented",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Picker",
+                                "props": {
+                                  "label": "Tagging",
+                                  "selection": [
+                                    "tagged",
+                                    null
+                                  ],
+                                  "currentValueId": "0,Fixture_Picker_0,VStack_0,Picker_5,Picker,5",
+                                  "setterId": "0,Fixture_Picker_0,VStack_0,Picker_5,Picker,5",
+                                  "environmentId": "0,Fixture_Picker_0,VStack_0,Picker_5,Picker,5",
+                                  "children": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "tag",
+                                          "props": {
+                                            "rawValue": "tagged",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Tagged",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Untagged",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "foregroundStyle",
+                              "props": {
+                                "rawValue": {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "gray",
+                                    "children": []
+                                  }
+                                },
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "font",
+                                    "props": {
+                                      "rawValue": "caption",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Disabled",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "disabled",
+                              "props": {
+                                "rawValue": true,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "pickerStyle",
+                                    "props": {
+                                      "rawValue": "segmented",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Picker",
+                                      "props": {
+                                        "label": "Locked",
+                                        "selection": [
+                                          "on",
+                                          null
+                                        ],
+                                        "currentValueId": "0,Fixture_Picker_0,VStack_0,Picker_7,Picker,7",
+                                        "setterId": "0,Fixture_Picker_0,VStack_0,Picker_7,Picker,7",
+                                        "environmentId": "0,Fixture_Picker_0,VStack_0,Picker_7,Picker,7",
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "off",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Off",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "on",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "On",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "foregroundStyle",
+                              "props": {
+                                "rawValue": {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "gray",
+                                    "children": []
+                                  }
+                                },
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "font",
+                                    "props": {
+                                      "rawValue": "caption",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Own menu style, tag with an apostrophe",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "pickerStyle",
+                              "props": {
+                                "rawValue": "menu",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Picker",
+                                "props": {
+                                  "label": "Department",
+                                  "selection": [
+                                    "Men's",
+                                    null
+                                  ],
+                                  "currentValueId": "0,Fixture_Picker_0,VStack_0,Picker_9,Picker,9",
+                                  "setterId": "0,Fixture_Picker_0,VStack_0,Picker_9,Picker,9",
+                                  "environmentId": "0,Fixture_Picker_0,VStack_0,Picker_9,Picker,9",
+                                  "children": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "tag",
+                                          "props": {
+                                            "rawValue": "Men's",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Men's",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "tag",
+                                          "props": {
+                                            "rawValue": "Women's",
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Women's",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

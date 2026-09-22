@@ -357,8 +357,7 @@ class JsRuntimeImpl private constructor(
     }
 
     override suspend fun callPickerSetter(setterId: String, value: String): String {
-        val script = "callEventHandler('$setterId', '$value',[]);"
-        val result = evalJs(script)
+        val result = evalJs(pickerSetterScript(gson, setterId, value))
         Log.d(TAG, "callPickerSetter result: $result")
 
         return result
@@ -728,3 +727,12 @@ class JsRuntimeImpl private constructor(
         }
     }
 }
+
+/**
+ * The script that hands a picked tag to the Picker's setter. Both arguments go in as
+ * JSON string literals rather than pasted between quotes: a tag such as "Men's" would
+ * otherwise end the literal early, the script would fail to parse, and the setter would
+ * never run, leaving the picker stuck on its old value.
+ */
+internal fun pickerSetterScript(gson: Gson, setterId: String, value: String): String =
+    "callEventHandler(${gson.toJson(setterId)}, ${gson.toJson(value)});"
