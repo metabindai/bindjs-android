@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.buildModifier
+import ai.metabind.bindjs.composables.ext.isEnabled
 import ai.metabind.bindjs.model.NavigationLinkComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 
@@ -20,7 +21,9 @@ fun NavigationLinkView(
     Box(
         modifier = modifiers
             .buildModifier(onUiEvent)
-            .clickable { onUiEvent.invoke(UiEvent.OnNavigationTap(component.props.destinationHandlerId)) }
+            .clickable(enabled = modifiers.isEnabled()) {
+                onUiEvent.invoke(UiEvent.OnNavigationTap(component.props.destinationHandlerId))
+            }
     ) {
         BindJSView(
             jsRuntime = jsRuntime,

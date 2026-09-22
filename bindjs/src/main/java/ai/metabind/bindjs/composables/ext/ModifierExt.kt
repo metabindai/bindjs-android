@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -525,15 +526,25 @@ fun List<ComponentModifier<*>>.getPickerStyle(): String {
 }
 
 /**
+ * SwiftUI's `isEnabled` environment value. `ModifiedComponent` narrows it at every
+ * `.disabled(...)` it passes, so it reaches every control below, however the containers
+ * in between build their children's modifier lists — a ScrollView, a List row and a
+ * toolbar item all start theirs from scratch.
+ */
+internal val LocalControlsEnabled = compositionLocalOf { true }
+
+/**
  * SwiftUI's `.disabled(_:)` takes a `Bool`, so `.disabled(false)` leaves the control
  * live — reading the modifier's mere presence as "disabled" killed every conditionally
  * disabled control (A2UI's FlightCard `Select` button, which is `.disabled(selected)`,
  * never fired).
+ *
+ * The flags combine as SwiftUI's do: a `.disabled(true)` on the control or on any
+ * ancestor disables it, and a `.disabled(false)` further in cannot re-enable it.
  */
+@Composable
 fun List<ComponentModifier<*>>.isEnabled(): Boolean {
-    return firstOrNull { it is DisabledModifier }?.let { modifier ->
-        (modifier as DisabledModifier).props.rawValue == false
-    } ?: true
+    return LocalControlsEnabled.current && none { it is DisabledModifier && it.props.rawValue != false }
 }
 
 fun List<ComponentModifier<*>>.allowsHitTesting(): Boolean {

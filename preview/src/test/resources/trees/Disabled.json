@@ -1,0 +1,626 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Disabled",
+    "props": {},
+    "children": [
+      {
+        "type": "ModifiedComponent",
+        "props": {
+          "modifier": {
+            "type": "padding",
+            "props": {
+              "top": 16,
+              "leading": 16,
+              "bottom": 16,
+              "trailing": 16,
+              "children": []
+            }
+          },
+          "content": [
+            {
+              "type": "VStack",
+              "props": {
+                "alignment": "leading",
+                "spacing": 10,
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "gray",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "caption",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Disabled stack",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": true,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "VStack",
+                          "props": {
+                            "alignment": "leading",
+                            "spacing": 8,
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "handlerId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Button_0,,0",
+                                  "label": {
+                                    "type": "Text",
+                                    "props": {
+                                      "rawValue": "Stack button",
+                                      "children": []
+                                    }
+                                  },
+                                  "environmentId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Button_0,,0",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "Toggle",
+                                "props": {
+                                  "label": "Stack toggle",
+                                  "isOn": true,
+                                  "setIsOnId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Toggle_1,setIsOn,1",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "TextField",
+                                "props": {
+                                  "placeholder": "Stack field",
+                                  "text": "",
+                                  "setTextId": "0,Fixture_Disabled_0,VStack_0,VStack_1,TextField_2,setText,2",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "pickerStyle",
+                                    "props": {
+                                      "rawValue": "segmented",
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Picker",
+                                      "props": {
+                                        "label": "Choice",
+                                        "selection": [
+                                          "a",
+                                          null
+                                        ],
+                                        "currentValueId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Picker_3,Picker,3",
+                                        "setterId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Picker_3,Picker,3",
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Picker_3,Picker,3",
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "a",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Seg A",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "tag",
+                                                "props": {
+                                                  "rawValue": "b",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Seg B",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "NavigationLink",
+                                "props": {
+                                  "destinationHandlerId": "0,Fixture_Disabled_0,VStack_0,VStack_1,NavigationLink_4,NavigationLink_destination,4",
+                                  "label": {
+                                    "type": "Text",
+                                    "props": {
+                                      "rawValue": "Stack link",
+                                      "children": []
+                                    }
+                                  },
+                                  "environmentId": "0,Fixture_Disabled_0,VStack_0,VStack_1,NavigationLink_4,,4",
+                                  "children": []
+                                }
+                              },
+                              {
+                                "type": "Menu",
+                                "props": {
+                                  "rawValue": "Stack menu",
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "handlerId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Menu_5,Button_0,,0",
+                                        "label": {
+                                          "type": "Text",
+                                          "props": {
+                                            "rawValue": "Menu item",
+                                            "children": []
+                                          }
+                                        },
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Menu_5,Button_0,,0",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "disabled",
+                                    "props": {
+                                      "rawValue": false,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "handlerId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Button_6,,6",
+                                        "label": {
+                                          "type": "Text",
+                                          "props": {
+                                            "rawValue": "Nested enable",
+                                            "children": []
+                                          }
+                                        },
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,VStack_1,Button_6,,6",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "gray",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "caption",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Inside a ScrollView and a List",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": true,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "frame",
+                              "props": {
+                                "height": 44,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ScrollView",
+                                "props": {
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "handlerId": "0,Fixture_Disabled_0,VStack_0,ScrollView_3,Button_0,,0",
+                                        "label": {
+                                          "type": "Text",
+                                          "props": {
+                                            "rawValue": "Scroll button",
+                                            "children": []
+                                          }
+                                        },
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,ScrollView_3,Button_0,,0",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": true,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "frame",
+                              "props": {
+                                "height": 60,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "List",
+                                "props": {
+                                  "children": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "handlerId": "0,Fixture_Disabled_0,VStack_0,List_4,Button_0,,0",
+                                        "label": {
+                                          "type": "Text",
+                                          "props": {
+                                            "rawValue": "List button",
+                                            "children": []
+                                          }
+                                        },
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,List_4,Button_0,,0",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "gray",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "caption",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Behind a frame, and re-enabled further out",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": true,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "frame",
+                              "props": {
+                                "maxWidth": "Infinity",
+                                "alignment": "leading",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "handlerId": "0,Fixture_Disabled_0,VStack_0,Button_6,,6",
+                                  "label": {
+                                    "type": "Text",
+                                    "props": {
+                                      "rawValue": "Framed button",
+                                      "children": []
+                                    }
+                                  },
+                                  "environmentId": "0,Fixture_Disabled_0,VStack_0,Button_6,,6",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": false,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 4,
+                                "leading": 4,
+                                "bottom": 4,
+                                "trailing": 4,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "disabled",
+                                    "props": {
+                                      "rawValue": true,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Button",
+                                      "props": {
+                                        "handlerId": "0,Fixture_Disabled_0,VStack_0,Button_7,,7",
+                                        "label": {
+                                          "type": "Text",
+                                          "props": {
+                                            "rawValue": "Inner disabled",
+                                            "children": []
+                                          }
+                                        },
+                                        "environmentId": "0,Fixture_Disabled_0,VStack_0,Button_7,,7",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "gray",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "caption",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "Enabled",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "disabled",
+                        "props": {
+                          "rawValue": false,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "Button",
+                          "props": {
+                            "handlerId": "0,Fixture_Disabled_0,VStack_0,Button_9,,9",
+                            "label": {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Live button",
+                                "children": []
+                              }
+                            },
+                            "environmentId": "0,Fixture_Disabled_0,VStack_0,Button_9,,9",
+                            "children": []
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

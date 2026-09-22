@@ -58,6 +58,8 @@ import ai.metabind.bindjs.composables.ext.getBackgroundComponents
 import ai.metabind.bindjs.composables.ext.getBackgroundFrameHeight
 import ai.metabind.bindjs.composables.ext.has
 import ai.metabind.bindjs.composables.ext.hasFrame
+import ai.metabind.bindjs.composables.ext.LocalControlsEnabled
+import ai.metabind.bindjs.composables.ext.isEnabled
 import ai.metabind.bindjs.composables.ext.modifiersToShareWithChildren
 import ai.metabind.bindjs.composables.ext.process
 import ai.metabind.bindjs.model.AngularGradientComponent
@@ -127,6 +129,7 @@ import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.ContextMenuModifier
 import ai.metabind.bindjs.model.modifier.CornerRadiusModifier
 import ai.metabind.bindjs.model.modifier.ForegroundStyleModifier
+import ai.metabind.bindjs.model.modifier.DisabledModifier
 import ai.metabind.bindjs.model.modifier.FrameModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.MaskModifier
@@ -395,6 +398,25 @@ private fun ModifiedComponent(
                 isBackground = isBackground,
                 hasFrame = hasFrame
             )
+        }
+
+        // `.disabled(...)` is an environment value in SwiftUI: it disables every control
+        // below it, not just the one it is written on, and nothing further in can undo
+        // it. Narrowed here rather than read at the leaf, since several containers start
+        // their children's modifier lists from scratch and would drop it.
+        is DisabledModifier -> {
+            val enabled = LocalControlsEnabled.current && modifier.props.rawValue == false
+            CompositionLocalProvider(LocalControlsEnabled provides enabled) {
+                InnerComponents(
+                    jsRuntime = jsRuntime,
+                    version = version,
+                    onUiEvent = onUiEvent,
+                    modifiers = updateModifiers,
+                    components = modifierProps.content,
+                    isBackground = isBackground,
+                    hasFrame = hasFrame
+                )
+            }
         }
 
         is OnDisappearModifier -> {
@@ -962,6 +984,7 @@ private fun MenuView(
             .combinedClickable(
                 interactionSource = null,
                 indication = null,
+                enabled = modifiers.isEnabled(),
                 onClick = { expanded = true },
                 onLongClick = {}
             ),

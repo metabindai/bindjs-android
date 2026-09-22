@@ -77,7 +77,7 @@ fun ButtonView(
                     isPressed = false
                 }
             }) {
-            TintedLabel {
+            TintedLabel(isEnabled) {
                 BindJSView(
                     jsRuntime = jsRuntime,
                     component = child,
@@ -128,7 +128,7 @@ fun ButtonView(
             val modifiersFinal = modifiers.modifiersToShareWithChildren() +
                     modifiers.filter { it is LocalModifier.InRow }
 
-            TintedLabel {
+            TintedLabel(isEnabled) {
                 BindJSView(
                     jsRuntime = jsRuntime,
                     component = component.props.label,
@@ -146,10 +146,13 @@ fun ButtonView(
  * [LocalContentTint], SF-Symbol glyphs through Material's [LocalContentColor] (which
  * `ImageView` already honours). A label with its own `.foregroundStyle(...)` overrides
  * both, so this only colours what the JS left unstyled.
+ *
+ * A disabled button is drawn in the content colour at 30% rather than the accent, as
+ * SwiftUI greys it; left blue, it read as tappable and did nothing.
  */
 @Composable
-private fun TintedLabel(content: @Composable () -> Unit) {
-    val tint = LocalAccentColor.current
+private fun TintedLabel(enabled: Boolean, content: @Composable () -> Unit) {
+    val tint = if (enabled) LocalAccentColor.current else LocalContentColor.current.copy(alpha = 0.3f)
     CompositionLocalProvider(
         LocalContentTint provides tint,
         LocalContentColor provides tint,
