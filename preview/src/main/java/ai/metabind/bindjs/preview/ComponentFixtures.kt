@@ -206,6 +206,39 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "ForEach",
+        description = "ForEach rows inside containers that read their children rather than lay them out: a navigation bar's toolbar items, segmented and menu pickers whose tagged options come from a ForEach, and a menu whose items do.",
+        source = """
+        (() => {
+          const [size, setSize] = useState('M');
+          const [fruit, setFruit] = useState('Cherry');
+          return NavigationStack(
+            VStack({ alignment: 'leading', spacing: 16 }, [
+              Text('Segmented picker').font('headline'),
+              Picker('Size', [size, setSize], [
+                ForEach(['S', 'M', 'L', 'XL'], (s) => Text(s).tag(s)),
+              ]).pickerStyle('segmented'),
+              Text('Menu picker').font('headline'),
+              Picker('Fruit', [fruit, setFruit], [
+                ForEach(['Apple', 'Banana', 'Cherry'], (f) => Text(f).tag(f)),
+              ]),
+              Text('Menu').font('headline'),
+              Menu({ label: Text('Actions') }, [
+                ForEach(['Copy', 'Rename', 'Delete'], (a) => Button(a, () => {})),
+              ]),
+            ])
+              .padding(16)
+              .navigationTitle('ForEach')
+              .navigationBarTitleDisplayMode('inline')
+              .toolbar([
+                ForEach(['Share', 'Edit'], (a) =>
+                  ToolbarItem({ placement: 'primaryAction' }, [Button(a, () => {})])),
+              ])
+          );
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """

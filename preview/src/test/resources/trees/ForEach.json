@@ -1,0 +1,493 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_ForEach",
+    "props": {},
+    "children": [
+      {
+        "type": "NavigationStack",
+        "props": {
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "toolbar",
+                  "props": {
+                    "content": {
+                      "type": "Group",
+                      "props": {
+                        "children": [
+                          {
+                            "type": "ForEach",
+                            "props": {
+                              "dataId": null,
+                              "functionId": null,
+                              "count": 2,
+                              "environmentId": null,
+                              "children": [
+                                {
+                                  "type": "ToolbarItem",
+                                  "props": {
+                                    "placement": "primaryAction",
+                                    "children": [
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "handlerId": "0,Fixture_ForEach_0,NavigationStack_0,ForEach_0,0,Button_0,,0",
+                                          "label": {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Share",
+                                              "children": []
+                                            }
+                                          },
+                                          "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,ForEach_0,0,Button_0,,0",
+                                          "children": []
+                                        }
+                                      }
+                                    ]
+                                  }
+                                },
+                                {
+                                  "type": "ToolbarItem",
+                                  "props": {
+                                    "placement": "primaryAction",
+                                    "children": [
+                                      {
+                                        "type": "Button",
+                                        "props": {
+                                          "handlerId": "0,Fixture_ForEach_0,NavigationStack_0,ForEach_0,1,Button_0,,0",
+                                          "label": {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Edit",
+                                              "children": []
+                                            }
+                                          },
+                                          "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,ForEach_0,1,Button_0,,0",
+                                          "children": []
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "navigationBarTitleDisplayMode",
+                        "props": {
+                          "rawValue": "inline",
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "navigationTitle",
+                              "props": {
+                                "rawValue": "ForEach",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "padding",
+                                    "props": {
+                                      "top": 16,
+                                      "leading": 16,
+                                      "bottom": 16,
+                                      "trailing": 16,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "VStack",
+                                      "props": {
+                                        "alignment": "leading",
+                                        "spacing": 16,
+                                        "children": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "font",
+                                                "props": {
+                                                  "rawValue": "headline",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Segmented picker",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "pickerStyle",
+                                                "props": {
+                                                  "rawValue": "segmented",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Picker",
+                                                  "props": {
+                                                    "label": "Size",
+                                                    "selection": [
+                                                      "M",
+                                                      null
+                                                    ],
+                                                    "currentValueId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_1,Picker,1",
+                                                    "setterId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_1,Picker,1",
+                                                    "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_1,Picker,1",
+                                                    "children": [
+                                                      {
+                                                        "type": "ForEach",
+                                                        "props": {
+                                                          "dataId": null,
+                                                          "functionId": null,
+                                                          "count": 4,
+                                                          "environmentId": null,
+                                                          "children": [
+                                                            {
+                                                              "type": "ModifiedComponent",
+                                                              "props": {
+                                                                "modifier": {
+                                                                  "type": "tag",
+                                                                  "props": {
+                                                                    "rawValue": "S",
+                                                                    "children": []
+                                                                  }
+                                                                },
+                                                                "content": [
+                                                                  {
+                                                                    "type": "Text",
+                                                                    "props": {
+                                                                      "rawValue": "S",
+                                                                      "children": []
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            {
+                                                              "type": "ModifiedComponent",
+                                                              "props": {
+                                                                "modifier": {
+                                                                  "type": "tag",
+                                                                  "props": {
+                                                                    "rawValue": "M",
+                                                                    "children": []
+                                                                  }
+                                                                },
+                                                                "content": [
+                                                                  {
+                                                                    "type": "Text",
+                                                                    "props": {
+                                                                      "rawValue": "M",
+                                                                      "children": []
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            {
+                                                              "type": "ModifiedComponent",
+                                                              "props": {
+                                                                "modifier": {
+                                                                  "type": "tag",
+                                                                  "props": {
+                                                                    "rawValue": "L",
+                                                                    "children": []
+                                                                  }
+                                                                },
+                                                                "content": [
+                                                                  {
+                                                                    "type": "Text",
+                                                                    "props": {
+                                                                      "rawValue": "L",
+                                                                      "children": []
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            {
+                                                              "type": "ModifiedComponent",
+                                                              "props": {
+                                                                "modifier": {
+                                                                  "type": "tag",
+                                                                  "props": {
+                                                                    "rawValue": "XL",
+                                                                    "children": []
+                                                                  }
+                                                                },
+                                                                "content": [
+                                                                  {
+                                                                    "type": "Text",
+                                                                    "props": {
+                                                                      "rawValue": "XL",
+                                                                      "children": []
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "font",
+                                                "props": {
+                                                  "rawValue": "headline",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Menu picker",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Picker",
+                                            "props": {
+                                              "label": "Fruit",
+                                              "selection": [
+                                                "Cherry",
+                                                null
+                                              ],
+                                              "currentValueId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_3,Picker,3",
+                                              "setterId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_3,Picker,3",
+                                              "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Picker_3,Picker,3",
+                                              "children": [
+                                                {
+                                                  "type": "ForEach",
+                                                  "props": {
+                                                    "dataId": null,
+                                                    "functionId": null,
+                                                    "count": 3,
+                                                    "environmentId": null,
+                                                    "children": [
+                                                      {
+                                                        "type": "ModifiedComponent",
+                                                        "props": {
+                                                          "modifier": {
+                                                            "type": "tag",
+                                                            "props": {
+                                                              "rawValue": "Apple",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "content": [
+                                                            {
+                                                              "type": "Text",
+                                                              "props": {
+                                                                "rawValue": "Apple",
+                                                                "children": []
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "ModifiedComponent",
+                                                        "props": {
+                                                          "modifier": {
+                                                            "type": "tag",
+                                                            "props": {
+                                                              "rawValue": "Banana",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "content": [
+                                                            {
+                                                              "type": "Text",
+                                                              "props": {
+                                                                "rawValue": "Banana",
+                                                                "children": []
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "ModifiedComponent",
+                                                        "props": {
+                                                          "modifier": {
+                                                            "type": "tag",
+                                                            "props": {
+                                                              "rawValue": "Cherry",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "content": [
+                                                            {
+                                                              "type": "Text",
+                                                              "props": {
+                                                                "rawValue": "Cherry",
+                                                                "children": []
+                                                              }
+                                                            }
+                                                          ]
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "font",
+                                                "props": {
+                                                  "rawValue": "headline",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Menu",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "Menu",
+                                            "props": {
+                                              "label": {
+                                                "type": "Text",
+                                                "props": {
+                                                  "rawValue": "Actions",
+                                                  "children": []
+                                                }
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "ForEach",
+                                                  "props": {
+                                                    "dataId": null,
+                                                    "functionId": null,
+                                                    "count": 3,
+                                                    "environmentId": null,
+                                                    "children": [
+                                                      {
+                                                        "type": "Button",
+                                                        "props": {
+                                                          "handlerId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,0,,0",
+                                                          "label": {
+                                                            "type": "Text",
+                                                            "props": {
+                                                              "rawValue": "Copy",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,0,,0",
+                                                          "children": []
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "Button",
+                                                        "props": {
+                                                          "handlerId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,1,,0",
+                                                          "label": {
+                                                            "type": "Text",
+                                                            "props": {
+                                                              "rawValue": "Rename",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,1,,0",
+                                                          "children": []
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "Button",
+                                                        "props": {
+                                                          "handlerId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,2,,0",
+                                                          "label": {
+                                                            "type": "Text",
+                                                            "props": {
+                                                              "rawValue": "Delete",
+                                                              "children": []
+                                                            }
+                                                          },
+                                                          "environmentId": "0,Fixture_ForEach_0,NavigationStack_0,VStack_0,Menu_5,ForEach_0,2,,0",
+                                                          "children": []
+                                                        }
+                                                      }
+                                                    ]
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -18,9 +18,11 @@ class ToolbarItemProps(
     val content: BaseComponent<*>?,
     children: List<BaseComponent<*>>?,
 ) : Props(children = children) {
-    /** The views this item contributes to the bar, in order. */
+    /** The views this item contributes to the bar, in order, with a `ForEach` read through. */
     val items: List<BaseComponent<*>>
-        get() = content?.let { listOf(it) } ?: children?.filterNotNull() ?: emptyList()
+        get() = (content?.let { listOf(it) } ?: children)
+            .expandingForEach()?.filterNotNull()
+            ?: emptyList()
 
     override fun toString(): String {
         return "ToolbarItemProps(placement=$placement)"
