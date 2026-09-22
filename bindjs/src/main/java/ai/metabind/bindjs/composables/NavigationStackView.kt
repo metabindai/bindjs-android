@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.model.BaseComponent
+import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GroupComponent
 import ai.metabind.bindjs.model.NavigationStackComponent
 import ai.metabind.bindjs.model.ToolbarItemComponent
@@ -129,6 +130,9 @@ private fun BaseComponent<*>.collectToolbarItems(
     when (this) {
         // `.toolbar([a, b])` arrives wrapped in a Group (see ContentModifier in script.js).
         is GroupComponent -> props.children?.forEach { it?.collectToolbarItems(leading, trailing) }
+
+        // `.toolbar([ForEach(actions, a => ToolbarItem(...))])`: each row is an item.
+        is ForEachComponent -> props.children?.forEach { it?.collectToolbarItems(leading, trailing) }
 
         is ToolbarItemComponent, is ToolbarItemGroupComponent -> {
             val itemProps = (props as? ToolbarItemProps) ?: return

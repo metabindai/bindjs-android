@@ -35,6 +35,7 @@ import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.PickerComponent
 import ai.metabind.bindjs.model.TextComponent
+import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.LineLimitModifier
 import ai.metabind.bindjs.model.modifier.LineLimitProps
@@ -94,7 +95,9 @@ fun PickerView(
     modifiers: List<ComponentModifier<*>>,
     onUiEvent: (UiEvent) -> Unit
 ) {
-    val options = component.props.children
+    // Options are usually written as `ForEach(values, v => Text(v).tag(v))`, which
+    // arrives as one ForEach child holding the tagged rows; SwiftUI reads through it.
+    val options = component.props.children.expandingForEach()
         ?.mapNotNull { child -> child?.asPickerOption() }
         ?: emptyList()
 

@@ -821,7 +821,8 @@ private fun ContextMenuItems(
     textColor: Color? = null,
 ) {
     when (component) {
-        is GroupComponent -> {
+        // A ForEach of items reads as its rows, as it does in a SwiftUI Menu.
+        is GroupComponent, is ForEachComponent -> {
             component.props.children?.forEach { child ->
                 child?.let {
                     ContextMenuItems(
