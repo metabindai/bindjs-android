@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import ai.metabind.bindjs.composables.ext.buildModifier
+import ai.metabind.bindjs.composables.ext.isEnabled
 import ai.metabind.bindjs.model.ToggleComponent
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 
@@ -28,7 +29,7 @@ fun ToggleView(
     val label = component.props.label
 
     if (label.isNullOrEmpty()) {
-        ToggleSwitch(component, onUiEvent, modifiers.buildModifier(onUiEvent))
+        ToggleSwitch(component, onUiEvent, modifiers.buildModifier(onUiEvent), modifiers.isEnabled())
 
         return
     }
@@ -40,7 +41,7 @@ fun ToggleView(
     ) {
         Text(text = label, modifier = Modifier.weight(1f, fill = true))
 
-        ToggleSwitch(component, onUiEvent, Modifier)
+        ToggleSwitch(component, onUiEvent, Modifier, modifiers.isEnabled())
     }
 }
 
@@ -49,9 +50,11 @@ private fun ToggleSwitch(
     component: ToggleComponent,
     onUiEvent: (UiEvent) -> Unit,
     modifier: Modifier,
+    enabled: Boolean,
 ) {
     Switch(
         checked = component.props.isOn,
+        enabled = enabled,
         onCheckedChange = {
             component.props.setIsOnId?.let { handlerId ->
                 onUiEvent.invoke(UiEvent.OnSwitch(handlerId, !component.props.isOn))

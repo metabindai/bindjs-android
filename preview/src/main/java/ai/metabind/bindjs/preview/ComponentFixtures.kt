@@ -287,6 +287,39 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Disabled",
+        description = "`.disabled(true)` the SwiftUI way: on a stack it disables every control inside, through a ScrollView, a List and a frame, and a `.disabled(false)` further in cannot undo it. The last button is live.",
+        source = """
+        (() => {
+          const [isOn, setIsOn] = useState(true);
+          const [text, setText] = useState('');
+          const [choice, setChoice] = useState('a');
+          const caption = (t) => Text(t).font('caption').foregroundStyle(Color('gray'));
+          return VStack({ alignment: 'leading', spacing: 10 }, [
+            caption('Disabled stack'),
+            VStack({ alignment: 'leading', spacing: 8 }, [
+              Button('Stack button', () => {}),
+              Toggle({ label: 'Stack toggle', isOn, setIsOn }),
+              TextField({ placeholder: 'Stack field', text, setText }),
+              Picker('Choice', [choice, setChoice], [Text('Seg A').tag('a'), Text('Seg B').tag('b')])
+                .pickerStyle('segmented'),
+              NavigationLink('Stack link', () => Text('Destination')),
+              Menu('Stack menu', [Button('Menu item', () => {})]),
+              Button('Nested enable', () => {}).disabled(false),
+            ]).disabled(true),
+            caption('Inside a ScrollView and a List'),
+            ScrollView([Button('Scroll button', () => {})]).frame({ height: 44 }).disabled(true),
+            List([Button('List button', () => {})]).frame({ height: 60 }).disabled(true),
+            caption('Behind a frame, and re-enabled further out'),
+            Button('Framed button', () => {}).frame({ maxWidth: Infinity, alignment: 'leading' }).disabled(true),
+            Button('Inner disabled', () => {}).disabled(true).padding(4).disabled(false),
+            caption('Enabled'),
+            Button('Live button', () => {}).disabled(false),
+          ]).padding(16);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """
