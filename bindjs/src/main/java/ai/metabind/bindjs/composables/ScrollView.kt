@@ -47,6 +47,17 @@ val LocalHostScrollsVertically = compositionLocalOf { false }
  */
 val LocalInHorizontalScroll = compositionLocalOf { false }
 
+/**
+ * The vertical counterpart of [LocalInHorizontalScroll]: true while the height offered to
+ * this content is unbounded — inside a vertical [ScrollView] or a List, or anywhere in a
+ * host that scrolls vertically — and false again under a frame that bounds the height.
+ *
+ * A weighted child is 0 tall in an unbounded Column, so a stack reads this to tell a
+ * `Spacer(minLength:)` that can flex from one that can only be its minimum. SwiftUI does
+ * the same: in a scroll view a Spacer collapses to its minimum length.
+ */
+val LocalInVerticalScroll = compositionLocalOf { false }
+
 @Composable
 fun ScrollView(
     jsRuntime: JsRuntime,
@@ -91,15 +102,17 @@ fun ScrollView(
         Column(
             modifier = modifiers.buildModifier(onUiEvent)
         ) {
-            component.props.children.expandingForEach()?.forEach { child ->
-                child?.let {
-                    BindJSView(
-                        jsRuntime = jsRuntime,
-                        component = child,
-                        version = version,
-                        onUiEvent = onUiEvent,
-                        modifiers = emptyList()
-                    )
+            CompositionLocalProvider(LocalInVerticalScroll provides true) {
+                component.props.children.expandingForEach()?.forEach { child ->
+                    child?.let {
+                        BindJSView(
+                            jsRuntime = jsRuntime,
+                            component = child,
+                            version = version,
+                            onUiEvent = onUiEvent,
+                            modifiers = emptyList()
+                        )
+                    }
                 }
             }
         }
@@ -120,13 +133,15 @@ fun ScrollView(
                         )
                     } else {
                         item {
-                            BindJSView(
-                                jsRuntime = jsRuntime,
-                                component = child,
-                                version = version,
-                                onUiEvent = onUiEvent,
-                                modifiers = emptyList()
-                            )
+                            CompositionLocalProvider(LocalInVerticalScroll provides true) {
+                                BindJSView(
+                                    jsRuntime = jsRuntime,
+                                    component = child,
+                                    version = version,
+                                    onUiEvent = onUiEvent,
+                                    modifiers = emptyList()
+                                )
+                            }
                         }
                     }
                 }
@@ -169,13 +184,15 @@ private fun LazyListScope.pinnedSectionHeaders(
     @Composable
     fun Piece(content: List<BaseComponent<*>>, top: Dp) {
         Column(modifier = Modifier.padding(top = top)) {
-            ColumnView(
-                jsRuntime = jsRuntime,
-                component = piece(content),
-                version = version,
-                modifiers = emptyList(),
-                onUiEvent = onUiEvent,
-            )
+            CompositionLocalProvider(LocalInVerticalScroll provides true) {
+                ColumnView(
+                    jsRuntime = jsRuntime,
+                    component = piece(content),
+                    version = version,
+                    modifiers = emptyList(),
+                    onUiEvent = onUiEvent,
+                )
+            }
         }
     }
 

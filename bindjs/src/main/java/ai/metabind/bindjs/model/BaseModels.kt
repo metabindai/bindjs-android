@@ -249,6 +249,64 @@ fun BaseComponent<*>.fillsFrameHeight(): Boolean {
 }
 
 /**
+ * The [SpacerComponent] at the leaf of this child if it still flexes along a stack's main
+ * axis, else null. [vertical] is that axis: height in a VStack, width in an HStack.
+ *
+ * A Spacer under modifiers is still a Spacer to SwiftUI: `Spacer().padding(4)` or
+ * `Spacer().frame(minWidth: 10)` still takes the leftover space, because the proposal
+ * passes through to it. A frame that fixes or caps the main axis — `.frame(height: 20)`,
+ * the usual fixed gap, or a finite `maxHeight` — makes it a fixed-size view instead, and
+ * that keeps rendering as the frame it is. A Group around a lone Spacer is looked
+ * through, as SwiftUI's Group is.
+ */
+fun BaseComponent<*>?.flexibleSpacer(vertical: Boolean): SpacerComponent? {
+    var node: BaseComponent<*>? = this
+    while (true) {
+        node = when (node) {
+            is ModifiedComponent -> {
+                val frame = node.props.modifier as? FrameModifier
+                if (frame != null) {
+                    val fixed = if (vertical) frame.props.height else frame.props.width
+                    val max = if (vertical) frame.props.maxHeight else frame.props.maxWidth
+                    if (fixed != null || (max != null && max != Float.POSITIVE_INFINITY)) return null
+                }
+                node.props.content?.singleOrNull()
+            }
+            // A Group is transparent in SwiftUI; one holding just a Spacer is that Spacer.
+            is GroupComponent -> node.props.children.layoutChildren()?.singleOrNull()
+            else -> return node as? SpacerComponent
+        }
+    }
+}
+
+/**
+ * Whether this is a vertical stack that SwiftUI would stretch to the height it is
+ * offered: one holding a flexible Spacer, directly or in a nested VStack. Such a stack
+ * needs the height it is offered to be bounded, or the Spacer has nothing to take.
+ */
+fun BaseComponent<*>?.expandsVertically(): Boolean {
+    var node: BaseComponent<*>? = this
+    while (node is ModifiedComponent) {
+        val frame = node.props.modifier as? FrameModifier
+        if (frame != null && (frame.props.height != null ||
+                    (frame.props.maxHeight != null && frame.props.maxHeight != Float.POSITIVE_INFINITY))
+        ) return false
+        node = node.props.content?.singleOrNull()
+    }
+    if (node !is ColumnComponent) return false
+    return node.props.children.expandingForEach()?.any {
+        it.flexibleSpacer(vertical = true) != null || it.expandsVertically()
+    } == true
+}
+
+/** Whether this is a vertical ScrollView or a List, under any modifiers. */
+fun BaseComponent<*>?.scrollsVertically(): Boolean {
+    var node: BaseComponent<*>? = this
+    while (node is ModifiedComponent) node = node.props.content?.singleOrNull()
+    return node is ListComponent || (node is ScrollComponent && node.props.axis != ScrollAxis.HORIZONTAL)
+}
+
+/**
  * SwiftUI's `ForEach` is a transparent container: once expanded, its rows become
  * direct children of the enclosing stack, inheriting that stack's width and
  * alignment. On Android an expanded `ForEach` arrives as a single

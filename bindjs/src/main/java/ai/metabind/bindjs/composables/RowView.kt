@@ -3,10 +3,8 @@ package ai.metabind.bindjs.composables
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -24,7 +22,8 @@ import ai.metabind.bindjs.model.ColumnComponent
 import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.RowComponent
-import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.BaseComponent
+import ai.metabind.bindjs.model.flexibleSpacer
 import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.isVerticallyGreedy
 import ai.metabind.bindjs.model.layoutChildren
@@ -63,8 +62,13 @@ fun RowView(
     // width, so fill the row width when such a child is present so the weight has
     // real space to distribute (the "fixed column + scrolling columns" table).
     // Skip inside a horizontal scroll, where width is intentionally unbounded.
+    // A Spacer is left out even when it is written `.frame(maxWidth: .infinity)`: it is
+    // the thing that takes the slack, not a sibling it should yield to.
     val hasGreedyChild = !inHorizontalScroll &&
-            (children?.any { it?.calculateMaxWidth() == Float.POSITIVE_INFINITY } ?: false)
+            (children?.any {
+                it.flexibleSpacer(vertical = false) == null &&
+                        it?.calculateMaxWidth() == Float.POSITIVE_INFINITY
+            } ?: false)
     val baselineAlignment = component.props.baselineAlignment()
     // SwiftUI's HStack proposes its own height to every child, so a vertically greedy
     // child — `Rectangle().frame(width: 1, maxHeight: .infinity)`, the vertical rule the
@@ -96,7 +100,10 @@ fun RowView(
     ) {
         @Composable
         fun doLayout() {
-            val hasSpacer = children?.firstOrNull { it is SpacerComponent } != null
+            // A Spacer under modifiers that leave it flexible (`Spacer().padding(4)`)
+            // counts: it takes the leftover width just the same.
+            val isSpacer = { child: BaseComponent<*>? -> child.flexibleSpacer(vertical = false) != null }
+            val hasSpacer = children?.any(isSpacer) == true
             val hasChildWithFixedSize = children?.any { child ->
                 child?.hasFixedSizeModifier() == true
             } == true
@@ -113,7 +120,7 @@ fun RowView(
             // `Row [Text("FROM"), Text(email)]` into evenly-spread columns.
             // HStacks whose children are ALL simple styled content (e.g.
             // ModifiedComponent wrapping Text words) skip this entirely.
-            val nonSpacerChildren = children?.filter { it !is SpacerComponent }
+            val nonSpacerChildren = children?.filterNot(isSpacer)
             val hasLayoutContainerChild = nonSpacerChildren?.any { child ->
                 child is Component || child is ColumnComponent ||
                         child is RowComponent || child is BoxComponent
@@ -156,14 +163,14 @@ fun RowView(
             // least one flexible child ahead of the Spacer — so no other Row shape
             // changes. Children *after* the Spacer stay unweighted, which is what
             // keeps the trailing child pinned to the Row's trailing edge.
-            val singleSpacer = children?.count { it is SpacerComponent } == 1
+            val singleSpacer = children?.count(isSpacer) == 1
             val flexibleBeforeSpacer =
                 if (!singleSpacer || !hasChildWithFixedSize ||
                     hasGreedyChild || inHorizontalScroll
                 ) {
                     emptySet()
                 } else {
-                    val spacerIndex = children.orEmpty().indexOfFirst { it is SpacerComponent }
+                    val spacerIndex = children.orEmpty().indexOfFirst(isSpacer)
                     children.orEmpty().take(spacerIndex)
                         .withIndex()
                         .filter { (_, child) ->
@@ -177,22 +184,26 @@ fun RowView(
             val spacerYieldsToFlexibleChild = flexibleBeforeSpacer.isNotEmpty()
 
             children?.forEachIndexed { index, child ->
-                if (child is SpacerComponent) {
+                val spacer = child.flexibleSpacer(vertical = false)
+                if (child != null && spacer != null) {
                     // Alongside a `maxWidth: .infinity` sibling the Spacer does NOT
                     // get an equal share: SwiftUI lets the greedy child take the
                     // leftover and the Spacer collapses to its minimum. Compose's
                     // weight is a hard constraint, so an equal split here compresses
                     // the greedy child below its content's intrinsic width — the
                     // A2UI chip picker rendered "Monthly" one letter per line.
-                    val spacerWidth = when {
-                        child.props.minLength != null -> Modifier.width(child.props.minLength.dp)
-                        hasGreedyChild -> Modifier
-                        // A weighted flexible sibling already claims the leftover; a
-                        // weighted Spacer would halve it. See the comment above.
-                        spacerYieldsToFlexibleChild -> Modifier
-                        else -> Modifier.weight(1.0f)
-                    }
-                    Spacer(modifier = spacerWidth)
+                    // A weighted flexible sibling already claims the leftover too; a
+                    // weighted Spacer would halve it (see above). Inside a horizontal
+                    // scroll the width is unbounded and a weight would come out 0.
+                    StackSpacer(
+                        jsRuntime = jsRuntime,
+                        child = child,
+                        spacer = spacer,
+                        flexible = !hasGreedyChild && !spacerYieldsToFlexibleChild && !inHorizontalScroll,
+                        version = version,
+                        modifiers = modifiers.modifiersToShareWithChildren(),
+                        onUiEvent = onUiEvent,
+                    )
                 } else {
                     val maxWidth = child?.calculateMaxWidth()
 

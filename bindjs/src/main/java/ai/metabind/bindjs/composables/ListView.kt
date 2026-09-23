@@ -109,13 +109,18 @@ fun ListView(
         )
     }
 
+    // A row is offered unbounded height either way; see LocalInVerticalScroll.
     if (LocalHostScrollsVertically.current) {
         Column(modifier = listModifier) {
-            entries.forEach { entry(it) }
+            CompositionLocalProvider(LocalInVerticalScroll provides true) {
+                entries.forEach { entry(it) }
+            }
         }
     } else {
         LazyColumn(modifier = listModifier) {
-            entries.forEach { item { entry(it) } }
+            entries.forEach {
+                item { CompositionLocalProvider(LocalInVerticalScroll provides true) { entry(it) } }
+            }
         }
     }
 }
