@@ -3,10 +3,8 @@ package ai.metabind.bindjs.composables
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,7 +20,8 @@ import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
 import ai.metabind.bindjs.model.ModifierProps
 import ai.metabind.bindjs.model.RowComponent
-import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.expandsVertically
+import ai.metabind.bindjs.model.flexibleSpacer
 import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.expandingForEach
 import ai.metabind.bindjs.model.layoutChildren
@@ -46,8 +45,12 @@ fun ColumnView(
     // Splice any ForEach rows in as direct children so this Column lays them out
     // (and centers / fills them) exactly like SwiftUI's transparent ForEach.
     val children = component.props.children.expandingForEach().layoutChildren()
+    // A Spacer under modifiers that leave it flexible (`Spacer().padding(4)`) counts:
+    // it takes the leftover height just the same.
     val hasSpacer =
-        children?.any { it is SpacerComponent } ?: false
+        children?.any { it.flexibleSpacer(vertical = true) != null } ?: false
+    // A nested VStack holding a Spacer stretches too, so it needs this Column to fill.
+    val hasExpandingChild = children?.any { it.expandsVertically() } ?: false
     // When a Column is a non-expanding child of a Row (InRow present, no
     // Weight), it should wrap its content width instead of filling the Row.
     // This matches SwiftUI VStack behaviour inside an HStack.
@@ -77,7 +80,7 @@ fun ColumnView(
             // When the Column has Spacers (or greedy leaves) and is inside a
             // bounded-height context, fill the available height so the weighted
             // children can expand (matching SwiftUI VStack behaviour).
-            .then(if (hasFrame && (hasSpacer || hasGreedyChild)) Modifier.fillMaxHeight() else Modifier),
+            .then(if (hasFrame && (hasSpacer || hasGreedyChild || hasExpandingChild)) Modifier.fillMaxHeight() else Modifier),
         verticalArrangement = Arrangement.spacedBy(space = (component.props.spacing?.dp ?: dimensionResource(R.dimen.default_spacing))),
         horizontalAlignment = component.props.horizontalAlignment(),
     ) {
@@ -96,7 +99,7 @@ fun ColumnView(
         // without explicit frames, give them equal weight so they share the
         // vertical space evenly (matching SwiftUI VStack behaviour).
         val parentHasWeight = modifiers.any { it is LocalModifier.Weight }
-        val nonSpacerChildren = children?.filter { it !is SpacerComponent }
+        val nonSpacerChildren = children?.filter { it.flexibleSpacer(vertical = true) == null }
         val multipleFlexibleChildren = !hasSpacer &&
                 !hasFramedChild &&
                 parentHasWeight &&
@@ -116,13 +119,15 @@ fun ColumnView(
                 hasFixedHeightSibling && hasFlexibleSibling
 
         children?.forEach { child ->
-            if (child is SpacerComponent) {
-                Spacer(
-                    modifier = Modifier.then(
-                        if (child.props.minLength != null) Modifier.height(
-                            child.props.minLength.dp
-                        ) else Modifier.weight(1.0f)
-                    )
+            val spacer = child.flexibleSpacer(vertical = true)
+            if (child != null && spacer != null) {
+                StackSpacer(
+                    jsRuntime = jsRuntime,
+                    child = child,
+                    spacer = spacer,
+                    version = version,
+                    modifiers = modifiers.modifiersToShareWithChildren(),
+                    onUiEvent = onUiEvent,
                 )
             } else {
                 val isFramed =
@@ -136,6 +141,13 @@ fun ColumnView(
                 ) {
                     modifiers.modifiersToShareWithChildren() + LocalModifier.FillMaxWidth(
                         Modifier.fillMaxWidth(child.props.modifier.props.rawValue.toFloat())
+                    )
+                } else if (hasFrame && child.expandsVertically()) {
+                    // A nested VStack holding a Spacer: give it the leftover height so
+                    // its Spacer has something to take. Height only — unlike a greedy
+                    // leaf it is no wider than its content.
+                    modifiers.modifiersToShareWithChildren() + LocalModifier.Weight(
+                        Modifier.weight(1f)
                     )
                 } else if (hasFrame && child?.isVerticallyGreedy() == true) {
                     // Greedy leaf in a bounded-height column: take a weighted

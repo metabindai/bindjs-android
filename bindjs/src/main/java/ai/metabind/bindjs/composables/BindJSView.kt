@@ -3,6 +3,7 @@ package ai.metabind.bindjs.composables
 import android.util.Log
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.defaultMinSize
@@ -78,6 +79,9 @@ import ai.metabind.bindjs.model.DividerComponent
 import ai.metabind.bindjs.model.EllipseComponent
 import ai.metabind.bindjs.model.EllipticalGradientComponent
 import ai.metabind.bindjs.model.EmptyComponent
+import ai.metabind.bindjs.model.SpacerComponent
+import ai.metabind.bindjs.model.expandsVertically
+import ai.metabind.bindjs.model.scrollsVertically
 import ai.metabind.bindjs.model.fillsFrameHeight
 import ai.metabind.bindjs.model.ForEachComponent
 import ai.metabind.bindjs.model.GeometryReaderComponent
@@ -164,7 +168,11 @@ fun BindJSView(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CompositionLocalProvider(LocalIsInsideBindJS provides true) {
+            CompositionLocalProvider(
+                LocalIsInsideBindJS provides true,
+                // A host that scrolls vertically offers its BindJS content unbounded height.
+                LocalInVerticalScroll provides LocalHostScrollsVertically.current,
+            ) {
                 BindJSViewImpl(jsRuntime, component, version, onUiEvent, modifiers, isBackground, hasFrame)
             }
         }
@@ -724,7 +732,10 @@ private fun SheetModifier(
         // about what is inside this one. Leaving the flag set degrades every
         // `ScrollView` in the sheet to a plain Column, and a full-page sheet then
         // overflows its own height instead of scrolling.
-        CompositionLocalProvider(LocalHostScrollsVertically provides false) {
+        CompositionLocalProvider(
+            LocalHostScrollsVertically provides false,
+            LocalInVerticalScroll provides false,
+        ) {
             Column(
                 modifier = if (fillsSheet) Modifier.fillMaxHeight() else Modifier
             ) {
@@ -1098,13 +1109,23 @@ private fun FrameModifier(
     // as is fill content (shapes/colors/gradients), which has no intrinsic
     // height to overflow with and collapses to zero under an unbounded
     // proposal — see [fillsFrameHeight].
+    // A stack holding a Spacer stretches to the height it is offered, so it must be
+    // offered this frame's height rather than an unbounded one — there its Spacer
+    // collapses and the stack shrinks to its content.
     val contentFillsFrameHeight =
-        modifierProps.content?.any { it?.fillsFrameHeight() == true } == true
+        modifierProps.content?.any { it?.fillsFrameHeight() == true || it.expandsVertically() } == true
+    // A vertical ScrollView or a List measured with unbounded height throws ("Vertically
+    // scrollable component was measured with an infinity maximum height"), so a
+    // `ScrollView(...).frame(width:height:)` crashed. It is the frame's height that
+    // gives a scroll view its viewport.
+    val contentScrollsVertically =
+        modifierProps.content?.any { it.scrollsVertically() } == true
     val allowHeightOverflow = frameModifier?.props?.height != null &&
             frameModifier.props.width != null &&
             !contentHasGeometryReader &&
             !contentHasOverflowingMedia &&
-            !contentFillsFrameHeight
+            !contentFillsFrameHeight &&
+            !contentScrollsVertically
     val verticalOverflowAlign = when (frameModifier?.props?.alignment) {
         "top", "topLeading", "topTrailing" -> Alignment.Top
         "bottom", "bottomLeading", "bottomTrailing" -> Alignment.Bottom
@@ -1125,16 +1146,23 @@ private fun FrameModifier(
         )
         // Preserve bounded height from either this frame or an ancestor frame
         val hasBoundedHeight = frameModifier?.props?.height != null || parentHasFrame
+        // A frame that fixes or caps the height bounds it again, even inside a scroll.
+        val boundsHeight = frameModifier?.props?.height != null ||
+                (frameModifier?.props?.maxHeight?.let { it != Float.POSITIVE_INFINITY } == true)
         val content = @Composable {
-            InnerComponents(
-                jsRuntime = jsRuntime,
-                version = version,
-                onUiEvent = onUiEvent,
-                modifiers = modifiers.modifiersToShareWithChildren(),
-                components = modifierProps.content,
-                isBackground = isBackground,
-                hasFrame = hasBoundedHeight
-            )
+            CompositionLocalProvider(
+                LocalInVerticalScroll provides (LocalInVerticalScroll.current && !boundsHeight)
+            ) {
+                InnerComponents(
+                    jsRuntime = jsRuntime,
+                    version = version,
+                    onUiEvent = onUiEvent,
+                    modifiers = modifiers.modifiersToShareWithChildren(),
+                    components = modifierProps.content,
+                    isBackground = isBackground,
+                    hasFrame = hasBoundedHeight
+                )
+            }
         }
         val laidOut = @Composable {
             if (hasPadding) {
@@ -1568,6 +1596,23 @@ private fun ComponentInnerView(
             version = version,
             modifiers = modifiers,
             onUiEvent = onUiEvent
+        )
+
+        // A Spacer the stacks did not lay out themselves: one inside a frame that fixes
+        // its size (`Spacer().frame(height: 20)`, the usual fixed gap), under modifiers
+        // in a stack's slot, or outside any stack. It draws its own modifiers — padding,
+        // a background — and takes whatever size it is given. The stacks' layout hints
+        // (fill, weight) are left off: a Spacer outside a stack has no axis to fill, and
+        // filling the cross axis would drag a wrapping stack out to its parent's width.
+        is SpacerComponent -> Spacer(
+            modifier = modifiers.filterNot { it is LocalModifier }.buildModifier(onUiEvent)
+                .then(
+                    when (LocalSpacerFillsSlot.current) {
+                        SpacerAxis.Vertical -> Modifier.fillMaxHeight()
+                        SpacerAxis.Horizontal -> Modifier.fillMaxWidth()
+                        null -> Modifier
+                    }
+                )
         )
 
         is MenuComponent -> MenuView(

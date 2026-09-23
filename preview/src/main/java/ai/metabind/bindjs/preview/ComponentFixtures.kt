@@ -320,6 +320,40 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Spacer",
+        description = "Spacers the SwiftUI way: minLength as a floor rather than a size, a Spacer under padding, a flexible frame or a Group still taking the slack, one in a fixed-size card and nested a level down, and the fixed gaps and scroll views where a Spacer must stay its size.",
+        source = """
+        (() => {
+          const caption = (t) => Text(t).font('caption').foregroundStyle(Color('gray'));
+          const bar = (left, spacer, right) =>
+            HStack([Text(left), spacer, Text(right)]).frame({ width: 300 }).background(Color('systemGray6'));
+          const card = (top, content) =>
+            content.frame({ width: 140, height: 90 }).background(Color('systemGray6'));
+          return VStack({ alignment: 'leading', spacing: 6 }, [
+            caption('Flexible: pushed to the edges'),
+            bar('A1', Spacer(), 'B1'),
+            bar('A2', Spacer({ minLength: 40 }), 'B2'),
+            bar('A3', Spacer().padding(4), 'B3'),
+            bar('A4', Spacer().frame({ minWidth: 10 }), 'B4'),
+            bar('A5', Group([Spacer()]), 'B5'),
+            caption('Fixed: a 24pt gap'),
+            bar('A6', Spacer().frame({ width: 24 }), 'B6'),
+            caption('In a fixed-size card, and nested a level down'),
+            HStack([
+              card('C1', VStack([Text('Top C1'), Spacer(), Text('Bottom C1')])),
+              card('C2', VStack([VStack([Text('Top C2'), Spacer({ minLength: 8 }), Text('Bottom C2')])])),
+            ]),
+            caption('In a vertical ScrollView: its minimum, 24pt'),
+            ScrollView([VStack([Text('Top S'), Spacer({ minLength: 24 }), Text('Bottom S')])])
+              .frame({ height: 90 }).background(Color('systemGray6')),
+            caption('In a horizontal ScrollView: its minimum, 30pt'),
+            ScrollView({ axis: 'horizontal' }, [HStack([Text('Left H'), Spacer({ minLength: 30 }), Text('Right H')])])
+              .frame({ width: 300 }).background(Color('systemGray6')),
+          ]).padding(16);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """
