@@ -219,6 +219,21 @@ bindjs-apple too — fix upstream in bindjs-runtime, then re-sync):
   `.presentationDetents([Detent.medium, Detent.large])` arrives as `[null, null]`.
   Both renderers fall back to a full-height sheet. Fix: register it as a value.
 
+## Materials
+
+`Material('thin')` decodes to `MaterialComponent`, a **subclass of `ColorComponent`**
+whose `color` is the material's tint. That is how it reaches every style slot (standalone,
+background, foregroundStyle, fill, stroke, border, listRowBackground): any
+`is ColorComponent` branch takes it. Don't add `is MaterialComponent` cases alongside them.
+
+- **Tinted, not blurred.** Compose cannot blur what is behind a view, so a material is a
+  light grey whose alpha rises with thickness. Don't reach for `Modifier.blur`: it blurs
+  the view's *own* content, the opposite of a material.
+- **Names match bindjs-apple**: `ultraThin`, `thin`, `regular`, `thick`, `ultraThick`.
+  Anything else draws nothing, as on iOS. The SDK typings also advertise `bar`, `chrome`,
+  `titlebar`, `toolbarMaterial` and a `{ type, opacity, blurRadius }` object form; neither
+  renderer reads them. Fix upstream, then relax both sides.
+
 ## Lists
 
 `List(...)` renders in `ListView` as a `LazyColumn` (a `Column` when

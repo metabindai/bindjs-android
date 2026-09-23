@@ -1,14 +1,12 @@
 package ai.metabind.bindjs.composables.ext
 
 import android.graphics.BlurMaskFilter
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
@@ -404,11 +402,7 @@ fun List<ComponentModifier<*>>.addFillWidthIfNoFrame(): List<ComponentModifier<*
 fun List<ComponentModifier<*>>.getForegroundColor(): Color {
     @Composable
     fun forColorComponent(colorComponent: ColorComponent): Color {
-        return if (colorComponent.isMaterial()) {
-            Color.White.copy(alpha = 0.2f)
-        } else {
-            Color(colorComponent.color)
-        }
+        return Color(colorComponent.color)
     }
 
     firstOrNull { it is ForegroundStyleModifier }?.let { modifier ->
@@ -430,11 +424,7 @@ fun List<ComponentModifier<*>>.getForegroundColor(): Color {
 
 @Composable
 fun ColorComponent.getForegroundColor(): Color {
-    return if (isMaterial()) {
-        Color.White.copy(alpha = 0.2f)
-    } else {
-        Color(color)
-    }
+    return Color(color)
 }
 
 fun List<ComponentModifier<*>>.getAlpha(): Float {
@@ -597,19 +587,6 @@ fun Modifier.shadow(
         canvas.translate(offsetX.toPx(), offsetY.toPx())
         canvas.drawOutline(outline, paint)
         canvas.restore()
-    }
-}
-
-fun Modifier.materialBlur(
-    blurRadius: Dp = 20.dp,
-    overlayColor: Color = Color.White.copy(alpha = 0.2f),
-): Modifier {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        this
-            .blur(blurRadius)
-            .background(overlayColor)
-    } else {
-        this.background(overlayColor)
     }
 }
 

@@ -54,7 +54,7 @@ fun PathView(
     }
 
     val fillBrush: Brush? = when (fillStyle) {
-        is ColorComponent -> if (fillStyle.isMaterial()) null else SolidColor(fillStyle.getForegroundColor())
+        is ColorComponent -> SolidColor(fillStyle.getForegroundColor())
         is BrushComponent -> fillStyle.createBrush()
         // Nothing resolved and no stroke to fall back on: SwiftUI's default
         // foreground style is the primary label colour, which the rest of this

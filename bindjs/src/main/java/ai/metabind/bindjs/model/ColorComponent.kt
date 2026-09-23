@@ -8,11 +8,11 @@ import androidx.core.graphics.ColorUtils
 import com.google.gson.annotations.SerializedName
 import ai.metabind.bindjs.composables.LocalAccentColor
 
-class ColorComponent(
+open class ColorComponent(
     props: ColorProps,
 ) : BaseComponent<ColorProps>(props) {
 
-    val color: Int
+    open val color: Int
         @Composable
         get() {
             props.rawValue?.let { color ->
@@ -22,8 +22,9 @@ class ColorComponent(
                     colorByName(color)
                 }
 
-                return if (props.opacity != null) {
-                    val alpha = props.opacity.times(255.0f).toInt()
+                val opacity = props.opacity
+                return if (opacity != null) {
+                    val alpha = opacity.times(255.0f).toInt()
                     ColorUtils.setAlphaComponent(colorVal, alpha)
                 } else {
                     colorVal
@@ -39,15 +40,6 @@ class ColorComponent(
 
     companion object {
         private const val TAG = "ColorComponent"
-
-        private val MATERIALS = listOf(
-            "thin",
-            "regular",
-            "thick",
-            "ultraThin",
-            "bar",
-            "chrome"
-        )
 
         // Packed by hand rather than through `Color.argb`: the companion initialises
         // during JVM unit tests, where android.graphics is a throwing stub.
@@ -105,10 +97,6 @@ class ColorComponent(
 
         private val SEPARATOR = argb(60, 60, 67, 0.29f)
         private val OPAQUE_SEPARATOR = argb(198, 198, 200)
-    }
-
-    fun isMaterial(): Boolean {
-        return props.rawValue in MATERIALS
     }
 
     /**

@@ -51,8 +51,7 @@ fun CapsuleView(
 
     boxModifier = when (fillStyle) {
         is ColorComponent ->
-            if (fillStyle.isMaterial()) boxModifier
-            else boxModifier.background(color = Color(fillStyle.color), shape = capsuleShape)
+            boxModifier.background(color = Color(fillStyle.color), shape = capsuleShape)
 
         is BrushComponent ->
             boxModifier.background(brush = fillStyle.createBrush(), shape = capsuleShape)
