@@ -41,6 +41,14 @@ class JsRuntimeImpl private constructor(
     context: Context,
 ) : JsRuntime {
     private lateinit var jsIsolate: JavaScriptIsolate
+    private val appContext = context.applicationContext
+
+    /** What the host last passed to [setEnvironment]; merged over [systemEnvironment]. */
+    @Volatile
+    private var hostEnvironment: Map<String, Any> = emptyMap()
+
+    /** The environment JSON last sent to JS, so an unchanged one is not re-sent. */
+    private var pushedEnvironment: String? = null
     private val gson: Gson
     private val initDeferred: Deferred<Unit>
 
@@ -190,8 +198,26 @@ class JsRuntimeImpl private constructor(
     private suspend fun evalLocked(script: String): String =
         jsIsolate.evaluateJavaScriptAsync(script).await()
 
+    /**
+     * Sends [systemEnvironment] with the host's [hostEnvironment] over it, if it changed
+     * since the last send. Runs before every render so the screen size and color scheme
+     * track rotation and theme changes, and so a host that never calls [setEnvironment]
+     * still renders with them. Assumes [jsLock] is held.
+     */
+    private suspend fun syncEnvironmentLocked() {
+        val resources = appContext.resources
+        val merged = systemEnvironment(resources.configuration, resources.displayMetrics.density) +
+                hostEnvironment
+        val envJson = gson.toJson(merged)
+        if (envJson == pushedEnvironment) return
+        Log.d(TAG, "Calling set environment: $envJson")
+        evalLocked("setEnvironment($envJson);")
+        pushedEnvironment = envJson
+    }
+
     /** willRender assuming [jsLock] is already held. */
     private suspend fun willRenderLocked() {
+        syncEnvironmentLocked()
         val result = evalLocked("willRender();")
         Log.d(TAG, "willRender result:\n$result")
     }
@@ -375,12 +401,7 @@ class JsRuntimeImpl private constructor(
         evalJs(registerScript)
     }
 
-    override suspend fun willRender() {
-        val callScript = "willRender();"
-        val result = evalJs(callScript)
-
-        Log.d(TAG, "willRender result:\n$result")
-    }
+    override suspend fun willRender() = jsLock.withLock { willRenderLocked() }
 
     override suspend fun callComponent(name: String): BaseComponent<*> {
         return callComponent(name, null)
@@ -709,12 +730,11 @@ class JsRuntimeImpl private constructor(
         // Effect: env was never populated on Android, so components reading
         // `env.toolResult` / `env.toolArguments` (e.g. a product carousel pulling
         // product data out of a tool result) ran with no inputs and rendered empty.
-        val envJson = gson.toJson(environment)
-        Log.d(TAG, "Calling set environment: $envJson")
-        val callScript = "setEnvironment($envJson);"
-        val result = evalJs(callScript)
-
-        Log.d(TAG, "setEnvironment result: $result")
+        //
+        // The host's values are kept and merged over [systemEnvironment] — see
+        // [syncEnvironmentLocked] — so they win over the defaults, as on iOS.
+        hostEnvironment = environment
+        jsLock.withLock { syncEnvironmentLocked() }
     }
 
     private suspend fun loadMainScript(context: Context): String {

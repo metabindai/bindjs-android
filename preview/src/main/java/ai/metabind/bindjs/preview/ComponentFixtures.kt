@@ -354,6 +354,31 @@ val componentFixtures = listOf(
         """.trimIndent()
     ),
     component(
+        name = "Hotspot",
+        description = "Hotspots like the Explore card's: a Circle in a frame much taller than it is wide draws as the dot that fits, and a label offset below it moves by the offset once, as do an offset, faded and scaled Text.",
+        source = """
+        (() => {
+          const hotspot = (title) => ZStack([
+            Circle().fill(Color('white')).frame({ width: 16, height: 400 }),
+            Circle().fill(Color('white')).frame({ width: 34, height: 34 }).opacity(0.25),
+            Text(title).multilineTextAlignment('center').fixedSize({ horizontal: true })
+              .offset({ y: 32 }).font('footnote').fontWeight('semibold').foregroundStyle(Color('gray')),
+          ]).frame({ width: 44, height: 44 });
+          return VStack({ spacing: 24 }, [
+            ZStack([
+              hotspot('Hotspot A').offset({ x: -80, y: -40 }),
+              hotspot('Hotspot B').offset({ x: 60, y: 30 }),
+            ]).frame({ width: 300, height: 220 }).background(Color('black')).cornerRadius(24),
+            HStack({ spacing: 24 }, [
+              Text('Offset').offset({ y: 12 }),
+              Text('Faded').opacity(0.5),
+              Text('Scaled').scaleEffect(1.5),
+            ]),
+          ]).padding(16);
+        })()
+        """.trimIndent()
+    ),
+    component(
         name = "LazyVStack",
         description = "A lazy vertical stack in a ScrollView: sections with pinned headers, leading alignment with explicit spacing, and a trailing-aligned stack on the default spacing.",
         source = """

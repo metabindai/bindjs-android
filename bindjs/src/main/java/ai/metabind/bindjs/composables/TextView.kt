@@ -56,6 +56,13 @@ import ai.metabind.bindjs.model.TextComponent
 import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
 import ai.metabind.bindjs.model.modifier.FixedSizeModifier
+import ai.metabind.bindjs.model.modifier.OffsetModifier
+import ai.metabind.bindjs.model.modifier.OpacityModifier
+import ai.metabind.bindjs.model.modifier.ScaleEffectModifier
+import ai.metabind.bindjs.model.modifier.RotationEffectModifier
+import ai.metabind.bindjs.model.modifier.BlurModifier
+import ai.metabind.bindjs.model.modifier.ShadowModifier
+import ai.metabind.bindjs.model.modifier.BorderModifier
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import ai.metabind.bindjs.model.modifier.PaddingModifier
 import io.noties.markwon.AbstractMarkwonPlugin
@@ -89,8 +96,26 @@ private fun List<ComponentModifier<*>>.textClipModifier(): Modifier =
  * overlap reads as a second, darker pill inside the first, where iOS draws one. The Box
  * already paints the background at the padded size, so the inner node skips it.
  */
+/**
+ * Modifiers the wrapping Box already applies, left off the inner text node. The chain is
+ * built for both, and each of these compounds when applied twice: a background painted
+ * a second, smaller pill inside the first; `.offset(y: 32)` moved the label 64 (the
+ * Explore card's hotspot labels hung twice as far below their dots as on iOS); opacity
+ * multiplied with itself, and scale, rotation, blur, shadow and border stacked.
+ */
 private val BACKGROUND_AND_PADDING =
-    listOf(BackgroundModifier::class, PaddingModifier::class, LocalModifier::class)
+    listOf(
+        BackgroundModifier::class,
+        PaddingModifier::class,
+        LocalModifier::class,
+        OffsetModifier::class,
+        OpacityModifier::class,
+        ScaleEffectModifier::class,
+        RotationEffectModifier::class,
+        BlurModifier::class,
+        ShadowModifier::class,
+        BorderModifier::class,
+    )
 
 @Composable
 fun TextView(
