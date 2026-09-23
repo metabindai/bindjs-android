@@ -1,0 +1,731 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_Material",
+    "props": {},
+    "children": [
+      {
+        "type": "VStack",
+        "props": {
+          "alignment": "leading",
+          "spacing": 16,
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Standalone",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "background",
+                  "props": {
+                    "content": {
+                      "type": "LinearGradient",
+                      "props": {
+                        "colors": [
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "orange",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "pink",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "indigo",
+                              "children": []
+                            }
+                          }
+                        ],
+                        "startPoint": "topLeading",
+                        "endPoint": "bottomTrailing",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "padding",
+                        "props": {
+                          "top": 12,
+                          "leading": 12,
+                          "bottom": 12,
+                          "trailing": 12,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "HStack",
+                          "props": {
+                            "spacing": 8,
+                            "children": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "width": 56,
+                                      "height": 56,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Material",
+                                      "props": {
+                                        "rawValue": "ultraThin",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "width": 56,
+                                      "height": 56,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Material",
+                                      "props": {
+                                        "rawValue": "thin",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "width": 56,
+                                      "height": 56,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Material",
+                                      "props": {
+                                        "rawValue": "regular",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "width": 56,
+                                      "height": 56,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Material",
+                                      "props": {
+                                        "rawValue": "thick",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "frame",
+                                    "props": {
+                                      "width": 56,
+                                      "height": 56,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Material",
+                                      "props": {
+                                        "rawValue": "ultraThick",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Background, fill, stroke",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "background",
+                  "props": {
+                    "content": {
+                      "type": "LinearGradient",
+                      "props": {
+                        "colors": [
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "orange",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "pink",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "indigo",
+                              "children": []
+                            }
+                          }
+                        ],
+                        "startPoint": "topLeading",
+                        "endPoint": "bottomTrailing",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "padding",
+                        "props": {
+                          "top": 12,
+                          "leading": 12,
+                          "bottom": 12,
+                          "trailing": 12,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "VStack",
+                          "props": {
+                            "alignment": "leading",
+                            "spacing": 10,
+                            "children": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "background",
+                                    "props": {
+                                      "content": {
+                                        "type": "Material",
+                                        "props": {
+                                          "rawValue": "thin",
+                                          "children": []
+                                        }
+                                      },
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "padding",
+                                          "props": {
+                                            "top": 8,
+                                            "leading": 8,
+                                            "bottom": 8,
+                                            "trailing": 8,
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Text",
+                                            "props": {
+                                              "rawValue": "Text on .background(Material('thin'))",
+                                              "children": []
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "HStack",
+                                "props": {
+                                  "spacing": 12,
+                                  "children": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "frame",
+                                          "props": {
+                                            "width": 100,
+                                            "height": 36,
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Capsule",
+                                            "props": {
+                                              "children": [],
+                                              "fill": {
+                                                "style": {
+                                                  "type": "Material",
+                                                  "props": {
+                                                    "rawValue": "regular",
+                                                    "children": []
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "frame",
+                                          "props": {
+                                            "width": 100,
+                                            "height": 36,
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "RoundedRectangle",
+                                            "props": {
+                                              "cornerRadius": 12,
+                                              "children": [],
+                                              "fill": {
+                                                "style": {
+                                                  "type": "Material",
+                                                  "props": {
+                                                    "rawValue": "thick",
+                                                    "children": []
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "frame",
+                                          "props": {
+                                            "width": 60,
+                                            "height": 36,
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "Capsule",
+                                            "props": {
+                                              "children": [],
+                                              "stroke": {
+                                                "style": {
+                                                  "type": "Material",
+                                                  "props": {
+                                                    "rawValue": "ultraThick",
+                                                    "children": []
+                                                  }
+                                                },
+                                                "lineWidth": 4
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              },
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "foregroundStyle",
+                                    "props": {
+                                      "rawValue": {
+                                        "type": "Material",
+                                        "props": {
+                                          "rawValue": "ultraThick",
+                                          "children": []
+                                        }
+                                      },
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "ModifiedComponent",
+                                      "props": {
+                                        "modifier": {
+                                          "type": "bold",
+                                          "props": {
+                                            "children": []
+                                          }
+                                        },
+                                        "content": [
+                                          {
+                                            "type": "ModifiedComponent",
+                                            "props": {
+                                              "modifier": {
+                                                "type": "font",
+                                                "props": {
+                                                  "rawValue": "title2",
+                                                  "children": []
+                                                }
+                                              },
+                                              "content": [
+                                                {
+                                                  "type": "Text",
+                                                  "props": {
+                                                    "rawValue": "Material foreground",
+                                                    "children": []
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Borders",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "HStack",
+              "props": {
+                "spacing": 12,
+                "children": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "border",
+                        "props": {
+                          "rawValue": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "red",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 8,
+                                "leading": 8,
+                                "bottom": 8,
+                                "trailing": 8,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "border(Color)",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "border",
+                        "props": {
+                          "style": {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "blue",
+                              "children": []
+                            }
+                          },
+                          "width": 3,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "padding",
+                              "props": {
+                                "top": 8,
+                                "leading": 8,
+                                "bottom": 8,
+                                "trailing": 8,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "rawValue": "border({ style, width })",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "background",
+                  "props": {
+                    "content": {
+                      "type": "LinearGradient",
+                      "props": {
+                        "colors": [
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "orange",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "pink",
+                              "children": []
+                            }
+                          },
+                          {
+                            "type": "Color",
+                            "props": {
+                              "rawValue": "indigo",
+                              "children": []
+                            }
+                          }
+                        ],
+                        "startPoint": "topLeading",
+                        "endPoint": "bottomTrailing",
+                        "children": []
+                      }
+                    },
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "padding",
+                        "props": {
+                          "top": 8,
+                          "leading": 8,
+                          "bottom": 8,
+                          "trailing": 8,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "border",
+                              "props": {
+                                "style": {
+                                  "type": "Material",
+                                  "props": {
+                                    "rawValue": "thick",
+                                    "children": []
+                                  }
+                                },
+                                "width": 4,
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "padding",
+                                    "props": {
+                                      "top": 8,
+                                      "leading": 8,
+                                      "bottom": 8,
+                                      "trailing": 8,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "rawValue": "Material border",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

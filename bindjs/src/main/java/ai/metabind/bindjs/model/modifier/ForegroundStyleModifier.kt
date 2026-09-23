@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.google.gson.annotations.SerializedName
 import ai.metabind.bindjs.composables.UiEvent
-import ai.metabind.bindjs.composables.ext.materialBlur
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.ColorProps
 import ai.metabind.bindjs.model.Component
+import ai.metabind.bindjs.model.MaterialComponent
 
 class ForegroundStyleModifier(
     props: ForegroundStyleProps,
@@ -17,17 +17,9 @@ class ForegroundStyleModifier(
     override fun buildModifier(
         onUiEvent: (UiEvent) -> Unit,
     ): Modifier {
-        val component = props.rawValue.asColorComponent()
-
-        return if (component != null) {
-            if (component.isMaterial()) {
-                Modifier.materialBlur()
-            } else {
-                Modifier
-            }
-        } else {
-            Modifier
-        }
+        // The style is read off the chain by the leaf that draws with it (text colour,
+        // a shape's fill), not applied as a Modifier of its own.
+        return Modifier
     }
 
     override fun toString(): String {
@@ -50,7 +42,11 @@ fun Any?.asColorComponent(): ColorComponent? {
         is String -> ColorComponent(ColorProps(rawValue = this))
         is Map<*, *> -> {
             val type = this["type"] as? String
-            if (type == "Color") {
+            if (type == "Material") {
+                // Typed `Any?`, so a `Material(...)` arrives as a plain Map too.
+                val props = this["props"] as? Map<*, *>
+                MaterialComponent(ColorProps(rawValue = props?.get("rawValue") as? String))
+            } else if (type == "Color") {
                 val props = this["props"] as? Map<*, *> ?: return null
                 ColorComponent(
                     ColorProps(

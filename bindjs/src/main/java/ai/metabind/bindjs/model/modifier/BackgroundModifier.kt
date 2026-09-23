@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.google.gson.annotations.SerializedName
 import ai.metabind.bindjs.composables.UiEvent
-import ai.metabind.bindjs.composables.ext.materialBlur
 import ai.metabind.bindjs.model.BaseComponent
 import ai.metabind.bindjs.model.BrushComponent
 import ai.metabind.bindjs.model.ColorComponent
@@ -29,11 +28,7 @@ class BackgroundModifier(
     ): Modifier {
         return when (val component = props.content) {
             is ColorComponent -> {
-                if (component.isMaterial()) {
-                    Modifier.materialBlur()
-                } else {
-                    Modifier.background(Color(component.color))
-                }
+                Modifier.background(Color(component.color))
             }
 
             is BrushComponent -> {

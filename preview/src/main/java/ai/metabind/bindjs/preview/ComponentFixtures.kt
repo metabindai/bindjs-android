@@ -435,4 +435,40 @@ val componentFixtures = listOf(
         })()
         """.trimIndent()
     ),
+    component(
+        name = "Material",
+        description = "The five materials over a gradient, standalone and as a background, fill, stroke, border and foreground style; plus both single-style border forms.",
+        source = """
+        (() => {
+          const backdrop = LinearGradient({
+            colors: [Color('orange'), Color('pink'), Color('indigo')],
+            startPoint: 'topLeading', endPoint: 'bottomTrailing',
+          });
+          const names = ['ultraThin', 'thin', 'regular', 'thick', 'ultraThick'];
+          return VStack({ alignment: 'leading', spacing: 16 }, [
+            Text('Standalone').font('headline'),
+            HStack({ spacing: 8 }, names.map((name) =>
+              Material(name).frame({ width: 56, height: 56 })
+            )).padding(12).background(backdrop),
+            Text('Background, fill, stroke').font('headline'),
+            VStack({ alignment: 'leading', spacing: 10 }, [
+              Text('Text on .background(Material(\'thin\'))').padding(8).background(Material('thin')),
+              HStack({ spacing: 12 }, [
+                Capsule().fill(Material('regular')).frame({ width: 100, height: 36 }),
+                RoundedRectangle({ cornerRadius: 12 }).fill(Material('thick')).frame({ width: 100, height: 36 }),
+                Capsule().stroke({ style: Material('ultraThick'), lineWidth: 4 }).frame({ width: 60, height: 36 }),
+              ]),
+              Text('Material foreground').font('title2').bold().foregroundStyle(Material('ultraThick')),
+            ]).padding(12).background(backdrop),
+            Text('Borders').font('headline'),
+            HStack({ spacing: 12 }, [
+              Text('border(Color)').padding(8).border(Color('red')),
+              Text('border({ style, width })').padding(8).border({ style: Color('blue'), width: 3 }),
+            ]),
+            Text('Material border').padding(8).border({ style: Material('thick'), width: 4 })
+              .padding(8).background(backdrop),
+          ]);
+        })()
+        """.trimIndent()
+    ),
 )
