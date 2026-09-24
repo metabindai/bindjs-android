@@ -249,7 +249,7 @@ Add the repository to your project's `settings.gradle.kts` (or root `build.gradl
 ```kotlin
 repositories {
     maven {
-        url = uri("https://maven.pkg.github.com/metabindai/bindjs-android")
+        url = uri("https://maven.pkg.github.com/metabindai/bindjs-android-binary")
         credentials {
             username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
             password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
