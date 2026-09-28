@@ -50,6 +50,13 @@
                     }
                   },
                   {
+                    "type": "Text",
+                    "props": {
+                      "markdown": "Two blank lines follow.\n\n\nThen a line\n    indented four spaces.",
+                      "children": []
+                    }
+                  },
+                  {
                     "type": "ModifiedComponent",
                     "props": {
                       "modifier": {
@@ -116,6 +123,167 @@
                                 "type": "Text",
                                 "props": {
                                   "markdown": "Centered **markdown** in a full-width frame",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Plain **Text** string, parsed as `markdown`",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "text": "The **text** prop, parsed too",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "verbatim": "The **verbatim** prop, left as written",
+                      "children": []
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "foregroundStyle",
+                        "props": {
+                          "rawValue": {
+                            "type": "LinearGradient",
+                            "props": {
+                              "colors": [
+                                {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "orange",
+                                    "children": []
+                                  }
+                                },
+                                {
+                                  "type": "Color",
+                                  "props": {
+                                    "rawValue": "purple",
+                                    "children": []
+                                  }
+                                }
+                              ],
+                              "startPoint": "leading",
+                              "endPoint": "trailing",
+                              "children": []
+                            }
+                          },
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "font",
+                              "props": {
+                                "rawValue": "title3",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "markdown": "**Gradient** markdown with a [link](https://metabind.ai)",
+                                  "children": []
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "underline",
+                        "props": {
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "italic",
+                              "props": {
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "ModifiedComponent",
+                                "props": {
+                                  "modifier": {
+                                    "type": "tracking",
+                                    "props": {
+                                      "rawValue": 2,
+                                      "children": []
+                                    }
+                                  },
+                                  "content": [
+                                    {
+                                      "type": "Text",
+                                      "props": {
+                                        "markdown": "Tracked, italic and underlined, with ~~struck~~ words",
+                                        "children": []
+                                      }
+                                    }
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "ModifiedComponent",
+                    "props": {
+                      "modifier": {
+                        "type": "lineSpacing",
+                        "props": {
+                          "rawValue": 12,
+                          "children": []
+                        }
+                      },
+                      "content": [
+                        {
+                          "type": "ModifiedComponent",
+                          "props": {
+                            "modifier": {
+                              "type": "textCase",
+                              "props": {
+                                "rawValue": "uppercase",
+                                "children": []
+                              }
+                            },
+                            "content": [
+                              {
+                                "type": "Text",
+                                "props": {
+                                  "markdown": "Uppercased with a [link](https://metabind.ai/Docs)\nand line spacing",
                                   "children": []
                                 }
                               }

@@ -85,7 +85,7 @@ private fun BaseComponent<*>.asPickerOption(): PickerOption {
     return PickerOption(
         tag = tag,
         label = this,
-        text = textProps?.rawValue ?: textProps?.markdown ?: "",
+        text = textProps?.plainText ?: "",
         hasLineLimit = hasLineLimit,
     )
 }

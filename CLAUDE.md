@@ -219,6 +219,24 @@ bindjs-apple too — fix upstream in bindjs-runtime, then re-sync):
   `.presentationDetents([Detent.medium, Detent.large])` arrives as `[null, null]`.
   Both renderers fall back to a full-height sheet. Fix: register it as a value.
 
+## Text and markdown
+
+`Text` mirrors bindjs-apple's `TextComponent`, which draws through SwiftUI's
+`LocalizedStringKey` (`inlineOnlyPreservingWhitespace` markdown):
+
+- **Which props are markdown**: `Text("…")` (`rawValue`), `{ markdown }` and `{ text }`
+  are; `{ verbatim }` is literal. First present wins (`TextComponentProps.markdownSource`).
+- **Inline syntax only.** `InlineMarkdown.kt` parses with commonmark-java, every block type
+  disabled, into an `AnnotatedString`: bold, italic, `~~strike~~`, monospaced inline code
+  (no background), links in `LocalAccentColor` opening through `LocalUriHandler`. Headings,
+  lists, quotes, code blocks and rules stay literal text, as on iOS. Don't re-enable them
+  here without adding them on iOS too.
+- **Whitespace is kept as written** — leading spaces, every newline, runs of blank lines —
+  by `preservingWhitespace`, which swaps them for non-breaking spaces CommonMark keeps.
+- **One `BasicText` draws markdown and verbatim text alike**, so every text modifier
+  applies to both. It is `BasicText`, not Material3's `Text`, because the latter always
+  merges a colour into the style and that replaces a gradient brush.
+
 ## Materials
 
 `Material('thin')` decodes to `MaterialComponent`, a **subclass of `ColorComponent`**
@@ -334,7 +352,7 @@ For coordinated releases (`bindjs-android` → `metabind-android`), publish here
 - **Kotlin 2.4.10**, **AGP 9.3.1**, Compose, `compileSdk` 36, `minSdk` 26, Java 21
 - `androidx.javascriptengine` (Android JS Sandbox) — isolate, console messaging, `evaluateJavaScriptAsync`
 - **Gson** + custom `RuntimeTypeAdapterFactory` (vendored from Google) for polymorphic AST deserialization
-- **Coil** (image loading), **SceneView** (3D models), **Media3/ExoPlayer** (video), **Markwon** (markdown), **Vico** (charts)
+- **Coil** (image loading), **SceneView** (3D models), **Media3/ExoPlayer** (video), **commonmark-java** (`Text` markdown), **Vico** (charts)
 
 ## Logcat tags
 

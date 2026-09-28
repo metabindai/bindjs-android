@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.composables.UiEvent
 import ai.metabind.bindjs.composables.chart.ChartCollector
 import ai.metabind.bindjs.model.BaseComponent
+import ai.metabind.bindjs.model.BrushComponent
+import ai.metabind.bindjs.GsonProvider
 import ai.metabind.bindjs.model.ColorComponent
 import ai.metabind.bindjs.model.Component
 import ai.metabind.bindjs.model.ModifiedComponent
@@ -254,15 +256,16 @@ fun List<ComponentModifier<*>>.getNearestNamedFontWeight(): FontWeight? {
     return null
 }
 
+/**
+ * The named text style of the nearest `.font(...)` — innermost wins, as in SwiftUI and
+ * [getNearestFontPointSize]. Taking the outermost meant a `VStack(...).font('caption')`
+ * overrode the `.font('title')` on its own child; the markdown path, which used to size
+ * text from the ladder directly, already resolved it innermost.
+ */
 @Composable
 fun List<ComponentModifier<*>>.getTextStyle(): TextStyle? {
-    firstOrNull { it is FontModifier }?.let { modifier ->
-        val fontModifier = (modifier as FontModifier)
-        if (fontModifier.props.rawValue is String) {
-            return fontModifier.props.rawValue.toTextStyle()
-        }
-    }
-    return null
+    val fontModifier = lastOrNull { it is FontModifier } as? FontModifier ?: return null
+    return (fontModifier.props.rawValue as? String)?.toTextStyle()
 }
 
 fun List<ComponentModifier<*>>.buttonStyleModifier(): ButtonStyleModifier? {
@@ -441,10 +444,16 @@ fun List<ComponentModifier<*>>.getForegroundStyleModifierComponent(): BaseCompon
         if (colorComponent != null) {
             return colorComponent
         }
-        if (rawValue is Component) {
-            rawValue.props.children?.firstOrNull()
-        } else {
-            rawValue as? BaseComponent<*>
+        when (rawValue) {
+            is Component -> rawValue.props.children?.firstOrNull()
+            // `rawValue` is typed `Any?`, so a gradient arrives as a plain Map and was
+            // dropped here: text and shapes given a gradient foregroundStyle drew in
+            // their default colour. Decoded as a component, it is the brush it names.
+            is Map<*, *> -> runCatching {
+                val gson = GsonProvider.get()
+                gson.fromJson(gson.toJsonTree(rawValue), BaseComponent::class.java)
+            }.getOrNull()?.takeIf { it is BrushComponent }
+            else -> rawValue as? BaseComponent<*>
         }
     }
 }
