@@ -349,7 +349,7 @@ For coordinated releases (`bindjs-android` → `metabind-android`), publish here
 
 ## Tech stack
 
-- **Kotlin 2.4.10**, **AGP 9.3.1**, Compose, `compileSdk` 36, `minSdk` 26, Java 21
+- **Kotlin 2.3.10**, **AGP 9.3.1**, Compose, `compileSdk` 36, `minSdk` 26, Java 21
 - `androidx.javascriptengine` (Android JS Sandbox) — isolate, console messaging, `evaluateJavaScriptAsync`
 - **Gson** + custom `RuntimeTypeAdapterFactory` (vendored from Google) for polymorphic AST deserialization
 - **Coil** (image loading), **SceneView** (3D models), **Media3/ExoPlayer** (video), **commonmark-java** (`Text` markdown), **Vico** (charts)
