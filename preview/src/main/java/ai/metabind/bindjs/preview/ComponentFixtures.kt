@@ -148,7 +148,7 @@ val componentFixtures = listOf(
     ),
     component(
         name = "Markdown",
-        description = "Text({ markdown }) rendering: headings, inline styles, lists, a quote, a code block, and markdown under font and colour modifiers.",
+        description = "Text({ markdown }) rendering: inline styles, block syntax (headings, lists, a quote, a code fence) left as literal text like iOS, newlines, blank lines and leading spaces kept as written; Text(\"…\") and { text } parsed as markdown, { verbatim } not; and markdown under font, colour, gradient, tracking, italic, underline, text-case and line-spacing modifiers.",
         source = """
         ScrollView([
           VStack({ alignment: 'leading', spacing: 16 }, [
@@ -157,8 +157,15 @@ val componentFixtures = listOf(
             Text({ markdown: '- First item\n- Second item\n  - Nested item\n\n1. Step one\n2. Step two' }),
             Text({ markdown: '> A block quote\n> spanning two lines.' }),
             Text({ markdown: '```\nconst answer = 42;\nconsole.log(answer);\n```' }),
+            Text({ markdown: 'Two blank lines follow.\n\n\nThen a line\n    indented four spaces.' }),
             Text({ markdown: 'Markdown styled with `.font(title2)` and a blue `.foregroundStyle`' }).font('title2').foregroundStyle(Color('blue')),
             Text({ markdown: 'Centered **markdown** in a full-width frame' }).multilineTextAlignment('center').frame({ maxWidth: Infinity }),
+            Text('Plain **Text** string, parsed as `markdown`'),
+            Text({ text: 'The **text** prop, parsed too' }),
+            Text({ verbatim: 'The **verbatim** prop, left as written' }),
+            Text({ markdown: '**Gradient** markdown with a [link](https://metabind.ai)' }).font('title3').foregroundStyle(LinearGradient({ colors: [Color('orange'), Color('purple')], startPoint: 'leading', endPoint: 'trailing' })),
+            Text({ markdown: 'Tracked, italic and underlined, with ~~struck~~ words' }).tracking(2).italic().underline(),
+            Text({ markdown: 'Uppercased with a [link](https://metabind.ai/Docs)\nand line spacing' }).textCase('uppercase').lineSpacing(12),
           ])
         ])
         """.trimIndent()

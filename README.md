@@ -49,7 +49,7 @@ One BindJS definition renders natively on all three surfaces. All three repos ar
 - **Coil** — image loading
 - **SceneView** — 3D model rendering
 - **Media3/ExoPlayer** — video playback
-- **Markwon** — Markdown rendering
+- **commonmark-java** — parses `Text` markdown (inline syntax only, as on iOS)
 - **GSON** — JSON deserialization
 
 ## The MCP host bridge (useMCPHost)
