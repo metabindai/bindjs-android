@@ -64,7 +64,7 @@ fun VideoView(
             PlayerView(ctx).apply {
                 setEnabled(isEnabled)
                 player = exoPlayer
-                useController = controls == true
+                useController = controls != false
                 player?.playWhenReady = autoplay == true
                 setResizeMode(resizeMode)
             }
