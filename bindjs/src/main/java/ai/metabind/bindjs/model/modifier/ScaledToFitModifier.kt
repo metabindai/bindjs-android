@@ -12,7 +12,8 @@ class ScaledToFitModifier(
     override fun buildModifier(
         onUiEvent: (UiEvent) -> Unit
     ): Modifier {
-        return Modifier
+        // SwiftUI's scaledToFit() is aspectRatio(nil, .fit).
+        return Modifier.aspectRatioBox(ratio = LocalContentRatio.current, fill = false)
     }
 }
 

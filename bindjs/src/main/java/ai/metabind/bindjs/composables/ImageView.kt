@@ -7,7 +7,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +36,7 @@ import ai.metabind.bindjs.model.ImageComponent
 import ai.metabind.bindjs.model.ext.toContentScale
 import ai.metabind.bindjs.model.modifier.AccessibilityLabelModifier
 import ai.metabind.bindjs.model.modifier.ComponentModifier
+import ai.metabind.bindjs.model.modifier.LocalContentRatio
 import ai.metabind.bindjs.model.modifier.LocalModifier
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -263,21 +268,32 @@ fun ImageView(
         val url = component.props.url
         // Coil 2.x can't load `data:` URIs directly — decode to bytes when present.
         val model: Any? = decodeDataUri(url) ?: url
-        AsyncImage(
-            modifier = modifiers.buildModifier(
-                onUiEvent,
-                exclude = listOf(AccessibilityLabelModifier::class)
-            ),
-            model = ImageRequest.Builder(context).data(model)
-                .crossfade(true)
-                .build(),
-            imageLoader = bindJsImageLoader(context),
-            contentDescription = contentDescription,
-            alignment = Alignment.Center,
-            contentScale = contentScale,
-            onError = { error ->
-                Log.e(TAG, "Coil image load error: ${error.result.throwable}")
-            }
-        )
+        // The loaded image's ratio, for an aspect modifier that keeps the image's own
+        // (`scaledToFit()`, `aspectRatio(nil, …)`). Until it loads, that box is square.
+        var ratio by remember(url) { mutableStateOf<Float?>(null) }
+        CompositionLocalProvider(LocalContentRatio provides ratio) {
+            AsyncImage(
+                modifier = modifiers.buildModifier(
+                    onUiEvent,
+                    exclude = listOf(AccessibilityLabelModifier::class)
+                ),
+                model = ImageRequest.Builder(context).data(model)
+                    .crossfade(true)
+                    .build(),
+                imageLoader = bindJsImageLoader(context),
+                contentDescription = contentDescription,
+                alignment = Alignment.Center,
+                contentScale = contentScale,
+                onSuccess = { success ->
+                    val drawable = success.result.drawable
+                    if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
+                        ratio = drawable.intrinsicWidth.toFloat() / drawable.intrinsicHeight
+                    }
+                },
+                onError = { error ->
+                    Log.e(TAG, "Coil image load error: ${error.result.throwable}")
+                }
+            )
+        }
     }
 }

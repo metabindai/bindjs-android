@@ -42,6 +42,7 @@ import ai.metabind.bindjs.model.ext.toTextAlign
 import ai.metabind.bindjs.model.ext.toTextStyle
 import ai.metabind.bindjs.model.modifier.AccessibilityLabelModifier
 import ai.metabind.bindjs.model.modifier.AllowsHitTestingModifier
+import ai.metabind.bindjs.model.modifier.AspectRatioModifier
 import ai.metabind.bindjs.model.modifier.AutocorrectionDisabledModifier
 import ai.metabind.bindjs.model.modifier.BackgroundModifier
 import ai.metabind.bindjs.model.modifier.BoldModifier
@@ -324,8 +325,12 @@ fun List<ComponentModifier<*>>.getLineSpacing(): Float? {
     }
 }
 
+/**
+ * Extra spacing between characters in points, from the innermost `.tracking(...)` as in
+ * SwiftUI. Points, not sp: the spacing does not follow the system font scale.
+ */
 fun List<ComponentModifier<*>>.getTracking(): Float {
-    return firstOrNull { it is TrackingModifier }?.let { modifier ->
+    return lastOrNull { it is TrackingModifier }?.let { modifier ->
         (modifier as TrackingModifier).props.rawValue
     } ?: 0f
 }
@@ -355,12 +360,23 @@ fun List<ComponentModifier<*>>.getTextAlign(): TextAlign {
     } ?: TextAlign.Start
 }
 
+/**
+ * How an image draws into its box, from the innermost aspect modifier on it. That
+ * modifier ([ai.metabind.bindjs.model.modifier.aspectRatioBox]) already sized the box: to the image's own ratio for
+ * `scaledToFit()`, `scaledToFill()` and `aspectRatio(nil, …)`, where fit and crop keep
+ * the image whole and undistorted while it loads; to the given ratio for
+ * `aspectRatio(ratio, …)`, which stretches the image into it as SwiftUI does.
+ */
 fun List<ComponentModifier<*>>.getContentScale(): ContentScale {
-    return firstOrNull { it is ScaledToFitModifier }?.let { modifier ->
-        ContentScale.Fit
-    } ?: firstOrNull { it is ScaledToFillModifier }?.let { modifier ->
-        ContentScale.FillBounds
-    } ?: ContentScale.Fit
+    return when (val modifier = lastOrNull { it is ScaledToFitModifier || it is ScaledToFillModifier || it is AspectRatioModifier }) {
+        is ScaledToFillModifier -> ContentScale.Crop
+        is AspectRatioModifier -> when {
+            modifier.props.ratio != null -> ContentScale.FillBounds
+            modifier.props.contentMode == "fill" -> ContentScale.Crop
+            else -> ContentScale.Fit
+        }
+        else -> ContentScale.Fit
+    }
 }
 
 fun List<ComponentModifier<*>>.getAlignment(): Alignment {

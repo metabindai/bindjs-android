@@ -362,6 +362,11 @@ class GsonProvider {
                 object : TypeAdapter<Float?>() {
                     @Throws(IOException::class)
                     override fun read(reader: JsonReader): Float? {
+                        // A null length is absent. Throwing here failed the whole tree.
+                        if (reader.peek() == JsonToken.NULL) {
+                            reader.nextNull()
+                            return null
+                        }
                         if (reader.peek() == JsonToken.STRING) {
                             val stringValue = reader.nextString()
                             if (stringValue.equals("Infinity", ignoreCase = true)) {
