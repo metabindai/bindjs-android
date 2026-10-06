@@ -2716,20 +2716,6 @@ exports.default = defineComponent({
         }
     }
 
-    /**
-     * Restores an environment by id, leaving the hook-state path alone. Callers that
-     * invoke a stored callback outside a render pass need the environment back without
-     * rebinding this pass's hooks to the stored path.
-     * @param {*} environmentId
-     */
-    restoreEnvironmentOnly(environmentId) {
-        let env = this.storedEnvironments[environmentId];
-
-        if (env) {
-            this.environment = env;
-        }
-    }
-
     restoreHookStateStorage() {
         // Setup currentComponent content.
         // This is needed if when restoring a function that would be accessing state.
@@ -3539,7 +3525,6 @@ Object.assign(this, {
     setEnvironment: (environment) => runtime.registerEnvironment(environment),
     makeComponent: (body, props, children) => runtime.makeComponent(body, props, children),
     restoreEnvironment: (environmentId) => runtime.restoreEnvironment(environmentId),
-    restoreEnvironmentOnly: (environmentId) => runtime.restoreEnvironmentOnly(environmentId),
     restoreFunction: (functionId) => runtime.restoreFunction(functionId),
     setForEachElementId: (id) => runtime.setForEachElementId(id),
     callForEachFunction: (functionId, element, index) => customJSONStringify(runtime.callForEachFunction(functionId, element, index), null, 2),
@@ -3557,7 +3542,7 @@ Object.assign(this, {
     },
     callGeometryReaderComponent: (handlerId, dimensions, environmentId) => {
         if (environmentId) {
-            runtime.restoreEnvironmentOnly(environmentId);
+            runtime.restoreEnvironment(environmentId);
         }
         var proxy = {
             size: dimensions["size"],
