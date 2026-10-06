@@ -103,7 +103,6 @@ interface JsRuntime {
     suspend fun callForResultComponent(handlerId: String): Component?
     suspend fun restoreForEachData(dataId: String): String
     suspend fun restoreEnvironment(id: String)
-    suspend fun restoreEnvironmentOnly(id: String)
     suspend fun restorePickerValue(currentValueId: String): String
     suspend fun callPickerSetter(setterId: String, value: String): String
     suspend fun callForEachFunction(functionId: String, element: String, index: String): String?
