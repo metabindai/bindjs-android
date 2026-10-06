@@ -1,7 +1,6 @@
 package ai.metabind.bindjs.model.modifier
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.IntrinsicMeasurable
 import androidx.compose.ui.layout.layout
@@ -21,17 +20,9 @@ class AspectRatioModifier(
     override fun buildModifier(
         onUiEvent: (UiEvent) -> Unit
     ): Modifier {
-        return Modifier.aspectRatioBox(props.ratio ?: LocalContentRatio.current, fill = props.contentMode == "fill")
+        return Modifier.aspectRatioBox(props.ratio, fill = props.contentMode == "fill")
     }
 }
-
-/**
- * The width over height of the content an aspect modifier wraps, when the content knows
- * it better than its intrinsic size says: an image provides its ratio once loaded. Coil
- * changes an image's intrinsic size without remeasuring the layouts that read it, so a
- * box sized from intrinsics alone kept the square it had before the image arrived.
- */
-val LocalContentRatio = compositionLocalOf<Float?> { null }
 
 class AspectRatioProps(
     // The runtime sends `aspectRatio`; older runtimes sent the ratio as `rawValue`, the
@@ -47,38 +38,83 @@ class AspectRatioProps(
 }
 
 /**
- * SwiftUI's `.aspectRatio(ratio, contentMode:)`: the box of [ratio] that fits inside the
- * size offered (or, with [fill], the smallest one covering it), with the content
- * proposed exactly that box. Offered one length only, the box takes it and derives the
+ * SwiftUI's `.aspectRatio(ratio, contentMode:)`. The content is proposed the box of [ratio]
+ * that fits inside the size offered (or, with [fill], the smallest one covering it), and
+ * the modifier takes the size the content answers: a flexible view, a color or a
+ * GeometryReader, fills the box; a view with a size of its own keeps it; and a resizable
+ * image scales to the box. Offered one length only, the box takes it and derives the
  * other; offered neither, it shapes the content's ideal size.
  *
- * A null [ratio] keeps the content's own: an image's from [LocalContentRatio], anything
- * else's from its ideal size. Content without one, a color or a shape, is square.
+ * A null [ratio] keeps the content's own, from its ideal size: an image's once loaded,
+ * padding and frames around it included. Content without one, a color or a shape, is
+ * square.
  *
  * A filled box can be larger than the space offered. It keeps its size and overflows
  * evenly on both sides, as SwiftUI's does; `.clipped()` trims it.
  */
 fun Modifier.aspectRatioBox(ratio: Float?, fill: Boolean): Modifier = layout { measurable, constraints ->
-    val kept = ratio ?: measurable.idealRatio() ?: 1f
+    val ideal = if (ratio == null || !constraints.hasBoundedWidth && !constraints.hasBoundedHeight) measurable.idealSize() else null
+    val kept = ratio ?: ideal?.let { it.width.toFloat() / it.height } ?: 1f
     val offeredWidth = if (constraints.hasBoundedWidth) constraints.maxWidth else null
     val offeredHeight = if (constraints.hasBoundedHeight) constraints.maxHeight else null
     val box = aspectBox(offeredWidth, offeredHeight, kept, fill)
-        ?: aspectBox(
-            measurable.maxIntrinsicWidth(Constraints.Infinity).takeIf { it > 0 },
-            measurable.maxIntrinsicHeight(Constraints.Infinity).takeIf { it > 0 },
-            kept,
-            fill,
-        )
+        ?: ideal?.let { aspectBox(it.width, it.height, kept, fill) }
         ?: IntSize.Zero
-    val placeable = measurable.measure(Constraints.fixed(box.width, box.height))
-    layout(box.width, box.height) { placeable.place(0, 0) }
+    if (measurable.hasOwnSize()) {
+        val placeable = measurable.measure(upTo(box))
+        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    } else {
+        // The box's size, not the placeable's: when a parent asks this layout for its
+        // intrinsic size, Compose measures the content as a stand-in of the content's own
+        // intrinsic size, which for a color or an image still loading is nothing.
+        val exact = exactly(box)
+        val placeable = measurable.measure(exact)
+        layout(exact.maxWidth, exact.maxHeight) { placeable.place(0, 0) }
+    }
 }
 
-/** The content's width over height at its ideal size, or null when it has none. */
-private fun IntrinsicMeasurable.idealRatio(): Float? {
+/**
+ * Whether the content has a size no offer changes: a frame of fixed lengths, an image, a
+ * stack of those. Its smallest and largest intrinsic sizes agree. Content that takes what
+ * it is offered reports none (a color) or can't answer (a GeometryReader, a lazy list),
+ * and Compose sizes it by the constraints alone, so it is given the box exactly.
+ */
+private fun IntrinsicMeasurable.hasOwnSize(): Boolean = try {
     val width = maxIntrinsicWidth(Constraints.Infinity)
     val height = maxIntrinsicHeight(Constraints.Infinity)
-    return if (width > 0 && height > 0) width.toFloat() / height else null
+    width > 0 && height > 0 &&
+        minIntrinsicWidth(Constraints.Infinity) == width && minIntrinsicHeight(Constraints.Infinity) == height
+} catch (_: IllegalStateException) {
+    false
+}
+
+/**
+ * The content's ideal size, or null when it has none (a color) or can't say: a lazy list
+ * answers no intrinsic measurements.
+ */
+private fun IntrinsicMeasurable.idealSize(): IntSize? = try {
+    val width = maxIntrinsicWidth(Constraints.Infinity)
+    val height = maxIntrinsicHeight(Constraints.Infinity)
+    if (width > 0 && height > 0) IntSize(width, height) else null
+} catch (_: IllegalStateException) {
+    null
+}
+
+/** Constraints proposing [box], from nothing up to its size. */
+private fun upTo(box: IntSize): Constraints = representable(box, exact = false)
+
+/** Constraints giving the content [box] exactly. */
+private fun exactly(box: IntSize): Constraints = representable(box, exact = true)
+
+/**
+ * A filled box of an extreme ratio can be longer than Compose can represent; it keeps its
+ * shorter side and is cut to what Compose can measure along the longer.
+ */
+private fun representable(box: IntSize, exact: Boolean): Constraints {
+    val minWidth = if (exact) box.width else 0
+    val minHeight = if (exact) box.height else 0
+    return if (box.width >= box.height) Constraints.fitPrioritizingHeight(minWidth, box.width, minHeight, box.height)
+    else Constraints.fitPrioritizingWidth(minWidth, box.width, minHeight, box.height)
 }
 
 /**

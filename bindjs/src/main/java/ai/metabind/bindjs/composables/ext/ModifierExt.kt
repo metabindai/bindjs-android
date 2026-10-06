@@ -100,6 +100,9 @@ fun List<ComponentModifier<*>>.modifiersToShareWithChildren(): List<ComponentMod
             is ForegroundStyleModifier,
             is AllowsHitTestingModifier,
             is MultilineTextAlignmentModifier,
+                // SwiftUI's tracking is a text style like the font: written on a frame or a
+                // stack, it sets the text inside. getTracking takes the innermost.
+            is TrackingModifier,
                 // List styling is read by the List the chain leads to, not by the layer it
                 // is written on, so `List(...).listStyle('plain').frame(...)` has to carry
                 // it through the frame the same way the text styles travel.

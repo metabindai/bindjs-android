@@ -2,6 +2,9 @@ package ai.metabind.bindjs.preview
 
 import android.os.Looper
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -23,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import ai.metabind.bindjs.GsonProvider
 import ai.metabind.bindjs.composables.BindJSView
 import ai.metabind.bindjs.model.BaseComponent
-import ai.metabind.bindjs.model.ModifiedComponent
-import ai.metabind.bindjs.model.modifier.LocalContentRatio
 import ai.metabind.bindjs.model.modifier.aspectRatioBox
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -50,13 +51,16 @@ class AspectRatioLayoutTest {
     @get:Rule
     val compose = createComposeRule()
 
-    /** The size [box] takes in a parent [width] wide and [height] tall, or unbounded in height. */
+    /**
+     * The size [box] takes in a parent [width] wide and [height] tall, or unbounded in
+     * height, around content that fills what it is offered, as a color does.
+     */
     private fun sizeIn(width: Int, height: Int?, box: Modifier): IntSize {
         compose.setContent {
             val parent = if (height != null) Modifier.size(width.dp, height.dp)
             else Modifier.width(width.dp).verticalScroll(rememberScrollState())
             Box(parent) {
-                Box(box.testTag("box"))
+                Box(box.testTag("box").fillMaxSize())
             }
         }
         return compose.onNodeWithTag("box").fetchSemanticsNode().size
@@ -79,27 +83,71 @@ class AspectRatioLayoutTest {
         assertEquals(IntSize(100, 100), sizeIn(300, 100, Modifier.aspectRatioBox(null, fill = false)))
 
     @Test
-    fun `scaledToFit keeps the ratio the content provides`() {
-        val scaledToFit = GsonProvider.get().fromJson(
-            modified("scaledToFit", "", """{"type":"Color","props":{"rawValue":"red"}}"""),
-            BaseComponent::class.java,
-        ) as ModifiedComponent
+    fun `a parent sizing by intrinsics gets the box`() {
+        // A card sized to its content's intrinsic height (IntrinsicSize, as a grid row or
+        // an equal-height stack measures) counts the box, not the color inside it.
         compose.setContent {
-            Box(Modifier.size(360.dp, 100.dp)) {
-                CompositionLocalProvider(LocalContentRatio provides 0.5f) {
-                    Box(scaledToFit.props.modifier!!.buildModifier {}.testTag("box"))
-                }
+            Box(Modifier.width(360.dp).height(IntrinsicSize.Max).testTag("box")) {
+                Box(Modifier.aspectRatioBox(2f, fill = false).fillMaxSize())
             }
         }
-        assertEquals(IntSize(50, 100), compose.onNodeWithTag("box").fetchSemanticsNode().size)
+        assertEquals(180, compose.onNodeWithTag("box").fetchSemanticsNode().size.height)
     }
 
-    private fun render(tree: String, density: Density? = null) {
+    @Test
+    fun `a resizable image keeps the box under a parent sizing by intrinsics`() {
+        // A resizable image takes any size, so the square box around this 2:1 image stays
+        // square when a parent asks for its intrinsic height, before and after it loads.
+        val box = GsonProvider.get().fromJson(
+            modified("aspectRatio", "\"aspectRatio\":1,\"contentMode\":\"fit\"", WIDE_IMAGE),
+            BaseComponent::class.java,
+        )
+        compose.setContent {
+            Box(Modifier.width(360.dp).height(IntrinsicSize.Max).testTag("root")) {
+                BindJSView(jsRuntime = FakeJsRuntime(), component = box, version = 1, onUiEvent = {})
+            }
+        }
+        settle(Duration.ofSeconds(3))
+        assertEquals(360f, rootHeight(), 0f)
+    }
+
+    @Test
+    fun `a view with a size of its own keeps it`() {
+        // SwiftUI proposes the fitted box, 360 x 180, and the 40 x 20 frame keeps its size.
+        render(modified("scaledToFit", "", modified("frame", "\"width\":40,\"height\":20", RED)))
+        assertEquals(20f, rootHeight(), 0f)
+    }
+
+    @Test
+    fun `a GeometryReader takes the box`() {
+        // A GeometryReader is flexible in SwiftUI; Compose's wraps its content, which it
+        // only has once it knows its size, so a box that let it choose drew nothing.
+        val reader = """{"type":"GeometryReader","props":{"handlerId":"h","environmentId":"e"}}"""
+        render(modified("aspectRatio", "\"aspectRatio\":1.25,\"contentMode\":\"fit\"", reader))
+        assertEquals(288f, rootHeight(), 0f)
+    }
+
+    @Test
+    fun `a lazy list keeps its own ratio without intrinsic measurements`() {
+        // A LazyColumn answers no intrinsic measurements; asking threw.
+        val list = """{"type":"List","props":{"children":[{"type":"Text","props":{"rawValue":"row"}}]}}"""
+        render(modified("scaledToFit", "", list), height = 400)
+        assertTrue(rootHeight() > 0f)
+    }
+
+    @Test
+    fun `a filled box of an extreme ratio is cut to what Compose can measure`() {
+        // SwiftUI's box is 280,000 x 400, longer than Compose can represent; asking for it threw.
+        assertEquals(400, sizeIn(360, 400, Modifier.aspectRatioBox(700f, fill = true)).height)
+    }
+
+    private fun render(tree: String, density: Density? = null, height: Int? = null) {
         val component = GsonProvider.get().fromJson(tree, BaseComponent::class.java)
         compose.setContent {
             val content = @Composable {
                 MaterialTheme {
-                    Box(Modifier.width(360.dp).verticalScroll(rememberScrollState()).testTag("root")) {
+                    val root = if (height != null) Modifier.size(360.dp, height.dp) else Modifier.width(360.dp).verticalScroll(rememberScrollState())
+                    Box(root.testTag("root")) {
                         BindJSView(jsRuntime = FakeJsRuntime(), component = component, version = 1, onUiEvent = {})
                     }
                 }
@@ -120,15 +168,45 @@ class AspectRatioLayoutTest {
         // 40 x 20 pixels: once loaded, a 360-wide box is 180 tall, not the square it
         // starts as. Coil doesn't remeasure the layouts reading the image's intrinsic size,
         // so this stayed 360 tall before the image provided its ratio.
-        val image = """{"type":"Image","props":{"url":"$WIDE_PNG","resizable":true}}"""
+        val image = WIDE_IMAGE
         render(modified("frame", """"width":360,"alignment":"topLeading"""", modified("scaledToFit", "", image)))
-        val deadline = System.currentTimeMillis() + 10_000
-        while (rootHeight() != 180f && System.currentTimeMillis() < deadline) {
+        assertEquals(180f, settledHeight(180f), 0f)
+    }
+
+    @Test
+    fun `an image's ratio includes the padding around it`() {
+        // The padded image's ideal size is 60 x 40, so a 360-wide box is 240 tall.
+        render(modified("scaledToFit", "", modified("padding", "\"rawValue\":10", WIDE_IMAGE)))
+        assertEquals(240f, settledHeight(240f), 0f)
+    }
+
+    @Test
+    fun `an image's ratio reaches a box outside its frame`() {
+        // The aspect box sits on the frame's layout, not the image's; it still remeasures
+        // when the image loads.
+        render(modified("scaledToFit", "", modified("frame", "\"maxWidth\":\"Infinity\"", WIDE_IMAGE)))
+        assertEquals(180f, settledHeight(180f), 0f)
+    }
+
+    /** Lets Coil load off the main thread for [time]. */
+    private fun settle(time: Duration) {
+        val deadline = System.currentTimeMillis() + time.toMillis()
+        while (System.currentTimeMillis() < deadline) {
             compose.waitForIdle()
             Thread.sleep(50)
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
         }
-        assertEquals(180f, rootHeight(), 0f)
+    }
+
+    /** The root's height once it reaches [expected] or 10 seconds pass: Coil loads off the main thread. */
+    private fun settledHeight(expected: Float): Float {
+        val deadline = System.currentTimeMillis() + 10_000
+        while (rootHeight() != expected && System.currentTimeMillis() < deadline) {
+            compose.waitForIdle()
+            Thread.sleep(50)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+        }
+        return rootHeight()
     }
 
     @Test
@@ -144,11 +222,38 @@ class AspectRatioLayoutTest {
         assertTrue("tracking added $added", added in 44f..51f)
     }
 
+    @Test
+    fun `tracking written outside a frame sets the text inside`() {
+        // Ten letters with 5pt tracking added outside a frame: about 45 points wider.
+        val plain = """{"type":"Text","props":{"rawValue":"$LETTERS"}}"""
+        val framed = modified("tracking", """"rawValue":5""", modified("frame", """"width":300""", plain))
+        render("""{"type":"VStack","props":{"children":[$plain,$framed]}}""")
+        val texts = compose.onAllNodesWithText(LETTERS)
+        val added = width(texts[1].getBoundsInRoot()) - width(texts[0].getBoundsInRoot())
+        assertTrue("tracking added $added", added in 44f..51f)
+    }
+
+    @Test
+    fun `the innermost tracking wins`() {
+        // 5pt on the text, 20pt outside its frame: the text's own 5pt applies, as in SwiftUI.
+        val plain = """{"type":"Text","props":{"rawValue":"$LETTERS"}}"""
+        val inner = modified("tracking", """"rawValue":5""", plain)
+        val both = modified("tracking", """"rawValue":20""", modified("frame", """"width":360""", inner))
+        render("""{"type":"VStack","props":{"children":[$plain,$both]}}""")
+        val texts = compose.onAllNodesWithText(LETTERS)
+        val added = width(texts[1].getBoundsInRoot()) - width(texts[0].getBoundsInRoot())
+        assertTrue("tracking added $added", added in 44f..51f)
+    }
+
     companion object {
         const val LETTERS = "MMMMMMMMMM"
+
+        const val RED = """{"type":"Color","props":{"rawValue":"red"}}"""
 
         /** A 40 x 20 magenta PNG. */
         const val WIDE_PNG =
             "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAUCAIAAABwJOjsAAAAJElEQVR4nGP4z/B/QBDDqMWjFo9aPGrxqMWjFo9aPGrxyLEYALhmOhvE9gcGAAAAAElFTkSuQmCC"
+
+        const val WIDE_IMAGE = """{"type":"Image","props":{"url":"$WIDE_PNG","resizable":true}}"""
     }
 }

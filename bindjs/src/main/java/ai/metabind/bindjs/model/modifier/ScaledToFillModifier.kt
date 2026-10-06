@@ -13,7 +13,7 @@ class ScaledToFillModifier(
         onUiEvent: (UiEvent) -> Unit
     ): Modifier {
         // SwiftUI's scaledToFill() is aspectRatio(nil, .fill).
-        return Modifier.aspectRatioBox(ratio = LocalContentRatio.current, fill = true)
+        return Modifier.aspectRatioBox(ratio = null, fill = true)
     }
 }
 
