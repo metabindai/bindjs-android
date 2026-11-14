@@ -372,11 +372,6 @@ class JsRuntimeImpl private constructor(
         evalJs(script)
     }
 
-    override suspend fun restoreEnvironmentOnly(id: String) {
-        val script = "restoreEnvironmentOnly('$id');"
-        evalJs(script)
-    }
-
     override suspend fun restorePickerValue(currentValueId: String): String {
         val script = "restorePickerValue('$currentValueId',[]);"
         return evalJs(script)

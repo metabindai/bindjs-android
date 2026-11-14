@@ -39,7 +39,6 @@ class FakeJsRuntime : JsRuntime {
     override suspend fun callForResultComponent(handlerId: String): Component? = null
     override suspend fun restoreForEachData(dataId: String): String = "[]"
     override suspend fun restoreEnvironment(id: String) { calls += "restoreEnvironment($id)" }
-    override suspend fun restoreEnvironmentOnly(id: String) {}
     override suspend fun restorePickerValue(currentValueId: String): String = ""
     override suspend fun callPickerSetter(setterId: String, value: String): String {
         calls += "callPickerSetter($setterId, $value)"
