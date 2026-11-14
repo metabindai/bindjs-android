@@ -9,6 +9,8 @@ class ImageProps(
     val svg: String?,
     val systemName: String?,
     val contentMode: String?,
+    /** `.resizable()`, which the runtime folds into the image's props. */
+    val resizable: Boolean?,
     children: List<BaseComponent<*>>?,
 ) : Props(children = children) {
     override fun toString(): String {

@@ -12,7 +12,8 @@ class ScaledToFillModifier(
     override fun buildModifier(
         onUiEvent: (UiEvent) -> Unit
     ): Modifier {
-        return Modifier
+        // SwiftUI's scaledToFill() is aspectRatio(nil, .fill).
+        return Modifier.aspectRatioBox(ratio = null, fill = true)
     }
 }
 

@@ -34,16 +34,19 @@ class FrameModifier(
                     effectiveMinHeight != null ||
                     effectiveMaxHeight != null
                 ) {
+                    // A max, finite or infinite, takes what is offered up to it, as SwiftUI's
+                    // flexible frame does. `maxWidth: Infinity` beside a finite `maxHeight`
+                    // used to skip the fill and hug the content instead.
                     Modifier.sizeIn(
                         effectiveMinWidth?.dp ?: Dp.Unspecified,
                         effectiveMinHeight?.dp ?: Dp.Unspecified,
                         effectiveMaxWidth?.dp ?: Dp.Unspecified,
                         effectiveMaxHeight?.dp ?: Dp.Unspecified
-                    ).then(if (effectiveMaxWidth != null) {
+                    ).then(if (hasMaxWidth) {
                         Modifier.fillMaxWidth()
                     } else {
                         Modifier
-                    }).then(if (effectiveMaxHeight != null) {
+                    }).then(if (hasMaxHeight) {
                         Modifier.fillMaxHeight()
                     } else
                         Modifier

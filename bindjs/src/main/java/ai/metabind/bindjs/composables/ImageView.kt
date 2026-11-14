@@ -7,13 +7,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.IntrinsicMeasurable
+import androidx.compose.ui.layout.IntrinsicMeasureScope
+import androidx.compose.ui.layout.LayoutModifier
+import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.MeasureResult
+import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.AsyncImage
@@ -263,11 +273,12 @@ fun ImageView(
         val url = component.props.url
         // Coil 2.x can't load `data:` URIs directly — decode to bytes when present.
         val model: Any? = decodeDataUri(url) ?: url
+        val loadedSize = remember(url) { mutableStateOf<IntSize?>(null) }
         AsyncImage(
             modifier = modifiers.buildModifier(
                 onUiEvent,
                 exclude = listOf(AccessibilityLabelModifier::class)
-            ),
+            ).then(LoadedImageSize(loadedSize, resizable = component.props.resizable == true)),
             model = ImageRequest.Builder(context).data(model)
                 .crossfade(true)
                 .build(),
@@ -275,9 +286,49 @@ fun ImageView(
             contentDescription = contentDescription,
             alignment = Alignment.Center,
             contentScale = contentScale,
+            onSuccess = { success ->
+                val drawable = success.result.drawable
+                if (drawable.intrinsicWidth > 0 && drawable.intrinsicHeight > 0) {
+                    loadedSize.value = IntSize(drawable.intrinsicWidth, drawable.intrinsicHeight)
+                }
+            },
             onError = { error ->
                 Log.e(TAG, "Coil image load error: ${error.result.throwable}")
             }
         )
     }
+}
+
+/**
+ * Answers intrinsic measurements with the loaded image's size. An AsyncImage reports none
+ * through its intrinsics, and Coil doesn't remeasure the layouts that asked when the image
+ * arrives. Read from state here, the size reaches whatever asks for the image's ideal size,
+ * on this layout or around it (an aspect box keeping the image's ratio, past padding or a
+ * frame), and that layout is remeasured when the image loads. A [resizable] image takes
+ * any size, as in SwiftUI, so its smallest intrinsic size is nothing; otherwise its size is
+ * its own. Measuring passes through.
+ */
+private class LoadedImageSize(private val size: State<IntSize?>, private val resizable: Boolean) : LayoutModifier {
+    override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        val placeable = measurable.measure(constraints)
+        return layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+
+    override fun IntrinsicMeasureScope.minIntrinsicWidth(measurable: IntrinsicMeasurable, height: Int) =
+        size.value?.let { if (resizable) 0 else widthAt(it, height) } ?: measurable.minIntrinsicWidth(height)
+
+    override fun IntrinsicMeasureScope.maxIntrinsicWidth(measurable: IntrinsicMeasurable, height: Int) =
+        size.value?.let { widthAt(it, height) } ?: measurable.maxIntrinsicWidth(height)
+
+    override fun IntrinsicMeasureScope.minIntrinsicHeight(measurable: IntrinsicMeasurable, width: Int) =
+        size.value?.let { if (resizable) 0 else heightAt(it, width) } ?: measurable.minIntrinsicHeight(width)
+
+    override fun IntrinsicMeasureScope.maxIntrinsicHeight(measurable: IntrinsicMeasurable, width: Int) =
+        size.value?.let { heightAt(it, width) } ?: measurable.maxIntrinsicHeight(width)
+
+    private fun widthAt(size: IntSize, height: Int) =
+        if (height == Constraints.Infinity) size.width else Math.round(height.toFloat() * size.width / size.height)
+
+    private fun heightAt(size: IntSize, width: Int) =
+        if (width == Constraints.Infinity) size.height else Math.round(width.toFloat() * size.height / size.width)
 }

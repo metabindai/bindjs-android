@@ -15,6 +15,8 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.composables.ext.applyTextCase
@@ -126,7 +128,8 @@ fun TextView(
     }
     val lineHeight = lineSpacing?.plus(defaultLineHeight)
     val textAlign = modifiers.getTextAlign()
-    val tracking = modifiers.getTracking()
+    // Tracking is in points; as sp it would grow with the user's font scale.
+    val trackingSp = with(LocalDensity.current) { modifiers.getTracking().dp.toSp() }
     val fontFamily = modifiers.getFontFamily()
     val isTextSelectionEnabled = modifiers.isTextSelectionEnabled()
 
@@ -164,7 +167,7 @@ fun TextView(
             platformStyle = PlatformTextStyle(
                 includeFontPadding = true
             ),
-            letterSpacing = tracking.sp
+            letterSpacing = trackingSp
         ).merge(fill).merge(textStyle).merge(
             TextStyle(
                 fontSize = fontSize?.toInt()?.sp ?: TextUnit.Unspecified,
