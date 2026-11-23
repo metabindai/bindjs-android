@@ -1,0 +1,303 @@
+{
+  "type": "ComponentCall",
+  "props": {
+    "name": "Fixture_ButtonStyleComponentLabel",
+    "props": {},
+    "children": [
+      {
+        "type": "VStack",
+        "props": {
+          "alignment": "leading",
+          "spacing": 8,
+          "children": [
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "font",
+                  "props": {
+                    "rawValue": "headline",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Text",
+                    "props": {
+                      "rawValue": "Notify me by",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "buttonStyle",
+                  "props": {
+                    "props": {},
+                    "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_1,buttonStyle,1",
+                    "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_1,buttonStyle,1",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_1,,1",
+                      "label": {
+                        "type": "HStack",
+                        "props": {
+                          "spacing": 12,
+                          "children": [
+                            {
+                              "type": "ComponentCall",
+                              "props": {
+                                "name": "Fixture_ButtonStyleComponentLabel",
+                                "props": {
+                                  "selected": true
+                                },
+                                "children": [
+                                  {
+                                    "type": "ModifiedComponent",
+                                    "props": {
+                                      "modifier": {
+                                        "type": "frame",
+                                        "props": {
+                                          "width": 18,
+                                          "height": 18,
+                                          "children": []
+                                        }
+                                      },
+                                      "content": [
+                                        {
+                                          "type": "Circle",
+                                          "props": {
+                                            "children": [],
+                                            "fill": {
+                                              "style": {
+                                                "type": "Color",
+                                                "props": {
+                                                  "rawValue": "blue",
+                                                  "children": []
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Email",
+                                "children": []
+                              }
+                            },
+                            {
+                              "type": "Spacer",
+                              "props": {
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_1,,1",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "buttonStyle",
+                  "props": {
+                    "props": {},
+                    "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_2,buttonStyle,2",
+                    "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_2,buttonStyle,2",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_2,,2",
+                      "label": {
+                        "type": "HStack",
+                        "props": {
+                          "spacing": 12,
+                          "children": [
+                            {
+                              "type": "ComponentCall",
+                              "props": {
+                                "name": "Fixture_ButtonStyleComponentLabel",
+                                "props": {
+                                  "selected": false
+                                },
+                                "children": [
+                                  {
+                                    "type": "ModifiedComponent",
+                                    "props": {
+                                      "modifier": {
+                                        "type": "frame",
+                                        "props": {
+                                          "width": 18,
+                                          "height": 18,
+                                          "children": []
+                                        }
+                                      },
+                                      "content": [
+                                        {
+                                          "type": "Circle",
+                                          "props": {
+                                            "children": [],
+                                            "fill": {
+                                              "style": {
+                                                "type": "Color",
+                                                "props": {
+                                                  "r": 209,
+                                                  "g": 209,
+                                                  "b": 214,
+                                                  "a": 1,
+                                                  "children": []
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "SMS",
+                                "children": []
+                              }
+                            },
+                            {
+                              "type": "Spacer",
+                              "props": {
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_2,,2",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "ModifiedComponent",
+              "props": {
+                "modifier": {
+                  "type": "buttonStyle",
+                  "props": {
+                    "props": {},
+                    "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_3,buttonStyle,3",
+                    "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,undefined_3,buttonStyle,3",
+                    "children": []
+                  }
+                },
+                "content": [
+                  {
+                    "type": "Button",
+                    "props": {
+                      "handlerId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_3,,3",
+                      "label": {
+                        "type": "HStack",
+                        "props": {
+                          "spacing": 12,
+                          "children": [
+                            {
+                              "type": "ComponentCall",
+                              "props": {
+                                "name": "Fixture_ButtonStyleComponentLabel",
+                                "props": {
+                                  "selected": false
+                                },
+                                "children": [
+                                  {
+                                    "type": "ModifiedComponent",
+                                    "props": {
+                                      "modifier": {
+                                        "type": "frame",
+                                        "props": {
+                                          "width": 18,
+                                          "height": 18,
+                                          "children": []
+                                        }
+                                      },
+                                      "content": [
+                                        {
+                                          "type": "Circle",
+                                          "props": {
+                                            "children": [],
+                                            "fill": {
+                                              "style": {
+                                                "type": "Color",
+                                                "props": {
+                                                  "r": 209,
+                                                  "g": 209,
+                                                  "b": 214,
+                                                  "a": 1,
+                                                  "children": []
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            },
+                            {
+                              "type": "Text",
+                              "props": {
+                                "rawValue": "Push",
+                                "children": []
+                              }
+                            },
+                            {
+                              "type": "Spacer",
+                              "props": {
+                                "children": []
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "environmentId": "0,Fixture_ButtonStyleComponentLabel_0,VStack_0,Button_3,,3",
+                      "children": []
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

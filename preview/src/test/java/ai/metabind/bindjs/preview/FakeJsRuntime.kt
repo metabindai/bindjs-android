@@ -1,6 +1,7 @@
 package ai.metabind.bindjs.preview
 
 import ai.metabind.bindjs.DesignerComponent
+import ai.metabind.bindjs.GsonProvider
 import ai.metabind.bindjs.JsRuntime
 import ai.metabind.bindjs.McpHost
 import ai.metabind.bindjs.model.BaseComponent
@@ -11,9 +12,9 @@ import ai.metabind.bindjs.model.EmptyComponent
  * A [JsRuntime] with no JavaScript behind it, for rendering an already-built tree.
  *
  * `BindJSView` reaches back into the runtime in three places only: a GeometryReader
- * body, a sheet or menu body, and a custom button style. None of the committed fixture
- * trees use them, so every callback answers with nothing. A fixture that starts to
- * depend on one will render its slot empty, which the screenshot then shows.
+ * body, a sheet or menu body, and a custom button style. Every callback answers with
+ * nothing, so a fixture that depends on one renders its slot empty (a styled button
+ * falls back to its plain label), which the screenshot then shows.
  *
  * Calls that carry a picked value back into JavaScript are recorded in [calls], in
  * order, so a test can check what an event was routed to.
@@ -56,7 +57,12 @@ class FakeJsRuntime : JsRuntime {
         handlerId: String,
         labelComponent: BaseComponent<*>,
         isPressed: Boolean,
-    ): BaseComponent<*>? = null
+    ): BaseComponent<*>? {
+        // The real runtime serializes the label to hand it to the style. Do the same, so
+        // a label that cannot be serialized fails the screenshot test instead of passing.
+        GsonProvider.get().toJson(labelComponent, BaseComponent::class.java)
+        return null
+    }
 
     override suspend fun awaitReady() {}
     override fun setOnRerenderRequested(listener: (() -> Unit)?) {}

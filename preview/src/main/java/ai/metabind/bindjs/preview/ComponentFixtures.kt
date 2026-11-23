@@ -478,4 +478,35 @@ val componentFixtures = listOf(
         })()
         """.trimIndent()
     ),
+    component(
+        name = "ButtonStyleComponentLabel",
+        description = "Buttons with a button style whose label holds a component call, like the UI library's ChoiceList rows. Such a label used to crash the app, then reached the style blank.",
+        source = """
+        (() => {
+          const Indicator = defineComponent({
+            body: (props) => Circle()
+              .fill(props.selected ? Color('blue') : Color('#D1D1D6'))
+              .frame({ width: 18, height: 18 }),
+          });
+          const Card = defineButtonStyle({
+            body: (configuration) => configuration.label
+              .padding(12)
+              .background(Color('#F2F2F7'))
+              .cornerRadius(10),
+          });
+          const [choice, setChoice] = useState('Email');
+          return VStack({ alignment: 'leading', spacing: 8 }, [
+            Text('Notify me by').font('headline'),
+            ...['Email', 'SMS', 'Push'].map((title) =>
+              Button(HStack({ spacing: 12 }, [
+                Indicator({ selected: title === choice }),
+                Text(title),
+                Spacer(),
+              ]), () => setChoice(title))
+                .buttonStyle(Card())
+            ),
+          ]);
+        })()
+        """.trimIndent()
+    ),
 )
