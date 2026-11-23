@@ -40,7 +40,10 @@ bindjs/src/main/
                                      @metabindai/bindjs-runtime). bindjs-runtime is the
                                      source of truth; the copy here is synced manually
                                      today. Fix runtime bugs upstream, then re-sync —
-                                     don't let this copy drift.
+                                     don't let this copy drift. Local fixes awaiting
+                                     upstream (re-apply after a sync if missing):
+                                     `callButtonStyleHandler` passes the button's label
+                                     through instead of `Text(label.props.rawValue)`.
   java/ai/metabind/bindjs/
     DesignerComponent.kt           ← root bundle: name + content (JS source) + dependencies
     JsRuntime.kt / JsRuntimeImpl.kt← isolate lifecycle, JS↔Kotlin bridge, callComponent

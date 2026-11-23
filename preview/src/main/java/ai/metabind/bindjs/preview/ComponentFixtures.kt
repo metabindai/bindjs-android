@@ -480,7 +480,7 @@ val componentFixtures = listOf(
     ),
     component(
         name = "ButtonStyleComponentLabel",
-        description = "Buttons with a button style whose label holds a component call, like the UI library's ChoiceList rows. Serializing such a label for the style used to crash the app.",
+        description = "Buttons with a button style whose label holds a component call, like the UI library's ChoiceList rows. Such a label used to crash the app, then reached the style blank.",
         source = """
         (() => {
           const Indicator = defineComponent({

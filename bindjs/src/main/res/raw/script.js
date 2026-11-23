@@ -3570,10 +3570,9 @@ Object.assign(this, {
         return callEventHandler(handlerId, proxy);
     },
     callButtonStyleHandler:(handlerId, inner, isPressed) => {
-        let label = inner.props.rawValue;
-        let labelComponent = runtime.makeComponent(() => {
-            return AST.Directive('Text', { rawValue: label });
-        });
+        // Hand the style the label the button was written with, whatever it is. Only
+        // keeping `inner.props.rawValue` blanked every label that was not plain Text.
+        let labelComponent = runtime.makeComponent(() => inner);
         const handler = runtime.storedFunctions[handlerId];
         if (handler) {
             let result = handler({label: labelComponent, isPressed: isPressed}, {})();
