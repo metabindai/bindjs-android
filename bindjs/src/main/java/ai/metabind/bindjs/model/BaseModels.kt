@@ -387,9 +387,16 @@ interface BrushComponent {
  * that composable renders instead.
  */
 class Component(
-    val type: String,
     props: ComponentCallProps,
 ) : BaseComponent<ComponentCallProps>(props) {
+    /**
+     * Always `"ComponentCall"`. A getter, not a stored field: `"type"` is the
+     * [ai.metabind.bindjs.GsonProvider] discriminator, so a field of that name makes Gson
+     * refuse to serialize the component (which `callButtonStyleHandler` does with a
+     * button's label), and the discriminator is stripped on read so it was never set.
+     */
+    val type: String get() = "ComponentCall"
+
     override fun toString(): String {
         return "Component(type=$type)"
     }

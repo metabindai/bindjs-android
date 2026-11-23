@@ -302,8 +302,8 @@ class JsRuntimeImpl private constructor(
         labelComponent: BaseComponent<*>,
         isPressed: Boolean,
     ): BaseComponent<*>? {
-        val label = gson.toJson(labelComponent)
         return try {
+            val label = gson.toJson(labelComponent, BaseComponent::class.java)
             val eventHandlerScript = "callButtonStyleHandler('$handlerId', $label, $isPressed);"
             val result = evalJs(eventHandlerScript)
             val typeToken = object : TypeToken<BaseComponent<*>>() {}.type
@@ -313,7 +313,7 @@ class JsRuntimeImpl private constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse component from callButtonStyleHandler", e)
+            Log.e(TAG, "callButtonStyleHandler failed", e)
             null
         }
     }
